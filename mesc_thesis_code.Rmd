@@ -241,8 +241,9 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 
 ```
 
+## data creation
 
-```{r everything copy-pasted}
+```{r load census data}
 
 #### load raw data ####
 # census
@@ -257,10 +258,11 @@ load(file =
        "onlyruca.rdata")
 load(file = 
        "onlyurbanruca.rdata")
+```
 
 
 
-##### air pollution data creation #####
+```{r air pollution data creation}
 
 # # import air pollution data files #
 # 
@@ -1320,11 +1322,11 @@ load(file =
 # save(atleast3years180obs,file="atleast3years180obs.rdata")
 # rm(atleast3years180obs)
 # load(file="atleast3years180obs.rdata")
+```
 
+## make racial isolation indices
 
-
-
-# #### RACIAL ISOLATION INDICES ####
+```{r racial isolation indices}
 
 # Guide to this section:
 # 1. List of groups of census tracts
@@ -1336,22 +1338,31 @@ load(file =
 
 
 
-
-
-
 #### preparation for all versions ####
 
 # import ArcGIS table with adjacency results into R
 censusadjacent <- 
-  read.csv("censusadjacent.csv", header = TRUE)
+  read.csv("censusadjacent.csv", 
+           header = TRUE)
+
 censusadjacent <- 
   censusadjacent[c(-1)]
-censusadjacent$NODE_COUNT <- as.numeric(censusadjacent$NODE_COUNT)
+
+censusadjacent$NODE_COUNT <- 
+  as.numeric(censusadjacent$NODE_COUNT)
 
 # import census data (Black, Black/other, total)
-segregationvars <- fullcensus[c("GEOID10", "DP0080001", "DP0080004")]
-segregationvars$allbutblack <- segregationvars$DP0080001-segregationvars$DP0080004 # create non-black
-colnames(segregationvars)[1] <- "selfneighbor"
+segregationvars <- 
+  fullcensus[c("GEOID10", 
+               "DP0080001", 
+               "DP0080004")]
+
+segregationvars$allbutblack <- 
+  segregationvars$DP0080001 - 
+  segregationvars$DP0080004 # create non-black
+
+colnames(segregationvars)[1] <- 
+  "selfneighbor"
 
 
 
@@ -1627,7 +1638,8 @@ states_and_GEOIDs <- editablecensuswithstates[,c("state2digits","GEOID10","State
 View(states_and_GEOIDs)
 
 # read in regions
-rawregion <- read.csv(file="uscensusbureauregionsanddivisions.csv")
+rawregion <- 
+  read.csv(file="uscensusbureauregionsanddivisions.csv")
 View(rawregion)
 
 # rename state variable
@@ -1855,7 +1867,8 @@ air_acs_census_seg_nodes_no_drops <- merge(air_acs_census_seg_nodes_no_drops,rac
 
 # note, just replaced old variables starting here
 finaldatanodrops <- air_acs_census_seg_nodes_no_drops
-save(finaldatanodrops,file="finaldatanodrops.rdata")
+save(finaldatanodrops, 
+     file="finaldatanodrops.rdata")
 load(file="finaldatanodrops.rdata")
 View(finaldatanodrops)
 
@@ -1891,10 +1904,11 @@ finaldatanodrops$age65plus <- finaldatanodrops$DP0010015+finaldatanodrops$DP0010
 
 save(finaldatanodrops,file="finaldatanodrops.rdata")
 load(file="finaldatanodrops.rdata")
+```
 
 
 
-
+```{r stats}
 
 #### begin statistical analysis ####
 table(finaldatanodrops$Region)
