@@ -241,599 +241,1023 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 
 ```
 
+
+```{r read necessary files for all data creation}
+
+
+```
+
 ## data creation
 
-```{r load census data}
+```{r read necessary files}
 
 #### load raw data ####
 # census
-fullcensus = 
-  read.csv("fullcensus.csv", 
-           header = TRUE) # load data
-fullcensus$GEOID10 <- 
-  as.character(fullcensus$GEOID10) # make ID into character
+# fullcensus <- 
+#   read_csv("fullcensus.csv") # load data
+# fullcensus$GEOID10 <- 
+#   as.character(fullcensus$GEOID10) # make ID into character
+# save(fullcensus, 
+#      file = "fullcensus.rdata")
+load(file = "fullcensus.rdata")
 
 # RUCA
 load(file = 
        "onlyruca.rdata")
 load(file = 
        "onlyurbanruca.rdata")
+
+# get speciation parameter codes
+# species_parameter_codes <- 
+#   read.csv("speciation_parameter_codes.csv", 
+#            header = TRUE)
+# save(species_parameter_codes, 
+#      file = "speciation_parameter_codes.rdata")
+load(file = "speciation_parameter_codes.rdata")
+```
+
+# air pollution data creation
+
+```{r air pollution data file import, eval=FALSE, include=FALSE}
+
+# import air pollution data files #
+
+# import chemical speciation data
+SPEC_filenames <- 
+  list.files(pattern = "daily_SPEC_.*\\.csv")
+SPEC_file_list <- 
+  lapply(SPEC_filenames,function(i){
+    read.csv(file=i, header=TRUE)
+})
+
+names(SPEC_file_list) <- 
+  gsub("\\.csv$", "", 
+       SPEC_filenames)
+
+# import total PM25 88101 files
+PM_25_88101_filenames <- 
+  list.files(pattern = "daily_88101_.*\\.csv")
+PM_25_88101_file_list <- 
+  lapply(PM_25_88101_filenames,function(i){
+  read.csv(file=i, header=TRUE)
+})
+names(PM_25_88101_file_list) <- gsub("\\.csv$", "", PM_25_88101_filenames)
+
+# import total PM25 88502 files
+PM_25_88502_filenames <- 
+  list.files(pattern = "daily_88502_.*\\.csv")
+PM_25_88502_file_list <- 
+  lapply(PM_25_88502_filenames,function(i){
+  read.csv(file=i, header=TRUE)
+})
+names(PM_25_88502_file_list) <- 
+  gsub("\\.csv$", "", PM_25_88502_filenames)
+
+# save original files to disk
+list.save(SPEC_file_list, 
+          file = "SPEC_file_list_unedited.rdata")  #save list to disk
+list.save(PM_25_88101_file_list, 
+          file = "PM_25_88101_file_list_unedited.rdata")  #save list to disk
+list.save(PM_25_88502_file_list, 
+          file = "PM_25_88502_file_list_unedited.rdata")  #save list to disk
+```
+
+
+```{r load raw air pollution data files, eval=FALSE, include=FALSE}
+###START HERE TO AVOID RE-READING FILES
+SPEC_file_list <- 
+  list.load(file = "SPEC_file_list_unedited.rdata")
+PM_25_88101_file_list <- 
+  list.load(file = "PM_25_88101_file_list_unedited.rdata")
+PM_25_88502_file_list <- 
+  list.load(file = "PM_25_88502_file_list_unedited.rdata")
+```
+
+
+```{r fix state codes and format individual files, eval=FALSE, include=FALSE}
+
+# fix state codes for speciation data from 2005 to 2007
+# force state code and state name to be character vectors
+SPEC_file_list <- 
+  lapply(SPEC_file_list, 
+         function(x) {
+           x$State.Code <- 
+             as.character(x$State.Code); x
+           })
+PM_25_88101_file_list <- 
+  lapply(PM_25_88101_file_list, 
+         function(x) {
+           x$State.Code <- 
+             as.character(x$State.Code); x
+           })
+PM_25_88502_file_list <- 
+  lapply(PM_25_88502_file_list, 
+         function(x) {
+           x$State.Code <- 
+             as.character(x$State.Code); x
+           })
+SPEC_file_list <- 
+  lapply(SPEC_file_list, 
+         function(x) {
+           x$State.Name <- 
+             as.character(x$State.Name); x
+           })
+PM_25_88101_file_list <- 
+  lapply(PM_25_88101_file_list, 
+         function(x) {
+           x$State.Name <- 
+             as.character(x$State.Name); x
+           })
+PM_25_88502_file_list <- 
+  lapply(PM_25_88502_file_list, 
+         function(x) {
+           x$State.Name <- 
+             as.character(x$State.Name); x
+           })
+
+# replace CC with 81 in state code for Canada
+# FRM
+PM_25_88101_file_list <- 
+  lapply(PM_25_88101_file_list,  
+         function(x){
+           x$State.Code <- 
+             replace(x$State.Code, 
+                     x$State.Code == "CC", 
+                     "81"); x
+ }
+ )
+# non-FRM
+# replace CC with 81 in state code for Canada
+PM_25_88502_file_list <- 
+  lapply(PM_25_88502_file_list, 
+         function(x){
+           x$State.Code <- 
+             replace(x$State.Code, 
+                     x$State.Code=="CC","81");x
+  }
+  )
+
+# import list of states and state codes
+states_and_counties <- 
+  read.csv(file="states_and_counties.csv")
+states_and_codes <- 
+  unique(states_and_counties[c("State.Name","State.Code")])
+states_and_codes$State.Code <- 
+  as.character(states_and_codes$State.Code)
+states_and_codes$State.Name <- 
+  as.character(states_and_codes$State.Name)
+
+# change state code for Canada to the number 81 in states_and_codes
+states_and_codes$State.Code[states_and_codes$State.Code == "CC"] <- "81"
+# View(states_and_codes)
+
+# remove wrong state codes from 2005-2007 speciation data
+SPEC_file_list$daily_SPEC_2005$State.Code <- NULL
+SPEC_file_list$daily_SPEC_2006$State.Code <- NULL
+SPEC_file_list$daily_SPEC_2007$State.Code <- NULL
+
+
+SPEC_file_list$daily_SPEC_2005 <- left_join(SPEC_file_list$daily_SPEC_2005,states_and_codes,by = "State.Name")
+SPEC_file_list$daily_SPEC_2006 <- left_join(SPEC_file_list$daily_SPEC_2006,states_and_codes,by = "State.Name")
+SPEC_file_list$daily_SPEC_2007 <- left_join(SPEC_file_list$daily_SPEC_2007,states_and_codes,by = "State.Name")
+
+# View(SPEC_file_list$daily_SPEC_2005)
+
+# put columns in correct order
+SPEC_file_list$daily_SPEC_2005 <- SPEC_file_list$daily_SPEC_2005[c(29,1:28)]
+SPEC_file_list$daily_SPEC_2006 <- SPEC_file_list$daily_SPEC_2006[c(29,1:28)]
+SPEC_file_list$daily_SPEC_2007 <- SPEC_file_list$daily_SPEC_2007[c(29,1:28)]
+# View(SPEC_file_list$daily_SPEC_2005)
+
+
+#### isolate rows with state code concordance problems (need massive_species_dataframe first, don't actually need this code)
+# species_state_discord <- anti_join(massive_species_dataframe, states_and_counties, by = c("State.Code","State.Name"))
+
+# check overall counts for species (won't work unless run the massive_species_dataframe first)
+#counts <- massive_species_dataframe_states %>%
+#  group_by(State.Code, State.Name) %>%
+#  summarise (n = n())
+
+#check state speciation assignments by year
+#SPEC_state_counts <- lapply(SPEC_file_list, function(x) {
+#  thing <- x %>%
+#    group_by(State.Code, State.Name) %>%
+#    summarise (n = n());thing
+#  }
+#)
+
+
+# View(SPEC_state_counts$daily_SPEC_2005)
+# View(SPEC_state_counts$daily_SPEC_2006)
+# View(SPEC_state_counts$daily_SPEC_2007)
+# View(SPEC_state_counts$daily_SPEC_2008)
+# View(SPEC_state_counts$daily_SPEC_2009)
+# View(SPEC_state_counts$daily_SPEC_2010)
+# View(SPEC_state_counts$daily_SPEC_2011)
+# View(SPEC_state_counts$daily_SPEC_2012)
+# View(SPEC_state_counts$daily_SPEC_2013)
+# View(SPEC_state_counts$daily_SPEC_2014)
+# View(SPEC_state_counts$daily_SPEC_2015)
+
+
+# check state FRM PM2.5 assignments by year
+# FRM_state_counts <- lapply(PM_25_88101_file_list, function(x) {
+#  thing <- x %>%
+#    group_by(State.Code, State.Name) %>%
+#    summarise (n = n());thing
+#}
+#)
+
+# View(FRM_state_counts$daily_88101_2005)
+# View(FRM_state_counts$daily_88101_2006)
+# View(FRM_state_counts$daily_88101_2007)
+# View(FRM_state_counts$daily_88101_2008)
+# View(FRM_state_counts$daily_88101_2009)
+# View(FRM_state_counts$daily_88101_2010)
+# View(FRM_state_counts$daily_88101_2011)
+# View(FRM_state_counts$daily_88101_2012)
+# View(FRM_state_counts$daily_88101_2013)
+# View(FRM_state_counts$daily_88101_2014)
+# View(FRM_state_counts$daily_88101_2015)
+
+
+# check state non-FRM PM2.5 assignments by year
+# non_FRM_state_counts <- lapply(PM_25_88502_file_list, function(x) {
+#  thing <- x %>%
+#    group_by(State.Code, State.Name) %>%
+#    summarise (n = n());thing
+#}
+#)
+
+# View(non_FRM_state_counts$daily_88502_2005)
+# View(non_FRM_state_counts$daily_88502_2006)
+# View(non_FRM_state_counts$daily_88502_2007)
+# View(non_FRM_state_counts$daily_88502_2008)
+# View(non_FRM_state_counts$daily_88502_2009)
+# View(non_FRM_state_counts$daily_88502_2010)
+# View(non_FRM_state_counts$daily_88502_2011)
+# View(non_FRM_state_counts$daily_88502_2012)
+# View(non_FRM_state_counts$daily_88502_2013)
+# View(non_FRM_state_counts$daily_88502_2014)
+# View(non_FRM_state_counts$daily_88502_2015)
+
+# # check state speciation assignments by year
+# # SPEC_state_counts <- lapply(SPEC_file_list, function(x) {
+# #  thing<-x %>%
+# #    group_by(State.Code, State.Name) %>%
+# #    summarise (n = n());thing
+# #}
+# #)
+#
+#
+# # View(SPEC_state_counts$daily_SPEC_2005)
+# # View(SPEC_state_counts$daily_SPEC_2006)
+# # View(SPEC_state_counts$daily_SPEC_2007)
+# # View(SPEC_state_counts$daily_SPEC_2008)
+# # View(SPEC_state_counts$daily_SPEC_2009)
+# # View(SPEC_state_counts$daily_SPEC_2010)
+# # View(SPEC_state_counts$daily_SPEC_2011)
+# # View(SPEC_state_counts$daily_SPEC_2012)
+# # View(SPEC_state_counts$daily_SPEC_2013)
+# # View(SPEC_state_counts$daily_SPEC_2014)
+# # View(SPEC_state_counts$daily_SPEC_2015)
+
+
+# force state to be numeric #
+SPEC_file_list <- 
+  lapply(SPEC_file_list, 
+         function(x) {
+           x$State.Code <- 
+             as.numeric(x$State.Code); x
+           })
+PM_25_88101_file_list <- 
+  lapply(PM_25_88101_file_list, 
+         function(x) {
+           x$State.Code <- 
+             as.numeric(x$State.Code); x
+           })
+PM_25_88502_file_list <- 
+  lapply(PM_25_88502_file_list, 
+         function(x) {
+           x$State.Code <- 
+             as.numeric(x$State.Code); x
+           })
+
+# create site IDs to match census files #
+SPEC_file_list <- 
+  lapply(SPEC_file_list, 
+         function(x) {
+           x$ID <- 
+             paste(formatC(x$State.Code, width=2, flag="0"),
+                   formatC(x$County.Code, width=3, flag="0"),
+                   formatC(x$Site.Num, width=4, flag="0"),
+                   sep="-");x
+           })
+
+PM_25_88101_file_list <- 
+  lapply(PM_25_88101_file_list, 
+         function(x) {
+           x$ID <- 
+             paste(formatC(x$State.Code, width=2, flag="0"),
+                   formatC(x$County.Code, width=3, flag="0"),
+                   formatC(x$Site.Num, width=4, flag="0"), 
+                   sep="-");x
+           })
+
+PM_25_88502_file_list <- 
+  lapply(PM_25_88502_file_list, 
+         function(x) {
+           x$ID <- 
+             paste(formatC(x$State.Code, width=2, flag="0"),
+                   formatC(x$County.Code, width=3, flag="0"),
+                   formatC(x$Site.Num, width=4, flag="0"), 
+                   sep="-");x})
+
+# make ID a factor (not sure why)
+SPEC_file_list <- 
+  lapply(SPEC_file_list, 
+         function(x) {
+           x$ID <- 
+             as.factor(x$ID); x
+         })
+PM_25_88101_file_list <- 
+  lapply(PM_25_88101_file_list, 
+         function(x) {x$ID <- 
+           as.factor(x$ID); x
+         })
+PM_25_88502_file_list <- 
+  lapply(PM_25_88502_file_list, 
+         function(x) {
+           x$ID <- 
+             as.factor(x$ID); x
+         })
+
+# make parameter code a factor
+SPEC_file_list <- 
+  lapply(SPEC_file_list, 
+         function(x) {
+           x$Parameter.Code <- 
+             as.factor(x$Parameter.Code); x
+           })
+
+PM_25_88101_file_list <- 
+  lapply(PM_25_88101_file_list, 
+         function(x) {
+           x$Parameter.Code <- 
+             as.factor(x$Parameter.Code); x
+           })
+PM_25_88502_file_list <- 
+  lapply(PM_25_88502_file_list, 
+         function(x) {
+           x$Parameter.Code <- 
+             as.factor(x$Parameter.Code); x
+           })
+
+# save all lists to disk
+list.save(SPEC_file_list, 
+          file = "SPEC_file_list.rdata")  #save list to disk
+list.save(PM_25_88101_file_list, 
+          file = "PM_25_88101_file_list.rdata")  #save list to disk
+list.save(PM_25_88502_file_list, 
+          file = "PM_25_88502_file_list.rdata")  #save list to disk
+```
+
+
+```{r pull individual species, eval=FALSE, include=FALSE}
+# load files if haven't run above chunks
+SPEC_file_list <- 
+  list.load(file = "SPEC_file_list.rdata")
+PM_25_88101_file_list <-
+  list.load(file = "PM_25_88101_file_list.rdata")
+PM_25_88502_file_list <-
+  list.load(file = "PM_25_88502_file_list.rdata")
+
+# pull PM2.5
+PM25FRM <- 
+  do.call("rbind", 
+          PM_25_88101_file_list)
+PM25nonFRM <- 
+  do.call("rbind", 
+          PM_25_88502_file_list)
+PM25all <- 
+  rbind(PM25FRM,
+        PM25nonFRM)
+
+# pull species
+speciesoptions <- 
+  as.list(
+    levels(
+      SPEC_file_list$daily_SPEC_2005$Parameter.Name))
+
+species_parameter_codes_only <- 
+  species_parameter_codes[,c("Parameter","Parameter.Code")]
+
+species_parameter_codes_only <- 
+  unique(species_parameter_codes_only)
+
+species_parameter_codes_only$Parameter.Code <- 
+  as.factor(species_parameter_codes_only$Parameter.Code)
+
+# pull individual species
+aluminum_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88104)
+ammonium_ion_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88301)
+antimony_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88102)
+arsenic_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88103)
+barium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88107)
+beryllium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88105)
+carbon_black_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88313)
+bromine_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88109)
+cadmium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88110)
+calcium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88111)
+cerium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88117)
+cesium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88118)
+chloride_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88203)
+chlorine_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88115)
+chromium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88112)
+cobalt_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88113)
+copper_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88114)
+carbon_EC_CSN_LC_TOT_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88307)
+carbon_EC_LC_TOR_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88321)
+carbon_EC_LC_TOT_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88381)
+carbon_EC_OPTICAL_TOT_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88316)
+europium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88121)
+gallium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88124)
+gold_by_year <- 
+  lapply(SPEC_file_list, 
+         subset,
+         Parameter.Code == 88143)
+hafnium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88127)
+indium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88131)
+iridium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88133)
+iron_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88126)
+lanthanum_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88146)
+lead_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88128)
+magnesium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88140)
+manganese_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88132)
+mercury_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88142)
+molybdenum_by_year <- 
+  lapply(SPEC_file_list,
+         subset, 
+         Parameter.Code == 88134)
+nickel_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88136)
+niobium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88147)
+nitrate_non_volatile_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88310)
+carbon_OC_TOR_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88320)
+carbon_OC_TOT_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88382)
+carbon_OCX_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88304)
+PM_25_SPEC_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88101)
+phosphorus_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88152)
+potassium_ion_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88303)
+potassium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88180)
+rubidium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88176)
+samarium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88162)
+scandium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88163)
+selenium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88154)
+silicon_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88165)
+silver_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88166)
+sodium_ion_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88302)
+sodium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88184)
+strontium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88168)
+sulfate_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88403)
+sulfur_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88169)
+tantalum_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88170)
+terbium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88172)
+tin_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88160)
+titanium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88161)
+carbon_TC_LC_TOT_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88312)
+nitrate_total_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88306)
+tungsten_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88186)
+carbon_UV_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88314)
+uranium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88179)
+vanadium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88164)
+nitrate_volatile_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88309)
+yttrium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88183)
+zinc_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88167)
+zirconium_by_year <- 
+  lapply(SPEC_file_list, 
+         subset, 
+         Parameter.Code == 88185)
+
+# put them all in a list
+species_list_by_year <- 
+  mget(ls(pattern = "_by_year"))
+
+# save above list to disk
+list.save(species_list_by_year, 
+          file = "species_list_by_year.rdata")
+
+# combine each sub-list into one dataframe
+species_list <- 
+  lapply(species_list_by_year, 
+         function(i){
+           rbindlist(i)
+           })
+
+# put all species in one dataframe for monitor extraction
+species_list_dataframe <- 
+  lapply(species_list,
+         function(i){ # make each a dataframe
+           as.data.frame(i)
+           })
+
+massive_species_dataframe <- 
+  rbindlist(species_list_dataframe) # combine them!
+
+# make tibble version of massive species dataframe
+massive_species_tibble <-
+  as_tibble(massive_species_dataframe)
+
+
+# save dataframes to disk before edits
+list.save(species_list, 
+          file="species_list.rdata")
+save(massive_species_dataframe, 
+     file="massive_species_dataframe.rdata")
+save(massive_species_tibble, 
+     file="massive_species_tibble.rdata")
+save(PM25FRM, 
+     file="PM25FRM.rdata")
+save(PM25nonFRM, 
+     file="PM25nonFRM.rdata")
+save(PM25all, 
+     file="PM25all.rdata")
+
+rm("SPEC_file_list", 
+   "species_list_by_year", 
+   "species_list_dataframe")
 ```
 
 
 
-```{r air pollution data creation}
+```{r begin analyses}
 
-# # import air pollution data files #
-# 
-# # import chemical speciation data
-# SPEC_filenames<-list.files(pattern = "daily_SPEC_.*\\.csv")
-# SPEC_file_list<-lapply(SPEC_filenames,function(i){
-#   read.csv(file=i, header=TRUE)
-# })
-# names(SPEC_file_list) <- gsub("\\.csv$", "", SPEC_filenames)
-# 
-# # import total PM25 88101 files
-# PM_25_88101_filenames<-list.files(pattern = "daily_88101_.*\\.csv")
-# PM_25_88101_file_list<-lapply(PM_25_88101_filenames,function(i){
-#   read.csv(file=i, header=TRUE)
-# })
-# names(PM_25_88101_file_list) <- gsub("\\.csv$", "", PM_25_88101_filenames)
-# 
-# # import total PM25 88502 files
-# PM_25_88502_filenames<-list.files(pattern = "daily_88502_.*\\.csv")
-# PM_25_88502_file_list<-lapply(PM_25_88502_filenames,function(i){
-#   read.csv(file=i, header=TRUE)
-# })
-# names(PM_25_88502_file_list) <- gsub("\\.csv$", "", PM_25_88502_filenames)
-# 
-# # save original files to disk
-# list.save(SPEC_file_list, file = "SPEC_file_list_unedited.rdata")  #save list to disk
-# list.save(PM_25_88101_file_list, file = "PM_25_88101_file_list_unedited.rdata")  #save list to disk
-# list.save(PM_25_88502_file_list, file = "PM_25_88502_file_list_unedited.rdata")  #save list to disk
-# 
-# 
-# 
-# 
-# ####START HERE TO AVOID RE-READING FILES
-# #SPEC_file_list<-list.load(file = "SPEC_file_list_unedited.rdata")
-# #PM_25_88101_file_list<-list.load(file = "PM_25_88101_file_list_unedited.rdata")
-# #PM_25_88502_file_list<-list.load(file = "PM_25_88502_file_list_unedited.rdata")
-# 
-# # fix state codes for speciation data from 2005 to 2007
-# # force state code and state name to be character vectors
-# SPEC_file_list<-lapply(SPEC_file_list, function(x) {x$State.Code <- as.character(x$State.Code); x})
-# PM_25_88101_file_list<-lapply(PM_25_88101_file_list, function(x) {x$State.Code <- as.character(x$State.Code); x})
-# PM_25_88502_file_list<-lapply(PM_25_88502_file_list, function(x) {x$State.Code <- as.character(x$State.Code); x})
-#  
-# SPEC_file_list<-lapply(SPEC_file_list, function(x) {x$State.Name <- as.character(x$State.Name); x})
-# PM_25_88101_file_list<-lapply(PM_25_88101_file_list, function(x) {x$State.Name <- as.character(x$State.Name); x})
-# PM_25_88502_file_list<-lapply(PM_25_88502_file_list, function(x) {x$State.Name <- as.character(x$State.Name); x})
-#  
-# 
-# 
-# # replace CC with 81 in state code for Canada
-# # FRM
-# PM_25_88101_file_list<-lapply(PM_25_88101_file_list, function(x){
-#  x$State.Code<-replace(x$State.Code,x$State.Code=="CC","81");x
-#  }
-#  )
-# # non-FRM
-# # replace CC with 81 in state code for Canada
-# PM_25_88502_file_list<-lapply(PM_25_88502_file_list, function(x){
-#   x$State.Code<-replace(x$State.Code,x$State.Code=="CC","81");x
-#   }
-#   )
-# 
-# 
-# # import list of states and state codes
-# states_and_counties<-read.csv(file="states_and_counties.csv")
-# states_and_codes<-unique(states_and_counties[c("State.Name","State.Code")])
-# states_and_codes$State.Code<-as.character(states_and_codes$State.Code)
-# states_and_codes$State.Name<-as.character(states_and_codes$State.Name)
-# 
-# # change state code for Canada to the number 81 in states_and_codes
-# states_and_codes$State.Code[states_and_codes$State.Code == "CC"] <- "81"
-# View(states_and_codes)
-# 
-# # remove wrong state codes from 2005-2007 speciation data
-# SPEC_file_list$daily_SPEC_2005$State.Code<-NULL
-# SPEC_file_list$daily_SPEC_2006$State.Code<-NULL
-# SPEC_file_list$daily_SPEC_2007$State.Code<-NULL
-#  
-#  
-# SPEC_file_list$daily_SPEC_2005<-left_join(SPEC_file_list$daily_SPEC_2005,states_and_codes,by = "State.Name")
-# SPEC_file_list$daily_SPEC_2006<-left_join(SPEC_file_list$daily_SPEC_2006,states_and_codes,by = "State.Name")
-# SPEC_file_list$daily_SPEC_2007<-left_join(SPEC_file_list$daily_SPEC_2007,states_and_codes,by = "State.Name")
-# 
-# View(SPEC_file_list$daily_SPEC_2005)
-# 
-# # put columns in correct order
-# SPEC_file_list$daily_SPEC_2005<-SPEC_file_list$daily_SPEC_2005[c(29,1:28)]
-# SPEC_file_list$daily_SPEC_2006<-SPEC_file_list$daily_SPEC_2006[c(29,1:28)]
-# SPEC_file_list$daily_SPEC_2007<-SPEC_file_list$daily_SPEC_2007[c(29,1:28)]
-# View(SPEC_file_list$daily_SPEC_2005)
-# 
-# 
-# #### isolate rows with state code concordance problems (need massive_species_dataframe first, don't actually need this code)
-# # species_state_discord<-anti_join(massive_species_dataframe, states_and_counties, by = c("State.Code","State.Name"))
-# 
-# # check overall counts for species (won't work unless run the massive_species_dataframe first)
-# #counts<-massive_species_dataframe_states %>%
-# #  group_by(State.Code, State.Name) %>%
-# #  summarise (n = n())
-# 
-# #check state speciation assignments by year
-# #SPEC_state_counts<-lapply(SPEC_file_list, function(x) {
-# #  thing<-x %>%
-# #    group_by(State.Code, State.Name) %>%
-# #    summarise (n = n());thing
-# #  }
-# #)
-# 
-# 
-# #View(SPEC_state_counts$daily_SPEC_2005)
-# #View(SPEC_state_counts$daily_SPEC_2006)
-# #View(SPEC_state_counts$daily_SPEC_2007)
-# #View(SPEC_state_counts$daily_SPEC_2008)
-# #View(SPEC_state_counts$daily_SPEC_2009)
-# #View(SPEC_state_counts$daily_SPEC_2010)
-# #View(SPEC_state_counts$daily_SPEC_2011)
-# #View(SPEC_state_counts$daily_SPEC_2012)
-# #View(SPEC_state_counts$daily_SPEC_2013)
-# #View(SPEC_state_counts$daily_SPEC_2014)
-# #View(SPEC_state_counts$daily_SPEC_2015)
-# 
-# 
-# #check state FRM PM2.5 assignments by year
-# #FRM_state_counts<-lapply(PM_25_88101_file_list, function(x) {
-# #  thing<-x %>%
-# #    group_by(State.Code, State.Name) %>%
-# #    summarise (n = n());thing
-# #}
-# #)
-# 
-# #View(FRM_state_counts$daily_88101_2005)
-# #View(FRM_state_counts$daily_88101_2006)
-# #View(FRM_state_counts$daily_88101_2007)
-# #View(FRM_state_counts$daily_88101_2008)
-# #View(FRM_state_counts$daily_88101_2009)
-# #View(FRM_state_counts$daily_88101_2010)
-# #View(FRM_state_counts$daily_88101_2011)
-# #View(FRM_state_counts$daily_88101_2012)
-# #View(FRM_state_counts$daily_88101_2013)
-# #View(FRM_state_counts$daily_88101_2014)
-# #View(FRM_state_counts$daily_88101_2015)
-# 
-# 
-# #check state non-FRM PM2.5 assignments by year
-# #non_FRM_state_counts<-lapply(PM_25_88502_file_list, function(x) {
-# #  thing<-x %>%
-# #    group_by(State.Code, State.Name) %>%
-# #    summarise (n = n());thing
-# #}
-# #)
-# 
-# #View(non_FRM_state_counts$daily_88502_2005)
-# #View(non_FRM_state_counts$daily_88502_2006)
-# #View(non_FRM_state_counts$daily_88502_2007)
-# #View(non_FRM_state_counts$daily_88502_2008)
-# #View(non_FRM_state_counts$daily_88502_2009)
-# #View(non_FRM_state_counts$daily_88502_2010)
-# #View(non_FRM_state_counts$daily_88502_2011)
-# #View(non_FRM_state_counts$daily_88502_2012)
-# #View(non_FRM_state_counts$daily_88502_2013)
-# #View(non_FRM_state_counts$daily_88502_2014)
-# #View(non_FRM_state_counts$daily_88502_2015)
-# 
-# # #check state speciation assignments by year
-# # #SPEC_state_counts<-lapply(SPEC_file_list, function(x) {
-# # #  thing<-x %>%
-# # #    group_by(State.Code, State.Name) %>%
-# # #    summarise (n = n());thing
-# # #}
-# # #)
-# # 
-# # 
-# # #View(SPEC_state_counts$daily_SPEC_2005)
-# # #View(SPEC_state_counts$daily_SPEC_2006)
-# # #View(SPEC_state_counts$daily_SPEC_2007)
-# # #View(SPEC_state_counts$daily_SPEC_2008)
-# # #View(SPEC_state_counts$daily_SPEC_2009)
-# # #View(SPEC_state_counts$daily_SPEC_2010)
-# # #View(SPEC_state_counts$daily_SPEC_2011)
-# # #View(SPEC_state_counts$daily_SPEC_2012)
-# # #View(SPEC_state_counts$daily_SPEC_2013)
-# # #View(SPEC_state_counts$daily_SPEC_2014)
-# # #View(SPEC_state_counts$daily_SPEC_2015)
-# 
-# 
-# 
-# # force state to be numeric #
-# SPEC_file_list<-lapply(SPEC_file_list, function(x) {x$State.Code <- as.numeric(x$State.Code); x})
-# PM_25_88101_file_list<-lapply(PM_25_88101_file_list, function(x) {x$State.Code <- as.numeric(x$State.Code); x})
-# PM_25_88502_file_list<-lapply(PM_25_88502_file_list, function(x) {x$State.Code <- as.numeric(x$State.Code); x})
-# 
-# 
-# # create site IDs to match Census files #
-# SPEC_file_list<-lapply(SPEC_file_list, function(x) {
-#   x$ID<-paste(formatC(x$State.Code, width=2, flag="0"),
-#                formatC(x$County.Code, width=3, flag="0"),
-#                formatC(x$Site.Num, width=4, flag="0"), sep="-");x})
-# 
-# PM_25_88101_file_list<-lapply(PM_25_88101_file_list, function(x) {
-#   x$ID<-paste(formatC(x$State.Code, width=2, flag="0"),
-#               formatC(x$County.Code, width=3, flag="0"),
-#               formatC(x$Site.Num, width=4, flag="0"), sep="-");x})
-# 
-# PM_25_88502_file_list<-lapply(PM_25_88502_file_list, function(x) {
-#   x$ID<-paste(formatC(x$State.Code, width=2, flag="0"),
-#               formatC(x$County.Code, width=3, flag="0"),
-#               formatC(x$Site.Num, width=4, flag="0"), sep="-");x})
-# 
-# # make ID a factor (not sure why)
-# SPEC_file_list<-lapply(SPEC_file_list, function(x) {x$ID<-as.factor(x$ID); x})
-# PM_25_88101_file_list<-lapply(PM_25_88101_file_list, function(x) {x$ID<-as.factor(x$ID); x})
-# PM_25_88502_file_list<-lapply(PM_25_88502_file_list, function(x) {x$ID<-as.factor(x$ID); x})
-# 
-# # make parameter code a factor
-# SPEC_file_list<-lapply(SPEC_file_list, function(x) {x$Parameter.Code<-as.factor(x$Parameter.Code); x})
-# PM_25_88101_file_list<-lapply(PM_25_88101_file_list, function(x) {x$Parameter.Code<-as.factor(x$Parameter.Code); x})
-# PM_25_88502_file_list<-lapply(PM_25_88502_file_list, function(x) {x$Parameter.Code<-as.factor(x$Parameter.Code); x})
-# 
-# 
-# # save all lists to disk
-# list.save(SPEC_file_list, file = "SPEC_file_list.rdata")  #save list to disk
-# list.save(PM_25_88101_file_list, file = "PM_25_88101_file_list.rdata")  #save list to disk
-# list.save(PM_25_88502_file_list, file = "PM_25_88502_file_list.rdata")  #save list to disk
-# 
-# # pull PM2.5
-# PM25FRM<-do.call("rbind", PM_25_88101_file_list)
-# PM25nonFRM<-do.call("rbind", PM_25_88502_file_list)
-# PM25all<-rbind(PM25FRM,PM25nonFRM)
-# 
-# # pull species
-# speciesoptions<-as.list(levels(SPEC_file_list$daily_SPEC_2005$Parameter.Name))
-# 
-# # get speciation parameter codes
-# species_parameter_codes<-read.csv("speciation_parameter_codes.csv", header = TRUE)
-# species_parameter_codes_only<-species_parameter_codes[,c("Parameter","Parameter.Code")]
-# species_parameter_codes_only <- unique(species_parameter_codes_only)
-# species_parameter_codes_only$Parameter.Code<-as.factor(species_parameter_codes_only$Parameter.Code)
-# 
-# # pull individual species
-# aluminum_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88104)
-# ammonium_ion_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88301)
-# antimony_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88102)
-# arsenic_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88103)
-# barium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88107)
-# beryllium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88105)
-# carbon_black_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88313)
-# bromine_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88109)
-# cadmium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88110)
-# calcium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88111)
-# cerium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88117)
-# cesium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88118)
-# chloride_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88203)
-# chlorine_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88115)
-# chromium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88112)
-# cobalt_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88113)
-# copper_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88114)
-# carbon_EC_CSN_LC_TOT_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88307)
-# carbon_EC_LC_TOR_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88321)
-# carbon_EC_LC_TOT_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88381)
-# carbon_EC_OPTICAL_TOT_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88316)
-# europium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88121)
-# gallium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88124)
-# gold_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88143)
-# hafnium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88127)
-# indium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88131)
-# iridium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88133)
-# iron_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88126)
-# lanthanum_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88146)
-# lead_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88128)
-# magnesium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88140)
-# manganese_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88132)
-# mercury_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88142)
-# molybdenum_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88134)
-# nickel_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88136)
-# niobium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88147)
-# nitrate_non_volatile_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88310)
-# carbon_OC_TOR_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88320)
-# carbon_OC_TOT_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88382)
-# carbon_OCX_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88304)
-# PM_25_SPEC_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88101)
-# phosphorus_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88152)
-# potassium_ion_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88303)
-# potassium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88180)
-# rubidium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88176)
-# samarium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88162)
-# scandium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88163)
-# selenium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88154)
-# silicon_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88165)
-# silver_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88166)
-# sodium_ion_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88302)
-# sodium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88184)
-# strontium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88168)
-# sulfate_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88403)
-# sulfur_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88169)
-# tantalum_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88170)
-# terbium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88172)
-# tin_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88160)
-# titanium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88161)
-# carbon_TC_LC_TOT_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88312)
-# nitrate_total_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88306)
-# tungsten_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88186)
-# carbon_UV_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88314)
-# uranium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88179)
-# vanadium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88164)
-# nitrate_volatile_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88309)
-# yttrium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88183)
-# zinc_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88167)
-# zirconium_by_year<-lapply(SPEC_file_list, subset, Parameter.Code == 88185)
-# 
-# # put them all in a list
-# species_list_by_year<-mget(ls(pattern = "_by_year"))
-# 
-# # save above list to disk
-# list.save(species_list_by_year, file = "species_list_by_year.rdata")
-# 
-# # combine each sub-list into one dataframe
-# species_list<-lapply(species_list_by_year, function(i){
-#   rbindlist(i)
-# })
-# 
-# # put all species in one dataframe for monitor extraction
-# species_list_dataframe<-lapply(species_list,function(i){ # make each a dataframe
-#   as.data.frame(i)
-# })
-# massive_species_dataframe<-rbindlist(species_list_dataframe) #combine them!
-# View(massive_species_dataframe)
-# View(PM25all)
-# 
-# 
-# 
-# # save dataframes to disk before edits
-# list.save(species_list,file="species_list.rdata")
-# save(massive_species_dataframe,file="massive_species_dataframe.rdata")
-# save(PM25FRM,file="PM25FRM.rdata")
-# save(PM25nonFRM,file="PM25nonFRM.rdata")
-# save(PM25all,file="PM25all.rdata")
-# 
-# rm("SPEC_file_list","species_list_by_year","species_list_dataframe")
-# 
-# 
-# #####RUN LOAD LIBRARIES AT BEGINNING,THEN START HERE IF TRUST STATE REASSIGNMENTS
-# 
-# #OR IF RUNNING STRAIGHT THROUGH, SKIP THESE
-# 
-# #load instead of reading files
-# 
-# # SPEC_file_list<-list.load(file = "SPEC_file_list.rdata")
-# # PM_25_88101_file_list<-list.load(file = "PM_25_88101_file_list.rdata")
-# # PM_25_88502_file_list<-list.load(file = "PM_25_88502_file_list.rdata")
-# # load(file="massive_species_dataframe.rdata")
-# # load(file="PM25FRM.rdata")
-# # load(file="PM25nonFRM.rdata")
-# # load(file="PM25all.rdata")
-# 
-# 
-# 
-# # data cleaning
-# 
-# # rechecking for state code errors
-# massive_species_dataframe_states<-massive_species_dataframe[,c("State.Code","State.Name")]
-# 
-# # check state speciation assignments by year
-# SPEC_state_counts<-massive_species_dataframe_states %>%
-#     group_by(State.Code, State.Name) %>%
-#     summarise (n = n())
-# 
-# SPEC_state_counts<-massive_species_dataframe_states %>%
-#   group_by(State.Code, State.Name) %>%
-#   summarise (n = n())
-# 
-# #check state PM assignments
-# PM_states<-PM25all[,c("State.Code","State.Name")]
-# 
-# PM_state_counts<-PM_states %>%
-#   group_by(State.Code, State.Name) %>%
-#   summarise (n = n())
-# 
-# 
-# 
-# # generating unique site ID lists
-# 
-# # speciation monitors!
-# 
-# # dataframe of speciation monitors
-# speciation_monitor_preliminary_data<-massive_species_dataframe[,c("State.Code","County.Code","Site.Num","Latitude","Longitude","Datum","Local.Site.Name","Address","State.Name","County.Name","City.Name","CBSA.Name","ID")]
-# speciation_monitor_preliminary_data_dataframe<-as.data.frame(speciation_monitor_preliminary_data) #make it a df
-# speciation_monitors_no_exact_dups<-unique(speciation_monitor_preliminary_data_dataframe) # take only unique monitors
+#####RUN LOAD LIBRARIES AT BEGINNING,THEN START HERE IF TRUST STATE REASSIGNMENTS
+
+#OR IF RUNNING STRAIGHT THROUGH, SKIP THESE
+
+#load instead of reading files
+
+SPEC_file_list <- 
+  list.load(file = "SPEC_file_list.rdata")
+PM_25_88101_file_list <- 
+  list.load(file = "PM_25_88101_file_list.rdata")
+PM_25_88502_file_list <- 
+  list.load(file = "PM_25_88502_file_list.rdata")
+load(file = "massive_species_dataframe.rdata")
+load(file = "massive_species_tibble.rdata")
+load(file = "PM25FRM.rdata")
+load(file = "PM25nonFRM.rdata")
+load(file = "PM25all.rdata")
+
+names(massive_species_tibble)
+View(head(massive_species_tibble))
+
+
+# data cleaning
+
+# rechecking for state code errors
+massive_species_dataframe_states <- 
+  massive_species_dataframe[,c("State.Code", 
+                               "State.Name")]
+
+# check state speciation assignments by year
+SPEC_state_counts <- 
+  massive_species_dataframe_states %>%
+    group_by(State.Code, State.Name) %>%
+    summarise (n = n())
+
+SPEC_state_counts <- 
+  massive_species_dataframe_states %>%
+  group_by(State.Code, State.Name) %>%
+  summarise (n = n())
+
+#check state PM assignments
+PM_states <- 
+  PM25all[,c("State.Code",
+             "State.Name")]
+
+PM_state_counts <- 
+  PM_states %>%
+  group_by(State.Code, 
+           State.Name) %>%
+  summarise (n = n())
+
+
+# generating unique site ID lists
+
+# speciation monitors!
+
+# dataframe of speciation monitors
+speciation_monitor_preliminary_data <- 
+  massive_species_dataframe[,c(
+    "State.Code",
+    "County.Code",
+    "Site.Num",
+    "Latitude",
+    "Longitude",
+    "Datum",
+    "Local.Site.Name",
+    "Address",
+    "State.Name",
+    "County.Name",
+    "City.Name",
+    "CBSA.Name",
+    "ID")]
+speciation_monitor_preliminary_data_dataframe <- 
+  as.data.frame(speciation_monitor_preliminary_data) #make it a df
+speciation_monitors_no_exact_dups <- 
+  unique(speciation_monitor_preliminary_data_dataframe) # take only unique monitors
 # View(speciation_monitors_no_exact_dups)
-# 
-# # drop unused factor levels for all columns for speciation monitors
-# speciation_monitors_no_exact_dups<-droplevels(speciation_monitors_no_exact_dups)
-# nlevels(speciation_monitors_no_exact_dups$ID)
-# 
-# # add column IDing as speciation monitors
-# speciation_monitors_no_exact_dups$Parameter.Code<-c("speciation")
-# 
-# # find duplicated rows for speciation monitors
-# speciation_only_dups<-speciation_monitors_no_exact_dups[duplicated(speciation_monitors_no_exact_dups$ID)| duplicated(speciation_monitors_no_exact_dups$ID, fromLast=TRUE),]
+
+# drop unused factor levels for all columns for speciation monitors
+speciation_monitors_no_exact_dups <- 
+  droplevels(speciation_monitors_no_exact_dups)
+nlevels(speciation_monitors_no_exact_dups$ID)
+
+# add column IDing as speciation monitors
+speciation_monitors_no_exact_dups$Parameter.Code<-c("speciation")
+
+# find duplicated rows for speciation monitors
+speciation_only_dups <- 
+  speciation_monitors_no_exact_dups[
+    duplicated(
+      speciation_monitors_no_exact_dups$ID)|
+      duplicated(speciation_monitors_no_exact_dups$ID, 
+                 fromLast=TRUE),]
 # View(speciation_only_dups)
-# 
-# # determine levels of datum factor
-# levels(speciation_monitors_no_exact_dups$Datum)
-# 
-# # reorder datum in order of priority
-# speciation_monitors_no_exact_dups$Datum<-factor(speciation_monitors_no_exact_dups$Datum, levels = c("NAD83","WGS84","NAD27","UNKNOWN"))
-# 
-# # order all rows of no exact duplicates by datum
-# speciation_monitors_no_exact_dups <- speciation_monitors_no_exact_dups[order(speciation_monitors_no_exact_dups[,'Datum']),]
+
+# determine levels of datum factor
+levels(speciation_monitors_no_exact_dups$Datum)
+
+# reorder datum in order of priority
+speciation_monitors_no_exact_dups$Datum<-factor(speciation_monitors_no_exact_dups$Datum, levels = c("NAD83","WGS84","NAD27","UNKNOWN"))
+
+# order all rows of no exact duplicates by datum
+speciation_monitors_no_exact_dups <- speciation_monitors_no_exact_dups[order(speciation_monitors_no_exact_dups[,'Datum']),]
 # View(speciation_monitors_no_exact_dups)
-# 
-# # delete duplicates :D
-# speciation_monitors_unique_site_IDs <- speciation_monitors_no_exact_dups[!duplicated(speciation_monitors_no_exact_dups$ID),]
+
+# delete duplicates :D
+speciation_monitors_unique_site_IDs <- speciation_monitors_no_exact_dups[!duplicated(speciation_monitors_no_exact_dups$ID),]
 # View(speciation_monitors_unique_site_IDs)
-# 
-# # save-non-duplicates to file
-# save(speciation_monitors_unique_site_IDs,file="speciation_monitors_unique_site_IDs.Rdata")
-# 
-# 
-# # generating unique site ID list for FRM PM2.5 monitors
-# varnames<-variable.names(PM25FRM)
-# varnames
-# PM_25_FRM_preliminary_data<-PM25FRM[,c("State.Code","County.Code","Site.Num","Parameter.Code","Latitude","Longitude","Datum","Local.Site.Name","Address","State.Name","County.Name","City.Name","CBSA.Name","ID")]
-# PM_25_FRM_preliminary_data<-as.data.frame(PM_25_FRM_preliminary_data)
-# PM_25_FRM_monitors_no_exact_duplicates<-unique(PM_25_FRM_preliminary_data)
+
+# save-non-duplicates to file
+save(speciation_monitors_unique_site_IDs,file="speciation_monitors_unique_site_IDs.Rdata")
+
+
+# generating unique site ID list for FRM PM2.5 monitors
+varnames<-variable.names(PM25FRM)
+varnames
+PM_25_FRM_preliminary_data<-PM25FRM[,c("State.Code","County.Code","Site.Num","Parameter.Code","Latitude","Longitude","Datum","Local.Site.Name","Address","State.Name","County.Name","City.Name","CBSA.Name","ID")]
+PM_25_FRM_preliminary_data<-as.data.frame(PM_25_FRM_preliminary_data)
+PM_25_FRM_monitors_no_exact_duplicates<-unique(PM_25_FRM_preliminary_data)
 # View(PM_25_FRM_monitors_no_exact_duplicates)
-# 
-# #drop unused factor levels for all columns for PM2.5 FRM monitors
-# PM_25_FRM_monitors_no_exact_duplicates<-droplevels(PM_25_FRM_monitors_no_exact_duplicates)
-# 
-# #look at duplicates
-# nlevels(PM_25_FRM_monitors_no_exact_duplicates$ID)
-# 
-# #view only the duplicates
-# PM_25_FRM_only_dups<-PM_25_FRM_monitors_no_exact_duplicates[duplicated(PM_25_FRM_monitors_no_exact_duplicates$ID)| duplicated(PM_25_FRM_monitors_no_exact_duplicates$ID, fromLast=TRUE),]
-# 
-# levels(PM_25_FRM_monitors_no_exact_duplicates$Datum)
-# 
-# #reorder datum in order of priority
-# PM_25_FRM_monitors_no_exact_duplicates$Datum<-factor(PM_25_FRM_monitors_no_exact_duplicates$Datum, levels = c("NAD83","WGS84","NAD27","UNKNOWN"))
-# 
-# #order all rows of no exact duplicates by datum
-# PM_25_FRM_monitors_no_exact_duplicates <- PM_25_FRM_monitors_no_exact_duplicates[order(PM_25_FRM_monitors_no_exact_duplicates[,'Datum']),]
+
+#drop unused factor levels for all columns for PM2.5 FRM monitors
+PM_25_FRM_monitors_no_exact_duplicates<-droplevels(PM_25_FRM_monitors_no_exact_duplicates)
+
+#look at duplicates
+nlevels(PM_25_FRM_monitors_no_exact_duplicates$ID)
+
+#view only the duplicates
+PM_25_FRM_only_dups<-PM_25_FRM_monitors_no_exact_duplicates[duplicated(PM_25_FRM_monitors_no_exact_duplicates$ID)| duplicated(PM_25_FRM_monitors_no_exact_duplicates$ID, fromLast=TRUE),]
+
+levels(PM_25_FRM_monitors_no_exact_duplicates$Datum)
+
+#reorder datum in order of priority
+PM_25_FRM_monitors_no_exact_duplicates$Datum<-factor(PM_25_FRM_monitors_no_exact_duplicates$Datum, levels = c("NAD83","WGS84","NAD27","UNKNOWN"))
+
+#order all rows of no exact duplicates by datum
+PM_25_FRM_monitors_no_exact_duplicates <- PM_25_FRM_monitors_no_exact_duplicates[order(PM_25_FRM_monitors_no_exact_duplicates[,'Datum']),]
 # View(PM_25_FRM_monitors_no_exact_duplicates)
-# 
-# #delete duplicates :D
-# PM_25_FRM_monitors_unique_site_IDs <- PM_25_FRM_monitors_no_exact_duplicates[!duplicated(PM_25_FRM_monitors_no_exact_duplicates$ID),]
+
+#delete duplicates :D
+PM_25_FRM_monitors_unique_site_IDs <- PM_25_FRM_monitors_no_exact_duplicates[!duplicated(PM_25_FRM_monitors_no_exact_duplicates$ID),]
 # View(PM_25_FRM_monitors_unique_site_IDs)
-# 
-# #save-non-duplicates to file
-# save(PM_25_FRM_monitors_unique_site_IDs,file="PM_25_FRM_monitors_unique_site_IDs.Rdata")
-# 
-# 
-# 
-# # non-FRM PM2.5 data!
-# # generating unique site ID list for FRM PM2.5 monitors
-# varnamesnonFRM<-variable.names(PM25nonFRM)
-# varnamesnonFRM
-# PM_25_non_FRM_preliminary_data<-PM25nonFRM[,c("State.Code","County.Code","Site.Num","Parameter.Code","Latitude","Longitude","Datum","Local.Site.Name","Address","State.Name","County.Name","City.Name","CBSA.Name","ID")]
-# PM_25_non_FRM_preliminary_data<-as.data.frame(PM_25_non_FRM_preliminary_data)
-# PM_25_non_FRM_monitors_no_exact_duplicates<-unique(PM_25_non_FRM_preliminary_data)
+
+#save-non-duplicates to file
+save(PM_25_FRM_monitors_unique_site_IDs,file="PM_25_FRM_monitors_unique_site_IDs.Rdata")
+
+
+
+# non-FRM PM2.5 data!
+# generating unique site ID list for FRM PM2.5 monitors
+varnamesnonFRM<-variable.names(PM25nonFRM)
+varnamesnonFRM
+PM_25_non_FRM_preliminary_data<-PM25nonFRM[,c("State.Code","County.Code","Site.Num","Parameter.Code","Latitude","Longitude","Datum","Local.Site.Name","Address","State.Name","County.Name","City.Name","CBSA.Name","ID")]
+PM_25_non_FRM_preliminary_data<-as.data.frame(PM_25_non_FRM_preliminary_data)
+PM_25_non_FRM_monitors_no_exact_duplicates<-unique(PM_25_non_FRM_preliminary_data)
 # View(PM_25_non_FRM_monitors_no_exact_duplicates)
-# 
-# # drop unused factor levels for all columns for PM2.5 non_FRM monitors
-# PM_25_non_FRM_monitors_no_exact_duplicates<-droplevels(PM_25_non_FRM_monitors_no_exact_duplicates)
-# 
-# # look at duplicates
-# nlevels(PM_25_non_FRM_monitors_no_exact_duplicates$ID)
-# 
-# # view only the duplicates
-# PM_25_non_FRM_only_dups<-PM_25_non_FRM_monitors_no_exact_duplicates[duplicated(PM_25_non_FRM_monitors_no_exact_duplicates$ID)| duplicated(PM_25_non_FRM_monitors_no_exact_duplicates$ID, fromLast=TRUE),]
-# 
-# levels(PM_25_non_FRM_monitors_no_exact_duplicates$Datum)
-# 
-# # reorder datum in order of priority
-# PM_25_non_FRM_monitors_no_exact_duplicates$Datum<-factor(PM_25_non_FRM_monitors_no_exact_duplicates$Datum, levels = c("NAD83","WGS84","NAD27","UNKNOWN"))
-# 
-# # order all rows of no exact duplicates by datum
-# PM_25_non_FRM_monitors_no_exact_duplicates <- PM_25_non_FRM_monitors_no_exact_duplicates[order(PM_25_non_FRM_monitors_no_exact_duplicates[,'Datum']),]
+
+# drop unused factor levels for all columns for PM2.5 non_FRM monitors
+PM_25_non_FRM_monitors_no_exact_duplicates<-droplevels(PM_25_non_FRM_monitors_no_exact_duplicates)
+
+# look at duplicates
+nlevels(PM_25_non_FRM_monitors_no_exact_duplicates$ID)
+
+# view only the duplicates
+PM_25_non_FRM_only_dups<-PM_25_non_FRM_monitors_no_exact_duplicates[duplicated(PM_25_non_FRM_monitors_no_exact_duplicates$ID)| duplicated(PM_25_non_FRM_monitors_no_exact_duplicates$ID, fromLast=TRUE),]
+
+levels(PM_25_non_FRM_monitors_no_exact_duplicates$Datum)
+
+# reorder datum in order of priority
+PM_25_non_FRM_monitors_no_exact_duplicates$Datum<-factor(PM_25_non_FRM_monitors_no_exact_duplicates$Datum, levels = c("NAD83","WGS84","NAD27","UNKNOWN"))
+
+# order all rows of no exact duplicates by datum
+PM_25_non_FRM_monitors_no_exact_duplicates <- PM_25_non_FRM_monitors_no_exact_duplicates[order(PM_25_non_FRM_monitors_no_exact_duplicates[,'Datum']),]
 # View(PM_25_non_FRM_monitors_no_exact_duplicates)
-# 
-# # delete duplicates :D
-# PM_25_non_FRM_monitors_unique_site_IDs <- PM_25_non_FRM_monitors_no_exact_duplicates[!duplicated(PM_25_non_FRM_monitors_no_exact_duplicates$ID),]
+
+# delete duplicates :D
+PM_25_non_FRM_monitors_unique_site_IDs <- PM_25_non_FRM_monitors_no_exact_duplicates[!duplicated(PM_25_non_FRM_monitors_no_exact_duplicates$ID),]
 # View(PM_25_non_FRM_monitors_unique_site_IDs)
-# 
-# # save-non-duplicates to file
-# save(PM_25_non_FRM_monitors_unique_site_IDs,file="PM_25_non_FRM_monitors_unique_site_IDs.Rdata")
-# 
-# ### make master monitor file
-# all_monitors<-rbind(PM_25_FRM_monitors_unique_site_IDs,PM_25_non_FRM_monitors_unique_site_IDs,speciation_monitors_unique_site_IDs)
+
+# save-non-duplicates to file
+save(PM_25_non_FRM_monitors_unique_site_IDs,file="PM_25_non_FRM_monitors_unique_site_IDs.Rdata")
+
+### make master monitor file
+all_monitors<-rbind(PM_25_FRM_monitors_unique_site_IDs,PM_25_non_FRM_monitors_unique_site_IDs,speciation_monitors_unique_site_IDs)
 # View(all_monitors)
-# 
-# # view only the duplicates
-# all_monitors_only_dups<-all_monitors[duplicated(all_monitors$ID)| duplicated(all_monitors$ID, fromLast=TRUE),]
+2
+# view only the duplicates
+all_monitors_only_dups<-all_monitors[duplicated(all_monitors$ID)| duplicated(all_monitors$ID, fromLast=TRUE),]
 # View(all_monitors_only_dups)
-# 
-# # put all monitors in a modifiable dataframe
-# final_monitors<-all_monitors
-# 
-# # idea -- make five columns, each w/ Y or N for speciation
-# # then map
-# 
-# #make binary columns for each monitor type
-# final_monitors$PM25FRM<-ifelse(final_monitors$Parameter.Code=="88101",1,0)
-# final_monitors$PM25nonFRM<-ifelse(final_monitors$Parameter.Code=="88502",1,0)
-# final_monitors$speciation<-ifelse(final_monitors$Parameter.Code=="speciation",1,0)
-# 
-# # drop parameter code
-# final_monitors$Parameter.Code <- NULL
-# 
-# # assign monitor values to all rows
-# final_monitors[,c("PM25FRM","PM25nonFRM","speciation")] = sapply(final_monitors[,c("PM25FRM","PM25nonFRM","speciation")], function(a) ave(a, final_monitors$ID, FUN = max))
-# 
-# # drop duplicated rows
-# final_monitors<-unique(final_monitors)
-# final_monitors<-droplevels(final_monitors)
-# 
-# # save the final-ish monitor list
-# save(final_monitors,file="final_monitors_still_some_dups.rdata")
-# nlevels(final_monitors$ID)
-# final_monitors$ID<-as.character(final_monitors$ID)
-# 
-# # isolate remaining duplicates
-# final_monitors_only_dups<-final_monitors[duplicated(final_monitors$ID)| duplicated(final_monitors$ID, fromLast=TRUE),]
+
+# put all monitors in a modifiable dataframe
+final_monitors<-all_monitors
+
+# idea -- make five columns, each w/ Y or N for speciation
+# then map
+
+#make binary columns for each monitor type
+final_monitors$PM25FRM<-ifelse(final_monitors$Parameter.Code=="88101",1,0)
+final_monitors$PM25nonFRM<-ifelse(final_monitors$Parameter.Code=="88502",1,0)
+final_monitors$speciation<-ifelse(final_monitors$Parameter.Code=="speciation",1,0)
+
+# drop parameter code
+final_monitors$Parameter.Code <- NULL
+
+# assign monitor values to all rows
+final_monitors[,c("PM25FRM","PM25nonFRM","speciation")] = sapply(final_monitors[,c("PM25FRM","PM25nonFRM","speciation")], function(a) ave(a, final_monitors$ID, FUN = max))
+
+# drop duplicated rows
+final_monitors<-unique(final_monitors)
+final_monitors<-droplevels(final_monitors)
+
+# save the final-ish monitor list
+save(final_monitors,file="final_monitors_still_some_dups.rdata")
+nlevels(final_monitors$ID)
+final_monitors$ID<-as.character(final_monitors$ID)
+
+# isolate remaining duplicates
+final_monitors_only_dups<-final_monitors[duplicated(final_monitors$ID)| duplicated(final_monitors$ID, fromLast=TRUE),]
 # View(final_monitors_only_dups)
-# 
-# # reorder datum in order of priority
-# final_monitors$Datum<-factor(final_monitors$Datum, levels = c("NAD83","WGS84","NAD27","UNKNOWN"))
-# 
-# # order all rows of no exact duplicates by datum
-# final_monitors <- final_monitors[order(final_monitors[,'Datum']),]
+
+# reorder datum in order of priority
+final_monitors$Datum<-factor(final_monitors$Datum, levels = c("NAD83","WGS84","NAD27","UNKNOWN"))
+
+# order all rows of no exact duplicates by datum
+final_monitors <- final_monitors[order(final_monitors[,'Datum']),]
 # View(final_monitors)
-# 
-# # delete duplicates :D
-# final_monitors <- final_monitors[!duplicated(final_monitors$ID),]
+
+# delete duplicates :D
+final_monitors <- final_monitors[!duplicated(final_monitors$ID),]
 # View(final_monitors)
-# table(final_monitors$ID)
-# 
-# save(final_monitors,file="monitor.list.rdata")
-# 
-# # split monitors by datum for ArcGIS
-# monitors_split_by_datum<-split(final_monitors, final_monitors$Datum)
-# str(monitors_split_by_datum)
-# monitors_NAD83<-monitors_split_by_datum[[1]]
-# monitors_WGS84<-monitors_split_by_datum[[2]]
-# monitors_NAD27<-monitors_split_by_datum[[3]]
-# monitors_UNKNO<-monitors_split_by_datum[[4]]
+table(final_monitors$ID)
+
+save(final_monitors,file="monitor.list.rdata")
+
+# split monitors by datum for ArcGIS
+monitors_split_by_datum<-split(final_monitors, final_monitors$Datum)
+str(monitors_split_by_datum)
+monitors_NAD83<-monitors_split_by_datum[[1]]
+monitors_WGS84<-monitors_split_by_datum[[2]]
+monitors_NAD27<-monitors_split_by_datum[[3]]
+monitors_UNKNO<-monitors_split_by_datum[[4]]
 # View(monitors_NAD83)
 # View(monitors_WGS84)
 # View(monitors_NAD27)
 # View(monitors_UNKNO)
-# 
-# # save monitors split by datum
-# save(monitors_NAD83,file="monitors_NAD83.rdata")
-# save(monitors_WGS84,file="monitors_WGS84.rdata")
-# save(monitors_NAD27,file="monitors_NAD27.rdata")
-# save(monitors_UNKNO,file="monitors_UNKNO.rdata")
-# 
-# # write to CSV for ArcGIS
-# write.csv(monitors_NAD83, "monitors_NAD83.csv")
-# write.csv(monitors_WGS84, "monitors_WGS84.csv")
-# write.csv(monitors_NAD27, "monitors_NAD27.csv")
-# write.csv(monitors_UNKNO, "monitors_UNKNO.csv")
-# 
-# # write to CSV directly to ArcGIS folder
-# write.csv(monitors_NAD83, "C:/ArcGIS/MEScProjectGIS/MonitorAssignmentsJanuary2018/monitors_NAD83.csv")
-# write.csv(monitors_WGS84, "C:/ArcGIS/MEScProjectGIS/MonitorAssignmentsJanuary2018/monitors_WGS84.csv")
-# write.csv(monitors_NAD27, "C:/ArcGIS/MEScProjectGIS/MonitorAssignmentsJanuary2018/monitors_NAD27.csv")
-# write.csv(monitors_UNKNO, "C:/ArcGIS/MEScProjectGIS/MonitorAssignmentsJanuary2018/monitors_UNKNO.csv")
-# 
-# #### MUST STOP HERE AND ASSIGN THE MONTIORS TO TRACTS
-# 
+
+# save monitors split by datum
+save(monitors_NAD83,file="monitors_NAD83.rdata")
+save(monitors_WGS84,file="monitors_WGS84.rdata")
+save(monitors_NAD27,file="monitors_NAD27.rdata")
+save(monitors_UNKNO,file="monitors_UNKNO.rdata")
+
+# write to CSV for ArcGIS
+write.csv(monitors_NAD83, "monitors_NAD83.csv")
+write.csv(monitors_WGS84, "monitors_WGS84.csv")
+write.csv(monitors_NAD27, "monitors_NAD27.csv")
+write.csv(monitors_UNKNO, "monitors_UNKNO.csv")
+
+# write to CSV directly to ArcGIS folder
+write.csv(monitors_NAD83, "arcgis/monitors_NAD83.csv")
+write.csv(monitors_WGS84, "arcgis/monitors_WGS84.csv")
+write.csv(monitors_NAD27, "arcgis/monitors_NAD27.csv")
+write.csv(monitors_UNKNO, "arcgis/monitors_UNKNO.csv")
+
+#### MUST STOP HERE AND ASSIGN THE MONTIORS TO TRACTS
+```
+
+```{r}
+
 # # perhaps put a load step here?
 # 
 # # read in the table with monitors assigned to census tracts
@@ -853,26 +1277,26 @@ load(file =
 # 
 # # count monitors
 # spec_monitor_count<-table(monitors_assigned_to_tracts$speciation)
-# View(spec_monitor_count)
+# # View(spec_monitor_count)
 # PM_monitor_count<-table(monitors_assigned_to_tracts$PM25FRM,monitors_assigned_to_tracts$PM25nonFRM)
-# View(PM_monitor_count)
+# # View(PM_monitor_count)
 # 
 # # view list of monitors occupying the same census tract
 # # find duplicated rows for speciation monitors
 # multiple_monitors_in_single_tracts<-monitors_assigned_to_tracts[duplicated(monitors_assigned_to_tracts$GEOID10)| duplicated(monitors_assigned_to_tracts$GEOID10, fromLast=TRUE),]
-# View(multiple_monitors_in_single_tracts)
+# # View(multiple_monitors_in_single_tracts)
 # 
 # # just pull monitor IDs and census tracts
 # monitors_and_tracts<-monitors_assigned_to_tracts[,c("tract_ID","monitor_ID")]
-# View(monitors_and_tracts)
+# # View(monitors_and_tracts)
 # 
 # # pull monitor IDs, census tracts, and monitor types
 # monitors_tracts_types<-monitors_assigned_to_tracts[,c("tract_ID","monitor_ID","PM25FRM","PM25nonFRM","speciation")]
-# View(monitors_tracts_types)
+# # View(monitors_tracts_types)
 # 
 # # make dataframe with all air data in one place
 # complete_air_data<-rbind(massive_species_dataframe,PM25all)
-# View(complete_air_data)
+# # View(complete_air_data)
 # 
 # # clarify monitor ID
 # complete_air_data$monitor_ID<-as.character(complete_air_data$ID)
@@ -888,7 +1312,7 @@ load(file =
 # 
 # # join tracts to full data
 # complete_air_and_tracts<-merge(complete_air_data,monitors_tracts_types,by="monitor_ID",all=TRUE)
-# View(complete_air_and_tracts)
+# # View(complete_air_and_tracts)
 # 
 # # save to disk
 # save(complete_air_and_tracts,file="complete_air_and_tracts.rdata")
@@ -1061,7 +1485,7 @@ load(file =
 # elements_and_codes
 # write.csv(elements_and_codes,file="elements_and_codes.csv")
 # elements_and_codes<-read.csv(file="elements_and_codes.csv")
-# View(elements_and_codes)
+# # View(elements_and_codes)
 # 
 # # break out individual parameter codes into lists
 # elements_and_codes$parameter_code<-as.character(elements_and_codes$parameter_code)
@@ -1073,7 +1497,7 @@ load(file =
 # 
 # # save broken-out components
 # list.save(components,file="components.rdata")
-# View(components$`88381`)
+# # View(components$`88381`)
 # 
 # # # load broken-out components if needed
 # # components<-list.load(file="components.rdata")
@@ -1081,12 +1505,12 @@ load(file =
 # # put the components I want back into one big dataframe
 # onlytheonesIwant <- do.call("rbind", components)
 # save(onlytheonesIwant,file="onlytheonesIwant.rdata")
-# View(onlytheonesIwant)
+# # View(onlytheonesIwant)
 # 
 # # load limited list if needed
 # load(file="onlytheonesIwant.rdata")
 # 
-# View(onlytheonesIwant)
+# # View(onlytheonesIwant)
 # #number of monitors
 # length(unique(onlytheonesIwant$monitor_ID))
 # 
@@ -1139,7 +1563,7 @@ load(file =
 
 
 # # check the above for a sample date
-# View(allairdatacorrected[which(allairdatacorrected$Parameter.Code %in% c("88101","88502","99101") & allairdatacorrected$Date.Local == "2010-01-02")])
+# # View(allairdatacorrected[which(allairdatacorrected$Parameter.Code %in% c("88101","88502","99101") & allairdatacorrected$Date.Local == "2010-01-02")])
 # 
 # # remove extraneous files to save memory
 # rm(allairdatacorrectedEC,datatobecorrected)
@@ -1149,8 +1573,10 @@ load(file =
 # 
 # #clear memory
 # gc()
+```
 
-##### POLLUTION SECTION ENDS HERE!
+
+```{r add rurality}
 
 #####
 # # rurality
@@ -1221,30 +1647,30 @@ load(file =
 # 
 # countthisdatasimple<-countthisdata[,c("Parameter.Code","tract_ID","count")]
 # countthisdatasimple<-unique(countthisdatasimple[,1:3])
-# View(countthisdatasimple)
+# # View(countthisdatasimple)
 # 
 # # count monitors per pollutant in raw data without exclusions
 # pollutantsandmonitors<-allairdataandruca[,c("Parameter.Code","monitor_ID")] # select only data points needed
-# View(pollutantsandmonitors)
+# # View(pollutantsandmonitors)
 # pollutantsandmonitors<-unique(pollutantsandmonitors)
-# View(pollutantsandmonitors)
+# # View(pollutantsandmonitors)
 # 
 # monitorsperpollutant<-pollutantsandmonitors %>% # make the counts
 #   group_by(Parameter.Code) %>%
 #   mutate(count = n())
 # monitorsperpollutant<-unique(monitorsperpollutant[,c(1,3)])
-# View(monitorsperpollutant)
+# # View(monitorsperpollutant)
 # 
 # # count tracts per pollutant in raw data without exclusions
 # pollutantsandtracts<-allairdataandruca[,c("Parameter.Code","tract_ID")]
 # pollutantsandtracts<-unique(pollutantsandtracts)
-# View(pollutantsandtracts)
+# # View(pollutantsandtracts)
 # tractsperpollutant<-pollutantsandtracts %>%
 #   group_by(Parameter.Code) %>%
 #   mutate(count = n())
-# View(tractsperpollutant)
+# # View(tractsperpollutant)
 # tractsperpollutant<-unique(tractsperpollutant[,c(1,3)])
-# View(tractsperpollutant)
+# # View(tractsperpollutant)
 # 
 # # save files to disk
 # save(countthisdata,file="countthisdata.rdata")
@@ -1279,7 +1705,7 @@ load(file =
 # # find first and last date for each pollutant for each tract
 # atleast300obs %>%
 #   group_by(Parameter.Code, tract_ID) %>%
-#   mutate(FirstDate = min(Date.Local), LastDate = max(Date.Local)) -> atleast300obsfirstlastdate
+#   mutate(FirstDate = min(Date.Local), LastDate = max(Date.Local)) <- atleast300obsfirstlastdate
 # rm(atleast300obs)
 # gc()
 # 
@@ -1305,7 +1731,7 @@ load(file =
 # # find first and last date for each pollutant for each tract
 # atleast180obs %>%
 #   group_by(Parameter.Code, tract_ID) %>%
-#   mutate(FirstDate = min(Date.Local), LastDate = max(Date.Local)) -> atleast180obsfirstlastdate
+#   mutate(FirstDate = min(Date.Local), LastDate = max(Date.Local)) <- atleast180obsfirstlastdate
 # rm(atleast180obs)
 # gc()
 # 
@@ -1444,7 +1870,7 @@ aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
 RI_nodes_urban_tracts <- aggregatedcensus[c("GEOID10","finalsegregationindex")]
 RI_nodes_urban_tracts$GEOID10 <- as.factor(RI_nodes_urban_tracts$GEOID10)
 colnames(RI_nodes_urban_tracts) <- c("tract_ID","RI_nodes_urban")
-View(RI_nodes_urban_tracts)
+# View(RI_nodes_urban_tracts)
 
 # save RI for all urban tracts with nodes
 save(RI_nodes_urban_tracts, file="RI_nodes_urban_tracts.rdata")
@@ -1484,7 +1910,7 @@ aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
 RI_no_nodes_urban_tracts <- aggregatedcensus[c("GEOID10","finalsegregationindex")]
 RI_no_nodes_urban_tracts$GEOID10 <- as.factor(RI_no_nodes_urban_tracts$GEOID10)
 colnames(RI_no_nodes_urban_tracts) <- c("tract_ID","RI_no_nodes_urban")
-View(RI_no_nodes_urban_tracts)
+# View(RI_no_nodes_urban_tracts)
 
 # save RI for all urban tracts w/o nodes
 save(RI_no_nodes_urban_tracts, file="RI_no_nodes_urban_tracts.rdata")
@@ -1525,12 +1951,12 @@ aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
 RI_yes_nodes_all_tracts <- aggregatedcensus[c("GEOID10","finalsegregationindex")]
 RI_yes_nodes_all_tracts$GEOID10 <- as.factor(RI_yes_nodes_all_tracts$GEOID10)
 colnames(RI_yes_nodes_all_tracts) <- c("tract_ID","RI_nodes_all")
-View(RI_yes_nodes_all_tracts)
+# View(RI_yes_nodes_all_tracts)
 
 # save RI for all tracts with nodes
 save(RI_yes_nodes_all_tracts, file="RI_yes_nodes_all_tracts.rdata")
 load(file="RI_yes_nodes_all_tracts.rdata")
-View(RI_yes_nodes_all_tracts)
+# View(RI_yes_nodes_all_tracts)
 
 # remove temporary files
 rm(segindcalcbasis, aggregatevars, aggregatedcensus, ct.nb, temp, ltemp, st, i, monitorct)
@@ -1567,12 +1993,12 @@ aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
 RI_no_nodes_all_tracts <- aggregatedcensus[c("GEOID10","finalsegregationindex")]
 RI_no_nodes_all_tracts$GEOID10 <- as.factor(RI_no_nodes_all_tracts$GEOID10)
 colnames(RI_no_nodes_all_tracts) <- c("tract_ID","RI_no_nodes_all")
-View(RI_no_nodes_all_tracts)
+# View(RI_no_nodes_all_tracts)
 
 # save RI for all tracts w/o nodes
 save(RI_no_nodes_all_tracts, file="RI_no_nodes_all_tracts.rdata")
 load(file="RI_no_nodes_all_tracts.rdata")
-View(RI_no_nodes_all_tracts)
+# View(RI_no_nodes_all_tracts)
 
 # remove temporary files
 rm(segindcalcbasis, aggregatevars, aggregatedcensus, ct.nb, temp, ltemp, st, i, monitorct)
@@ -1593,7 +2019,7 @@ racialisolationallwithnodesquantile <- within(racialisolationindexallwithnodes, 
 
 # check quantiles
 table(racialisolationallwithnodesquantile$RI_quantile)
-View(racialisolationallwithnodesquantile)
+# View(racialisolationallwithnodesquantile)
 
 
 
@@ -1618,7 +2044,7 @@ states_and_codes$State.Name <- as.character(states_and_codes$State.Name)
 
 # change state code for Canada to the number 81 in states_and_codes
 states_and_codes$State.Code[states_and_codes$State.Code == "CC"] <- "81"
-View(states_and_codes)
+# View(states_and_codes)
 
 # make new state code file for isolation index
 states_for_isolation_index <- states_and_codes
@@ -1626,30 +2052,30 @@ states_for_isolation_index <- states_and_codes
 # make variable name the same
 states_for_isolation_index$state2digits <- states_for_isolation_index$State.Code
 states_for_isolation_index$State.Code <- NULL
-View(states_for_isolation_index)
+# View(states_for_isolation_index)
 
 # add states to editable census
 editablecensuswithstates <- merge(editablecensus,states_for_isolation_index,by="state2digits",all.x=TRUE)
-View(editablecensuswithstates[,190:198])
-View(editablecensuswithstates)
+# View(editablecensuswithstates[,190:198])
+# View(editablecensuswithstates)
 
 # extract state and GEOID10 from editable census
 states_and_GEOIDs <- editablecensuswithstates[,c("state2digits","GEOID10","State.Name","GEOID10pad0")]
-View(states_and_GEOIDs)
+# View(states_and_GEOIDs)
 
 # read in regions
 rawregion <- 
   read.csv(file="uscensusbureauregionsanddivisions.csv")
-View(rawregion)
+# View(rawregion)
 
 # rename state variable
 states_and_GEOIDs$State <- states_and_GEOIDs$State.Name
 states_and_GEOIDs$State.Name <- NULL
-View(states_and_GEOIDs)
+# View(states_and_GEOIDs)
 
 # merge states, GEOIDs, and regions
 states_GEOIDs_and_regions <- merge(states_and_GEOIDs,rawregion,by="State",all.x=TRUE)
-View(states_GEOIDs_and_regions)
+# View(states_GEOIDs_and_regions)
 
 # make tract_ID for merging
 states_GEOIDs_and_regions$tract_ID <- states_GEOIDs_and_regions$GEOID10
@@ -1660,7 +2086,7 @@ load(file="racialisolationindexall.rdata")
 
 # merge states, GEOIDs, regions, and RI
 racial_iso_region_nodes <- merge(states_GEOIDs_and_regions,racialisolationindexallwithnodes,by="tract_ID",all.x=TRUE)
-View(is.na(racial_iso_region_nodes))
+# View(is.na(racial_iso_region_nodes))
 
 # make region into a character
 racial_iso_region_nodes$Region <- as.character(racial_iso_region_nodes$Region)
@@ -1674,7 +2100,7 @@ racial_iso_region_nodes$Region[racial_iso_region_nodes$State=='Puerto Rico'] <- 
 # make table of isolation NAs before fixing
 racial_iso_region_nodes_NAs_for_iso <- racial_iso_region_nodes[is.na(racial_iso_region_nodes$isolationindex),]
 save(racial_iso_region_nodes_NAs_for_iso,file="racial_iso_region_nodes_NAs_for_iso.rdata")
-View(racial_iso_region_nodes_NAs_for_iso)
+# View(racial_iso_region_nodes_NAs_for_iso)
 
 # split into quantiles by region
 racial_iso_nodes_quantiles_by_region <- racial_iso_region_nodes %>%
@@ -1685,7 +2111,7 @@ racial_iso_nodes_quantiles_by_region <- racial_iso_region_nodes %>%
 # split into overall quantiles
 racial_iso_nodes_quantiles_by_region$OverallQuantile <- as.integer(cut2(racial_iso_nodes_quantiles_by_region$isolationindex, quantile(racial_iso_nodes_quantiles_by_region$isolationindex, probs=0:5/5,na.rm=TRUE)))
 
-View(racial_iso_nodes_quantiles_by_region)
+# View(racial_iso_nodes_quantiles_by_region)
 
 # save and load
 save(racial_iso_nodes_quantiles_by_region,file="racial_iso_nodes_quantiles_by_region.rdata")
@@ -1710,18 +2136,18 @@ averagebycensustractnodrops3 <- aggregate(Arithmetic.Mean ~ Parameter.Code + tra
 #make it by tract
 moltenaverage3 <- melt(averagebycensustractnodrops3)
 tractaverage3 <- dcast(moltenaverage3,tract_ID ~ Parameter.Code)
-View(tractaverage3)
+# View(tractaverage3)
 
 # remove OC
 # tractaverage3$`88320` <- NULL
 # tractaverage3$`88382` <- NULL
 
 #count number of tracts for each parameter
-View(tractaverage3)
+# View(tractaverage3)
 colSums(!is.na(tractaverage3) | tractaverage3 != "", na.rm = TRUE)
 tractcountbypollutant3 <- colSums(!is.na(tractaverage3) | tractaverage3 != "", na.rm = TRUE)
 write.csv(tractcountbypollutant3,file="tractcountbypollutant3.csv")
-View(tractcountbypollutant3)
+# View(tractcountbypollutant3)
 
 #add rurality data
 load(file="onlyruca.rdata")
@@ -1750,7 +2176,7 @@ write.csv(monitorcountonlyurbanover1003,file="monitorcountonlyurbanover1003.csv"
 # add racial isolation index
 threeyearspluswithRInodes <- merge(tractaverageonlyurbanover1003,racialisolationindexallwithnodes,by="tract_ID")
 # colnames(threeyearspluswithRI) <- c("tract_ID","PM25_88101","aluminum_88104","calcium_88111","chlorine_88115","nickel_88136","titanium_88161","vanadium_88164","silicon_88165","zinc_88167","ammonium_88301","sodium_ion_88302","nitrate_88306","sulfate_88403","PM_25_non_FRM_88502","EC","ruca_prime","ruca_second","urban","total_population_DP0010001","isolationindex")
-View(threeyearspluswithRInodes)
+# View(threeyearspluswithRInodes)
 save(threeyearspluswithRInodes,file="threeyearspluswithRInodes.rdata")
 # load(file="threeyearspluswithRI.rdata")
 
@@ -1758,7 +2184,7 @@ save(threeyearspluswithRInodes,file="threeyearspluswithRInodes.rdata")
 
 # add region and overall quantiles
 threeyearsplusregionRInodes <- merge(threeyearspluswithRInodes,racial_iso_nodes_quantiles_by_region,by="tract_ID")
-View(threeyearsplusregionRInodes)
+# View(threeyearsplusregionRInodes)
 
 table(threeyearsplusregionRInodes$OverallQuantile)
 
@@ -1766,7 +2192,7 @@ table(threeyearsplusregionRInodes$OverallQuantile)
 censusfullracedata <- fullcensus[c("GEOID10","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")]
 
 colnames(censusfullracedata) <- c("tract_ID","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")
-View(censusfullracedata)
+# View(censusfullracedata)
 
 # join race data to three years of data with RI quintile
 threeyearspluswithRInodesquantilesandrace <- merge(threeyearsplusregionRInodes,censusfullracedata,by="tract_ID")
@@ -1791,7 +2217,7 @@ acs_education_variables <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003m
 education_labels <- c("tract_ID","ed_pop","ed_pop_margin","ed_no_school","ed_no_school_margin","ed_nurse","ed_nurse_margin","ed_kinder","ed_kinder_margin","ed_1","ed_1_margin","ed_2","ed_2_margin","ed_3","ed_3_margin","ed_4","ed_4_margin","ed_5","ed_5_margin","ed_6","ed_6_margin","ed_7","ed_7_margin","ed_8","ed_8_margin","ed_9","ed_9_margin","ed_10","ed_10_margin","ed_11","ed_11_margin","ed_12","ed_12_margin","ed_hsdip","ed_hsdip_margin","ed_GED","ed_GED_margin","ed_<1_college","ed_<1_college_margin","ed_1+_college","ed_1+_college_margin","ed_associate","ed_associate_margin","ed_bachelor","ed_bachelor_margin","ed_master","ed_master_margin","ed_prof","ed_prof_marg","ed_doctor","ed_doctor_marg")
 
 acs_education_variables_no_margins <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003e2","B15003e3","B15003e4","B15003e5","B15003e6","B15003e7","B15003e8","B15003e9","B15003e10","B15003e11","B15003e12","B15003e13","B15003e14","B15003e15","B15003e16","B15003e17","B15003e18","B15003e19","B15003e20","B15003e21","B15003e22","B15003e23","B15003e24","B15003e25")]
-View(acs_education_variables_no_margins)
+# View(acs_education_variables_no_margins)
 
 education_labels_no_margins <- c("GEOID","ed_pop","ed_no_school","ed_nurse","ed_kinder","ed_1","ed_2","ed_3","ed_4","ed_5","ed_6","ed_7","ed_8","ed_9","ed_10","ed_11","ed_12","ed_hsdip","ed_GED","ed_<1_college","ed_1+_college","ed_associate","ed_bachelor","ed_master","ed_prof","ed_doctor")
 
@@ -1829,7 +2255,7 @@ air_acs_seg_nodes_no_drops <- merge(air_acs_seg_nodes_no_drops,acs_median_househ
 air_acs_seg_nodes_no_drops <- merge(air_acs_seg_nodes_no_drops,acs_median_household_income_no_marg,by="GEOID",all.x=TRUE)
 air_acs_seg_nodes_no_drops <- merge(air_acs_seg_nodes_no_drops,acs_poverty,by="GEOID",all.x=TRUE)
 air_acs_seg_nodes_no_drops <- merge(air_acs_seg_nodes_no_drops,acs_unemp_no_marg,by="GEOID",all.x=TRUE)
-View(air_acs_seg_nodes_no_drops)
+# View(air_acs_seg_nodes_no_drops)
 
 save(air_acs_seg_nodes_no_drops,file="air_acs_seg_nodes_no_drops.rdata")
 
@@ -1847,18 +2273,18 @@ save(air_acs_seg_nodes_no_drops,file="air_acs_seg_nodes_no_drops.rdata")
 agefromcensus <- fullcensus[c("GEOID10","DP0010001","DP0010002","DP0010003","DP0010004","DP0010005","DP0010006","DP0010007","DP0010008","DP0010009","DP0010010","DP0010011","DP0010012","DP0010013","DP0010014","DP0010015","DP0010016","DP0010017","DP0010018","DP0010019")]
 
 colnames(agefromcensus) <- c("GEOID","DP0010001","DP0010002","DP0010003","DP0010004","DP0010005","DP0010006","DP0010007","DP0010008","DP0010009","DP0010010","DP0010011","DP0010012","DP0010013","DP0010014","DP0010015","DP0010016","DP0010017","DP0010018","DP0010019")
-View(agefromcensus)
+# View(agefromcensus)
 
 # Hispanic or Latino from census
 HispanicLatinofromCensus <- fullcensus[c("GEOID10","DP0100001","DP0100002")]
-View(HispanicLatinofromCensus)
+# View(HispanicLatinofromCensus)
 colnames(HispanicLatinofromCensus) <- c("GEOID","DP0100001","DP0100002")
 
 # race and ethnicity from census
 raceethnicityfromcensus <- fullcensus[c("GEOID10","DP0110001","DP0110002","DP0110003","DP0110004","DP0110005","DP0110006","DP0110007","DP0110008","DP0110009","DP0110010","DP0110011","DP0110012","DP0110013","DP0110014","DP0110015","DP0110016","DP0110017")]    
 
 colnames(raceethnicityfromcensus) <- c("GEOID","DP0110001","DP0110002","DP0110003","DP0110004","DP0110005","DP0110006","DP0110007","DP0110008","DP0110009","DP0110010","DP0110011","DP0110012","DP0110013","DP0110014","DP0110015","DP0110016","DP0110017")
-View(raceethnicityfromcensus)
+# View(raceethnicityfromcensus)
 
 # merge census to prior
 air_acs_census_seg_nodes_no_drops <- merge(air_acs_seg_nodes_no_drops,agefromcensus,by="GEOID")
@@ -1870,7 +2296,7 @@ finaldatanodrops <- air_acs_census_seg_nodes_no_drops
 save(finaldatanodrops, 
      file="finaldatanodrops.rdata")
 load(file="finaldatanodrops.rdata")
-View(finaldatanodrops)
+# View(finaldatanodrops)
 
 #### making needed vars ####
 
@@ -1888,7 +2314,7 @@ finaldatanodrops$percent_black <- finaldatanodrops$DP0080004 / finaldatanodrops$
 
 # % Hispanic
 finaldatanodrops$percent_Hispanic <- finaldatanodrops$DP0100002/finaldatanodrops$DP0100001
-View(finaldatanodrops)
+# View(finaldatanodrops)
 
 # % unemployed
 finaldatanodrops$percent_unemployed <- finaldatanodrops$B23025e5/finaldatanodrops$B23025e1
@@ -2005,7 +2431,7 @@ p_and_p_adjust <- cbind(component_list,p_and_p_adjust)
 
 
 
-View(p_and_p_adjust)
+# View(p_and_p_adjust)
 adjusted_ps
 
 
@@ -3450,7 +3876,7 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # finaldatanodrops$log_nitrate_88306 <- log(finaldatanodrops$nitrate_88306)
 # finaldatanodrops$log_sulfate_88403 <- log(finaldatanodrops$sulfate_88403)
 # finaldatanodrops$log_EC <- log(finaldatanodrops$EC)
-# View(finaldatanodrops)
+# # View(finaldatanodrops)
 # 
 # #make normal quantile plots for the logs
 # #check for linearity
@@ -3865,13 +4291,13 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # 
 # # split RI into quantiles
 # threeyearspluswithRIquantiles <- within(threeyearspluswithRI, RI_quantile <- as.integer(cut(isolationindex, quantile(isolationindex, probs=0:5/5)), include.lowest=TRUE))
-# View(threeyearspluswithRIquantiles)
+# # View(threeyearspluswithRIquantiles)
 # 
 # # pull census data
 # censusfullracedata <- fullcensus[c("GEOID10","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")]
 # 
 # colnames(censusfullracedata) <- c("tract_ID","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")
-# View(censusfullracedata)
+# # View(censusfullracedata)
 # 
 # 
 # # join race data to three years of data with RI quintile
@@ -3925,7 +4351,7 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # education_labels <- c("tract_ID","ed_pop","ed_pop_margin","ed_no_school","ed_no_school_margin","ed_nurse","ed_nurse_margin","ed_kinder","ed_kinder_margin","ed_1","ed_1_margin","ed_2","ed_2_margin","ed_3","ed_3_margin","ed_4","ed_4_margin","ed_5","ed_5_margin","ed_6","ed_6_margin","ed_7","ed_7_margin","ed_8","ed_8_margin","ed_9","ed_9_margin","ed_10","ed_10_margin","ed_11","ed_11_margin","ed_12","ed_12_margin","ed_hsdip","ed_hsdip_margin","ed_GED","ed_GED_margin","ed_<1_college","ed_<1_college_margin","ed_1+_college","ed_1+_college_margin","ed_associate","ed_associate_margin","ed_bachelor","ed_bachelor_margin","ed_master","ed_master_margin","ed_prof","ed_prof_marg","ed_doctor","ed_doctor_marg")
 # 
 # acs_education_variables_no_margins <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003e2","B15003e3","B15003e4","B15003e5","B15003e6","B15003e7","B15003e8","B15003e9","B15003e10","B15003e11","B15003e12","B15003e13","B15003e14","B15003e15","B15003e16","B15003e17","B15003e18","B15003e19","B15003e20","B15003e21","B15003e22","B15003e23","B15003e24","B15003e25")]
-# View(acs_education_variables_no_margins)
+# # View(acs_education_variables_no_margins)
 # 
 # education_labels_no_margins <- c("GEOID","ed_pop","ed_no_school","ed_nurse","ed_kinder","ed_1","ed_2","ed_3","ed_4","ed_5","ed_6","ed_7","ed_8","ed_9","ed_10","ed_11","ed_12","ed_hsdip","ed_GED","ed_<1_college","ed_1+_college","ed_associate","ed_bachelor","ed_master","ed_prof","ed_doctor")
 # 
@@ -3963,7 +4389,7 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_median_household_income_no_marg,by="GEOID",all.x=TRUE)
 # air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_poverty,by="GEOID",all.x=TRUE)
 # air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_unemp_no_marg,by="GEOID",all.x=TRUE)
-# View(air_acs_seg_no_drops)
+# # View(air_acs_seg_no_drops)
 # 
 # save(air_acs_seg_no_drops,file="air_acs_seg_no_drops.rdata")
 # 
@@ -3981,18 +4407,18 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # agefromcensus <- fullcensus[c("GEOID10","DP0010001","DP0010002","DP0010003","DP0010004","DP0010005","DP0010006","DP0010007","DP0010008","DP0010009","DP0010010","DP0010011","DP0010012","DP0010013","DP0010014","DP0010015","DP0010016","DP0010017","DP0010018","DP0010019")]
 # 
 # colnames(agefromcensus) <- c("GEOID","DP0010001","DP0010002","DP0010003","DP0010004","DP0010005","DP0010006","DP0010007","DP0010008","DP0010009","DP0010010","DP0010011","DP0010012","DP0010013","DP0010014","DP0010015","DP0010016","DP0010017","DP0010018","DP0010019")
-# View(agefromcensus)
+# # View(agefromcensus)
 # 
 # # Hispanic or Latino from census
 # HispanicLatinofromCensus <- fullcensus[c("GEOID10","DP0100001","DP0100002")]
-# View(HispanicLatinofromCensus)
+# # View(HispanicLatinofromCensus)
 # colnames(HispanicLatinofromCensus) <- c("GEOID","DP0100001","DP0100002")
 # 
 # # race and ethnicity from census
 # raceethnicityfromcensus <- fullcensus[c("GEOID10","DP0110001","DP0110002","DP0110003","DP0110004","DP0110005","DP0110006","DP0110007","DP0110008","DP0110009","DP0110010","DP0110011","DP0110012","DP0110013","DP0110014","DP0110015","DP0110016","DP0110017")]    
 # 
 # colnames(raceethnicityfromcensus) <- c("GEOID","DP0110001","DP0110002","DP0110003","DP0110004","DP0110005","DP0110006","DP0110007","DP0110008","DP0110009","DP0110010","DP0110011","DP0110012","DP0110013","DP0110014","DP0110015","DP0110016","DP0110017")
-# View(raceethnicityfromcensus)
+# # View(raceethnicityfromcensus)
 # 
 # # merge census to prior
 # air_acs_census_seg_no_drops <- merge(air_acs_seg_no_drops,agefromcensus,by="GEOID")
@@ -4002,7 +4428,7 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # finaldatanodrops <- air_acs_census_seg_no_drops
 # save(finaldatanodrops,file="finaldatanodrops.rdata")
 # load(file="finaldatanodrops.rdata")
-# View(finaldatanodrops)
+# # View(finaldatanodrops)
 # 
 # 
 # ########making the variables I need
@@ -4044,7 +4470,7 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # 
 # # % Hispanic
 # finaldatanodrops$percent_Hispanic <- finaldatanodrops$DP0100002/finaldatanodrops$DP0100001
-# View(finaldatanodrops)
+# # View(finaldatanodrops)
 # 
 # # % unemployed
 # finaldatanodrops$percent_unemployed <- finaldatanodrops$B23025e5/finaldatanodrops$B23025e1
@@ -4283,7 +4709,7 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # names <- colnames(alldatawithRI)
 # names
 # colnames(alldatawithRI) <- c("tract_ID","PM25_88101","aluminum_88104","calcium_88111","chlorine_88115","nickel_88136","titanium_88161","vanadium_88164","silicon_88165","zinc_88167","ammonium_88301","sodium_ion_88302","nitrate_88306","sulfate_88403","PM_25_non_FRM_88502","EC","ruca_prime","ruca_second","urban","total_population_DP0010001","isolationindex")
-# View(alldatawithRI)
+# # View(alldatawithRI)
 # save(alldatawithRI,file="alldatawithRI.rdata")
 # load(file="alldatawithRI.rdata")
 
@@ -4292,9 +4718,9 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 
 # #3 years or more
 # threeyearspluswithRI <- merge(tractaverageonlyurbanover1003,racialisolationindexmonitors,by="tract_ID")
-# View(threeyearspluswithRI)
+# # View(threeyearspluswithRI)
 # # colnames(threeyearspluswithRI) <- c("tract_ID","PM25_88101","aluminum_88104","calcium_88111","chlorine_88115","nickel_88136","titanium_88161","vanadium_88164","silicon_88165","zinc_88167","ammonium_88301","sodium_ion_88302","nitrate_88306","sulfate_88403","PM_25_non_FRM_88502","EC","ruca_prime","ruca_second","urban","total_population_DP0010001","isolationindex")
-#  View(threeyearspluswithRI)
+#  # View(threeyearspluswithRI)
 # save(threeyearspluswithRI,file="threeyearspluswithRI.rdata")
 # # load(file="threeyearspluswithRI.rdata")
 # 
@@ -4304,13 +4730,13 @@ p.adjust(p=c(.0001,.6563,.0249), method="holm")
 # 
 # # split RI into quantiles
 # threeyearspluswithRIquantiles <- within(threeyearspluswithRI, RI_quantile <- as.integer(cut(isolationindex, quantile(isolationindex, probs=0:5/5)), include.lowest=TRUE))
-# View(threeyearspluswithRIquantiles)
+# # View(threeyearspluswithRIquantiles)
 # 
 # # pull census data
 # censusfullracedata <- fullcensus[c("GEOID10","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")]
 # 
 # colnames(censusfullracedata) <- c("tract_ID","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")
-# View(censusfullracedata)
+# # View(censusfullracedata)
 # 
 # 
 # # join race data to three years of data with RI quintile
@@ -4337,7 +4763,7 @@ load(file="ACS_raw_data.rdata")
 
 #save simplified raw data to disk
 #save(ACS_simplified_raw_data,file="ACS_simplified_raw_data.rdata")
-#View(ACS_simplified_raw_data)
+## View(ACS_simplified_raw_data)
 
 
 load(file="ACS_simplified_raw_data.rdata")
@@ -4364,7 +4790,7 @@ acs_median_earnings_no_marg <- ACS_raw_data[c("GEOID","B20002e1")]
 #education_labels <- c("tract_ID","ed_pop","ed_pop_margin","ed_no_school","ed_no_school_margin","ed_nurse","ed_nurse_margin","ed_kinder","ed_kinder_margin","ed_1","ed_1_margin","ed_2","ed_2_margin","ed_3","ed_3_margin","ed_4","ed_4_margin","ed_5","ed_5_margin","ed_6","ed_6_margin","ed_7","ed_7_margin","ed_8","ed_8_margin","ed_9","ed_9_margin","ed_10","ed_10_margin","ed_11","ed_11_margin","ed_12","ed_12_margin","ed_hsdip","ed_hsdip_margin","ed_GED","ed_GED_margin","ed_<1_college","ed_<1_college_margin","ed_1+_college","ed_1+_college_margin","ed_associate","ed_associate_margin","ed_bachelor","ed_bachelor_margin","ed_master","ed_master_margin","ed_prof","ed_prof_marg","ed_doctor","ed_doctor_marg")
 
 acs_education_variables_no_margins <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003e2","B15003e3","B15003e4","B15003e5","B15003e6","B15003e7","B15003e8","B15003e9","B15003e10","B15003e11","B15003e12","B15003e13","B15003e14","B15003e15","B15003e16","B15003e17","B15003e18","B15003e19","B15003e20","B15003e21","B15003e22","B15003e23","B15003e24","B15003e25")]
-View(acs_education_variables_no_margins)
+# View(acs_education_variables_no_margins)
 
 #education_labels_no_margins <- c("tract_ID","ed_pop","ed_no_school","ed_nurse","ed_kinder","ed_1","ed_2","ed_3","ed_4","ed_5","ed_6","ed_7","ed_8","ed_9","ed_10","ed_11","ed_12","ed_hsdip","ed_GED","ed_<1_college","ed_1+_college","ed_associate","ed_bachelor","ed_master","ed_prof","ed_doctor")
 
@@ -4405,7 +4831,7 @@ air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_median_househ_value_no_ma
 air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_median_household_income_no_marg,by="GEOID",all.x=TRUE)
 air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_poverty,by="GEOID",all.x=TRUE)
 air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_unemp_no_marg,by="GEOID",all.x=TRUE)
-View(air_acs_seg_no_drops)
+# View(air_acs_seg_no_drops)
 
 save(air_acs_seg_no_drops,file="air_acs_seg_no_drops.rdata")
 
@@ -4427,13 +4853,13 @@ save(air_acs_seg_no_drops,file="air_acs_seg_no_drops.rdata")
 # agefromcensus <- fullcensus[c("GEOID10","DP0010001","DP0010002","DP0010003","DP0010004","DP0010005","DP0010006","DP0010007","DP0010008","DP0010009","DP0010010","DP0010011","DP0010012","DP0010013","DP0010014","DP0010015","DP0010016","DP0010017","DP0010018","DP0010019")]
 # 
 # colnames(agefromcensus) <- c("GEOID","DP0010001","DP0010002","DP0010003","DP0010004","DP0010005","DP0010006","DP0010007","DP0010008","DP0010009","DP0010010","DP0010011","DP0010012","DP0010013","DP0010014","DP0010015","DP0010016","DP0010017","DP0010018","DP0010019")
-# View(agefromcensus)
+# # View(agefromcensus)
 # 
 # HispanicLatinofromCensus <- fullcensus[c("GEOID10","DP0100001","DP0100002")]
-# View(HispanicLatinofromCensus)
+# # View(HispanicLatinofromCensus)
 # colnames(HispanicLatinofromCensus) <- c("GEOID","DP0100001","DP0100002")
 # 
-# View(air_acs_seg_no_drops)
+# # View(air_acs_seg_no_drops)
 # air_acs_census_seg_no_drops <- merge(air_acs_seg_no_drops,agefromcensus,by="GEOID")
 # 
 # 
@@ -4493,7 +4919,7 @@ save(air_acs_seg_no_drops,file="air_acs_seg_no_drops.rdata")
 # # 5 years or more
 # fiveyearspluswithRI <- merge(tractaverageonlyurbanover1005,racialisolationindexmonitors,by="tract_ID")
 # colnames(fiveyearspluswithRI) <- c("tract_ID","PM25_88101","aluminum_88104","calcium_88111","chlorine_88115","nickel_88136","titanium_88161","vanadium_88164","silicon_88165","zinc_88167","ammonium_88301","sodium_ion_88302","nitrate_88306","sulfate_88403","PM_25_non_FRM_88502","EC","ruca_prime","ruca_second","urban","total_population_DP0010001","isolationindex")
-# View(fiveyearspluswithRI)
+# # View(fiveyearspluswithRI)
 # save(fiveyearspluswithRI,file="fiveyearspluswithRI.rdata")
 # load(file="fiveyearspluswithRI.rdata")
 
@@ -4524,13 +4950,13 @@ save(air_acs_seg_no_drops,file="air_acs_seg_no_drops.rdata")
 
 #split RI into quantiles
 alldatawithRI <- within(alldatawithRI, RI_quantile <- as.integer(cut(isolationindex, quantile(isolationindex, probs=0:5/5)), include.lowest=TRUE))
-View(alldatawithRI)
+# View(alldatawithRI)
 
 #pull census data
 censusfullracedata <- fullcensus[c("GEOID10","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")]
 
 colnames(censusfullracedata) <- c("tract_ID","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")
-View(censusfullracedata)
+# View(censusfullracedata)
 
 
 #joinracedatatoalldatawithRI
@@ -4556,7 +4982,7 @@ load(file="ACS_raw_data.rdata")
 
 #save simplified raw data to disk
 #save(ACS_simplified_raw_data,file="ACS_simplified_raw_data.rdata")
-#View(ACS_simplified_raw_data)
+## View(ACS_simplified_raw_data)
 
 
 load(file="ACS_simplified_raw_data.rdata")
@@ -4582,7 +5008,7 @@ acs_median_earnings_no_marg <- ACS_raw_data[c("GEOID","B20002e1")]
 #education_labels <- c("tract_ID","ed_pop","ed_pop_margin","ed_no_school","ed_no_school_margin","ed_nurse","ed_nurse_margin","ed_kinder","ed_kinder_margin","ed_1","ed_1_margin","ed_2","ed_2_margin","ed_3","ed_3_margin","ed_4","ed_4_margin","ed_5","ed_5_margin","ed_6","ed_6_margin","ed_7","ed_7_margin","ed_8","ed_8_margin","ed_9","ed_9_margin","ed_10","ed_10_margin","ed_11","ed_11_margin","ed_12","ed_12_margin","ed_hsdip","ed_hsdip_margin","ed_GED","ed_GED_margin","ed_<1_college","ed_<1_college_margin","ed_1+_college","ed_1+_college_margin","ed_associate","ed_associate_margin","ed_bachelor","ed_bachelor_margin","ed_master","ed_master_margin","ed_prof","ed_prof_marg","ed_doctor","ed_doctor_marg")
 
 acs_education_variables_no_margins <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003e2","B15003e3","B15003e4","B15003e5","B15003e6","B15003e7","B15003e8","B15003e9","B15003e10","B15003e11","B15003e12","B15003e13","B15003e14","B15003e15","B15003e16","B15003e17","B15003e18","B15003e19","B15003e20","B15003e21","B15003e22","B15003e23","B15003e24","B15003e25")]
-View(acs_education_variables_no_margins)
+# View(acs_education_variables_no_margins)
 
 #education_labels_no_margins <- c("tract_ID","ed_pop","ed_no_school","ed_nurse","ed_kinder","ed_1","ed_2","ed_3","ed_4","ed_5","ed_6","ed_7","ed_8","ed_9","ed_10","ed_11","ed_12","ed_hsdip","ed_GED","ed_<1_college","ed_1+_college","ed_associate","ed_bachelor","ed_master","ed_prof","ed_doctor")
 
@@ -4623,7 +5049,7 @@ air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_median_househ_value_no_ma
 air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_median_household_income_no_marg,by="GEOID",all.x=TRUE)
 air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_poverty,by="GEOID",all.x=TRUE)
 air_acs_seg_no_drops <- merge(air_acs_seg_no_drops,acs_unemp_no_marg,by="GEOID",all.x=TRUE)
-View(air_acs_seg_no_drops)
+# View(air_acs_seg_no_drops)
 
 save(air_acs_seg_no_drops,file="air_acs_seg_no_drops.rdata")
 
@@ -4645,13 +5071,13 @@ save(air_acs_seg_no_drops,file="air_acs_seg_no_drops.rdata")
 agefromcensus <- fullcensus[c("GEOID10","DP0010001","DP0010002","DP0010003","DP0010004","DP0010005","DP0010006","DP0010007","DP0010008","DP0010009","DP0010010","DP0010011","DP0010012","DP0010013","DP0010014","DP0010015","DP0010016","DP0010017","DP0010018","DP0010019")]
 
 colnames(agefromcensus) <- c("GEOID","DP0010001","DP0010002","DP0010003","DP0010004","DP0010005","DP0010006","DP0010007","DP0010008","DP0010009","DP0010010","DP0010011","DP0010012","DP0010013","DP0010014","DP0010015","DP0010016","DP0010017","DP0010018","DP0010019")
-View(agefromcensus)
+# View(agefromcensus)
 
 HispanicLatinofromCensus <- fullcensus[c("GEOID10","DP0100001","DP0100002")]
-View(HispanicLatinofromCensus)
+# View(HispanicLatinofromCensus)
 colnames(HispanicLatinofromCensus) <- c("GEOID","DP0100001","DP0100002")
 
-View(air_acs_seg_no_drops)
+# View(air_acs_seg_no_drops)
 air_acs_census_seg_no_drops <- merge(air_acs_seg_no_drops,agefromcensus,by="GEOID")
 
 
@@ -4773,7 +5199,7 @@ finaldatanodrops$log_sodium_ion_88302 <- log(finaldatanodrops$sodium_ion_88302)
 finaldatanodrops$log_nitrate_88306 <- log(finaldatanodrops$nitrate_88306)
 finaldatanodrops$log_sulfate_88403 <- log(finaldatanodrops$sulfate_88403)
 finaldatanodrops$log_EC <- log(finaldatanodrops$EC)
-View(finaldatanodrops)
+# View(finaldatanodrops)
 
 #make normal quantile plots for the logs
 #check for linearity
@@ -5288,7 +5714,7 @@ table(finaldatanodrops$tract_ID)
 
 #split RI into quantiles
 threeyearspluswithRI <- within(threeyearspluswithRI, RI_quantile <- as.integer(cut(isolationindex, quantile(isolationindex, probs=0:5/5)), include.lowest=TRUE))
-View(threeyearspluswithRI)
+# View(threeyearspluswithRI)
 
 #joinracedatatofinaldatanodrops
 threeyearspluswithRI<-merge(threeyearspluswithRI,censusfullracedata,by="tract_ID")
@@ -5307,7 +5733,7 @@ air_acs_seg_three_drop<-merge(air_acs_seg_three_drop,acs_median_househ_value_no_
 air_acs_seg_three_drop<-merge(air_acs_seg_three_drop,acs_median_household_income_no_marg,by="GEOID",all.x=TRUE)
 air_acs_seg_three_drop<-merge(air_acs_seg_three_drop,acs_poverty,by="GEOID",all.x=TRUE)
 air_acs_seg_three_drop<-merge(air_acs_seg_three_drop,acs_unemp_no_marg,by="GEOID",all.x=TRUE)
-View(air_acs_seg_three_drop)
+# View(air_acs_seg_three_drop)
 
 save(air_acs_seg_three_drop,file="air_acs_seg_three_drop.rdata")
 
@@ -5395,7 +5821,7 @@ finaldatathree_drop$log_ammonium_88301 <- log(finaldatathree_drop$ammonium_88301
 finaldatathree_drop$log_nitrate_88306 <- log(finaldatathree_drop$nitrate_88306)
 finaldatathree_drop$log_sulfate_88403 <- log(finaldatathree_drop$sulfate_88403)
 finaldatathree_drop$log_EC <- log(finaldatathree_drop$EC)
-View(finaldatathree_drop)
+# View(finaldatathree_drop)
 
 #make normal quantile plots for the logs
 #check for linearity
@@ -5620,7 +6046,7 @@ EC_by_quantile_three_sd
 #same for eliminating less than 5 years
 #split RI into quantiles
 fiveyearspluswithRI <- within(fiveyearspluswithRI, RI_quantile <- as.integer(cut(isolationindex, quantile(isolationindex, probs=0:5/5)), include.lowest=TRUE))
-View(fiveyearspluswithRI)
+# View(fiveyearspluswithRI)
 
 #joinracedatatofiveyearspluswithRI
 fiveyearspluswithRI <- merge(fiveyearspluswithRI,censusfullracedata,by="tract_ID")
@@ -5639,7 +6065,7 @@ air_acs_seg_five_drop <- merge(air_acs_seg_five_drop,acs_median_househ_value_no_
 air_acs_seg_five_drop <- merge(air_acs_seg_five_drop,acs_median_household_income_no_marg,by="GEOID",all.x=TRUE)
 air_acs_seg_five_drop <- merge(air_acs_seg_five_drop,acs_poverty,by="GEOID",all.x=TRUE)
 air_acs_seg_five_drop <- merge(air_acs_seg_five_drop,acs_unemp_no_marg,by="GEOID",all.x=TRUE)
-View(air_acs_seg_five_drop)
+# View(air_acs_seg_five_drop)
 
 save(air_acs_seg_five_drop,file="air_acs_seg_five_drop.rdata")
 
@@ -5725,7 +6151,7 @@ finaldatafive_drop$log_ammonium_88301 <- log(finaldatafive_drop$ammonium_88301)
 finaldatafive_drop$log_nitrate_88306 <- log(finaldatafive_drop$nitrate_88306)
 finaldatafive_drop$log_sulfate_88403 <- log(finaldatafive_drop$sulfate_88403)
 finaldatafive_drop$log_EC <- log(finaldatafive_drop$EC)
-View(finaldatafive_drop)
+# View(finaldatafive_drop)
 
 #make normal quantile plots for the logs
 #check for linearity
@@ -5977,17 +6403,17 @@ EC_by_quantile_five_sd
 
 #selectACSdata <- ACS_simplified_raw_data[c("OBJECTID","STATEFP","COUNTYFP","TRACTCE","BLKGRPCE","GEOID","NAMELSAD","MTFCC","FUNCSTAT","ALAND","AWATER","INTPTLAT","INTPTLON","Shape_Length","Shape_Area","GEOID_Data","B00001e1","B03002e1","B03002e2","B03002e3","B03002e4","B03002e5","B03002e6","B03002e7","B03002e8","B03002e9","B03002e10","B03002e11","B03002e12","B03002e13","B03002e14","B03002e15","B03002e16","B03002e17","B03002e18","B03002e19","B03002e20","B03002e21","B01001e1","B01001e2","B01001e3","B01001e4","B01001e5","B01001e6","B01001e7","B01001e8","B01001e9","B01001e10","B01001e11","B01001e12","B01001e13","B01001e14","B01001e15","B01001e16","B01001e17","B01001e18","B01001e19","B01001e20","B01001e21","B01001e22","B01001e23","B01001e24","B01001e25","B01001e26","B01001e27","B01001e28","B01001e29","B01001e30","B01001e31","B01001e32","B01001e33","B01001e34","B01001e35","B01001e36","B01001e37","B01001e38","B01001e39","B01001e40","B01001e41","B01001e42","B01001e43","B01001e44","B01001e45","B01001e46","B01001e47","B01001e48","B01001e49","B01002e1","B01002e2","B01002e3","B00001e1","B03002e1","B03002e2","B03002e3","B03002e4","B03002e5","B03002e6","B03002e7","B03002e8","B03002e9","B03002e10","B03002e11","B03002e12","B03002e13","B03002e14","B03002e15","B03002e16","B03002e17","B03002e18","B03002e19","B03002e20","B03002e21","B15003e1","B15003e2","B15003e3","B15003e4","B15003e5","B15003e6","B15003e7","B15003e8","B15003e9","B15003e10","B15003e11","B15003e12","B15003e13","B15003e14","B15003e15","B15003e16","B15003e17","B15003e18","B15003e19","B15003e20","B15003e21","B15003e22","B15003e23","B15003e24","B15003e25","B25077e1","B00001e1","B03002e1","B03002e2","B03002e3","B03002e4","B03002e5","B03002e6","B03002e7","B03002e8","B03002e9","B03002e10","B03002e11","B03002e12","B03002e13","B03002e14","B03002e15","B03002e16","B03002e17","B03002e18","B03002e19","B03002e20","B03002e21","B25075e1","B25075e2","B25075e3","B25075e4","B25075e5","B25075e6","B25075e7","B25075e8","B25075e9","B25075e10","B25075e11","B25075e12","B25075e13","B25075e14","B25075e15","B25075e16","B25075e17","B25075e18","B25075e19","B25075e20","B25075e21","B25075e22","B25075e23","B25075e24","B25075e25","B25075e26","B25075e27","B00001e1","B03002e1","B03002e2","B03002e3","B03002e4","B03002e5","B03002e6","B03002e7","B03002e8","B03002e9","B03002e10","B03002e11","B03002e12","B03002e13","B03002e14","B03002e15","B03002e16","B03002e17","B03002e18","B03002e19","B03002e20","B03002e21","B20001e1","B20001e2","B20001e3","B20001e4","B20001e5","B20001e6","B20001e7","B20001e8","B20001e9","B20001e10","B20001e11","B20001e12","B20001e13","B20001e14","B20001e15","B20001e16","B20001e17","B20001e18","B20001e19","B20001e20","B20001e21","B20001e22","B20001e23","B20001e24","B20001e25","B20001e26","B20001e27","B20001e28","B20001e29","B20001e30","B20001e31","B20001e32","B20001e33","B20001e34","B20001e35","B20001e36","B20001e37","B20001e38","B20001e39","B20001e40","B20001e41","B20001e42","B20001e43","B20002e1","B20002e2","B20002e3","B19013e1","B19301e1","C17002e1","C17002e2","C17002e3","C17002e4","C17002e5","C17002e6","C17002e7","C17002e8","B23025e1","B23025e1","B23025e2","B23025e3","B23025e4","B23025e5","B23025e6","B23025e7")]
 # 
-# View(selectACSdata)
+# # View(selectACSdata)
 # 
-# View(ACS_simplified_raw_data[c("B00001e1")])
+# # View(ACS_simplified_raw_data[c("B00001e1")])
 # whatvars <- colnames(ACS_simplified_raw_data)
 # whatvars <- as.data.frame(whatvars)
-# View(whatvars)
+# # View(whatvars)
 # 
 # 
 # #READ IN METADATA
 # ACS_metadata <- read.csv(file="ACS_METADATA.txt")
-# View(ACS_metadata)
+# # View(ACS_metadata)
 # 
 # #Metadata I want
 # 
@@ -6076,8 +6502,8 @@ EC_by_quantile_five_sd
 # #Pure 2010 Census Data
 # #import DP table
 # census_2010_DP1_raw <- read.csv("2010_Census_Data_Exported_from_ArcGIS.txt")
-# View(census_2010_DP1_raw[1:22])
-# View(ACS_data)
+# # View(census_2010_DP1_raw[1:22])
+# # View(ACS_data)
 # colnames(census_2010_DP1_raw)
 # 
 # #join 2010 census data to ACS data
@@ -6086,18 +6512,18 @@ EC_by_quantile_five_sd
 # 
 # #join
 # census_2010_and_ACS <- full_join(census_2010_DP1_raw,ACS_data,by="GEOID10")
-# View(census_2010_and_ACS[c(1:5,190:205)])
+# # View(census_2010_and_ACS[c(1:5,190:205)])
 # ACS_data_missing <- census_2010_and_ACS[is.na(census_2010_and_ACS$GEOID_Data),]
-# View(ACS_data_missing[c(1:5,190:215)])
+# # View(ACS_data_missing[c(1:5,190:215)])
 # 
 # 
 # 
 # 
 # 
 # aluminum_observations <- subset(compact_air_and_tracts, Parameter.Code == "88104")
-# View(aluminum_observations)
+# # View(aluminum_observations)
 # 
-# View(aluminum_observations)
+# # View(aluminum_observations)
 # 
 # #aluminum 88104
 # #calcium 
@@ -6157,8 +6583,8 @@ EC_by_quantile_five_sd
 # #read monitor and site lists
 # #aqs_monitors <- read.csv("aqs_monitors.csv",header=TRUE)
 # #aqs_sites <- read.csv("aqs_sites.csv",header=TRUE)
-# #View(aqs_monitors)
-# #View(aqs_sites)
+# ## View(aqs_monitors)
+# ## View(aqs_sites)
 
 
 
