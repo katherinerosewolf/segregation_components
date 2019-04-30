@@ -243,7 +243,7 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 
 ## data creation
 
-```{r read necessary files}
+```{r read necessary files, eval=FALSE, include=FALSE}
 
 #### load raw data ####
 # census
@@ -1478,9 +1478,10 @@ parameter_code <- c(
   "88502")
 
 elements_and_codes <- 
-  data.frame(component,
-             parameter_code)
-elements_and_codes
+  tibble(component,
+         parameter_code)
+save(elements_and_codes, 
+     file = "elements_and_codes.rdata")
 write.csv(elements_and_codes,
           file = "elements_and_codes.csv")
 elements_and_codes <- 
@@ -1940,7 +1941,7 @@ gc()
 ```
 
 
-```{r create files for sensitivity analyses}
+```{r create files for sensitivity analyses, eval=FALSE, include=FALSE}
 # countthisdata and countthisdatasimple give the number of observations for that pollutant at each monitor to use later in sensitivity analysis
 # this code drops those pollutants for each monitor which don't meet the conditions at least 5 years with 300 observations (300 observations over 365*5=1825 days)
 
@@ -2005,13 +2006,384 @@ gc()
 
 # save final file to disk and then remove for later loading
 save(atleast3years180obs,
-     file="atleast3years180obs.rdata")
+     file = "atleast3years180obs.rdata")
 rm(atleast3years180obs)
+```
+
+
+```{r checking minimum detection limits for sensitivity analyses}
+
+# get necessary datasets
+load(file = "elements_and_codes.rdata")
+
+methods_speciation <- 
+  read_csv(file = "methods_speciation.csv",
+           col_types = 
+             cols(Parameter = col_character(),
+                  `Parameter Code` = col_character(),
+                  `Method Code` = col_character(),
+                  `Recording Mode` = col_character(),
+                  `Collection Description` = col_character(),
+                  `Analysis Description` = col_character(),
+                  `Method Type` = col_character(),
+                  `Reference Method ID` = col_character(),
+                  `Equivalent Method` = col_character(),
+                  `Federal MDL` = col_double(),
+                  `Min Value` = col_double(),
+                  `Max Value` = col_double(),
+                  Digits = col_double(),
+                  `Round Truncate Indicator` = col_character(),
+                  Units = col_character()))
+
+# fix column names
+methods_speciation_fixed_column_names <-
+  methods_speciation %>%
+  colnames() %>% 
+  tolower() %>% 
+  {gsub(" ", "_", .)}
+
+colnames(methods_speciation) <- 
+  methods_speciation_fixed_column_names
+
+# add half detection limit column
+methods_speciation <- 
+  methods_speciation %>% 
+  mutate(half_mdl = federal_mdl/2)
+
+
+## all data work ####
+load(file = "countthisdata.rdata")
+
+# make working full dataset
+air_data_all_obs <- 
+  as_tibble(countthisdata)
+rm(countthisdata)
+gc()
+
+# fix column types
+air_data_all_obs <-
+  air_data_all_obs %>% 
+  mutate_if(is.factor, 
+            as.character) %>% 
+  mutate(method_code = 
+           as.character(Method.Code),
+         Method.Code = NULL)
+
+# fix column names
+air_data_all_obs_corrected_colnames <-
+  air_data_all_obs %>% 
+  colnames() %>% 
+  tolower() %>% 
+  {gsub("\\.", "_", .)}
+
+colnames(air_data_all_obs) <- 
+  air_data_all_obs_corrected_colnames
+
+# fix column types
+air_data_all_obs <- 
+  air_data_all_obs %>% 
+  mutate(parameter_code = as.character(parameter_code),
+         method_code = as.character(method_code))
+
+# merge speciation methods with detection limits
+air_data_all_obs_mdl <- 
+  air_data_all_obs %>% 
+  left_join(methods_speciation, 
+            by = c("parameter_code", 
+                   "method_code"))
+rm(air_data_all_obs)
+gc()
+
+# figure out percent above mdl for each species
+air_all_obs_mdl_num <- 
+  air_data_all_obs_mdl %>%   # this takes observations as the default
+  group_by(parameter_code) %>% 
+  dplyr::select(parameter_code,
+                arithmetic_mean,
+                federal_mdl) %>% 
+  count(arithmetic_mean < federal_mdl) %>% 
+  mutate(observations = sum(n), 
+         percent_of_total = n/sum(n))
+  
+air_all_obs_mdl_percent <- 
+  air_all_obs_mdl_num %>% 
+  group_by(parameter_code) %>% 
+  filter(`arithmetic_mean < federal_mdl` == FALSE) %>% 
+  dplyr::select(parameter_code, 
+                observations_all_year = observations,
+                percent_above_mdl_all_year = percent_of_total) %>% 
+  left_join(elements_and_codes, 
+            by = "parameter_code") %>% 
+  arrange()
+
+# figure out percent zero for each species
+air_all_obs_zero_num <- 
+  air_data_all_obs_mdl %>%   # this takes observations as the default
+  group_by(parameter_code) %>% 
+  dplyr::select(parameter_code,
+                arithmetic_mean) %>% 
+  count(arithmetic_mean == 0) %>% 
+  mutate(observations = sum(n), 
+    percent_of_total = n/sum(n))
+  
+air_all_obs_zero_percent <- 
+  air_all_obs_zero_num %>% 
+  group_by(parameter_code) %>% 
+  filter(`arithmetic_mean == 0` == FALSE) %>% 
+  dplyr::select(parameter_code, 
+                observations_all_year = observations,
+                percent_non_zero_all_year = percent_of_total) %>% 
+  left_join(elements_and_codes, 
+            by = "parameter_code") %>% 
+  arrange()
+
+save(air_data_all_obs_mdl, 
+     file = "air_data_all_obs_mdl.rdata")
+
+save(air_all_obs_mdl_num, 
+     file = "air_all_obs_mdl_num.rdata")
+save(air_all_obs_mdl_percent, 
+     file = "air_all_obs_mdl_percent.rdata")
+
+save(air_all_obs_zero_num, 
+     file = "air_all_obs_zero_num.rdata")
+save(air_all_obs_zero_percent, 
+     file = "air_all_obs_zero_percent.rdata")
+
+rm(air_data_all_obs_mdl)
+gc()
+
+
+
+## 3-year data work ####
+
+# get necessary datasets
+load(file = "atleast3years180obs.rdata")
+
+# make working 3-year dataset
+air_data_3_year_180_obs <- 
+  as_tibble(atleast3years180obs)
+rm(atleast3years180obs)
+gc()
+
+# fix column types
+air_data_3_year_180_obs <-
+  air_data_3_year_180_obs %>% 
+  mutate_if(is.factor, 
+            as.character) %>% 
+  mutate(method_code = 
+           as.character(Method.Code),
+         Method.Code = NULL)
+
+# fix column names
+air_data_3_year_180_obs_corrected_colnames <-
+  air_data_3_year_180_obs %>% 
+  colnames() %>% 
+  tolower() %>% 
+  {gsub("\\.", "_", .)}
+
+colnames(air_data_3_year_180_obs) <- 
+  air_data_3_year_180_obs_corrected_colnames
+
+# fix column types
+air_data_3_year_180_obs <- 
+  air_data_3_year_180_obs %>% 
+  mutate(parameter_code = as.character(parameter_code),
+         method_code = as.character(method_code))
+
+# merge speciation methods with detection limits
+air_data_3_year_180_obs_mdl <- 
+  air_data_3_year_180_obs %>% 
+  left_join(methods_speciation, 
+            by = c("parameter_code", 
+                   "method_code"))
+rm(air_data_3_year_180_obs)
+gc()
+
+# figure out percent above mdl for each species
+air_3_year_180_obs_mdl_num <- 
+  air_data_3_year_180_obs_mdl %>%   # this takes observations as the default
+  group_by(parameter_code) %>% 
+  dplyr::select(parameter_code,
+                arithmetic_mean,
+                federal_mdl) %>% 
+  count(arithmetic_mean < federal_mdl) %>% 
+  mutate(observations = sum(n), 
+         percent_of_total = n/sum(n))
+  
+air_3_year_180_obs_mdl_percent <- 
+  air_3_year_180_obs_mdl_num %>% 
+  group_by(parameter_code) %>% 
+  filter(`arithmetic_mean < federal_mdl` == FALSE) %>% 
+  dplyr::select(parameter_code, 
+                observations_3_year = observations,
+                percent_above_mdl_3_year = percent_of_total) %>% 
+  left_join(elements_and_codes, 
+            by = "parameter_code") %>% 
+  arrange()
+
+# figure out percent zero for each species
+air_3_year_180_obs_zero_num <- 
+  air_data_3_year_180_obs_mdl %>%   # this takes observations as the default
+  group_by(parameter_code) %>% 
+  dplyr::select(parameter_code,
+                arithmetic_mean) %>% 
+  count(arithmetic_mean == 0) %>% 
+  mutate(observations = sum(n), 
+    percent_of_total = n/sum(n))
+  
+air_3_year_180_obs_zero_percent <- 
+  air_3_year_180_obs_zero_num %>% 
+  group_by(parameter_code) %>% 
+  filter(`arithmetic_mean == 0` == FALSE) %>% 
+  dplyr::select(parameter_code, 
+                observations_3_year = observations,
+                percent_non_zero_3_year = percent_of_total) %>% 
+  left_join(elements_and_codes, 
+            by = "parameter_code") %>% 
+  arrange()
+
+save(air_data_3_year_180_obs_mdl, 
+     file = "air_data_3_year_180_obs_mdl.rdata")
+save(air_3_year_180_obs_mdl_num, 
+     file = "air_3_year_180_obs_mdl_num.rdata")
+save(air_3_year_180_obs_mdl_percent, 
+     file = "air_3_year_180_obs_mdl_percent.rdata")
+
+save(air_3_year_180_obs_zero_num, 
+     file = "air_3_year_180_obs_zero_num.rdata")
+save(air_3_year_180_obs_zero_percent, 
+     file = "air_3_year_180_obs_zero_percent.rdata")
+
+rm(air_data_3_year_180_obs_mdl)
+gc()
+
+
+# 5-year data work ####
+load(file = "atleast5years300obs.rdata")
+
+# make working 5-year dataset
+air_data_5_year_300_obs <- 
+  as_tibble(atleast5years300obs)
+rm(atleast5years300obs)
+gc()
+
+# fix column types
+air_data_5_year_300_obs <-
+  air_data_5_year_300_obs %>% 
+  mutate_if(is.factor, 
+            as.character) %>% 
+  mutate(method_code = 
+           as.character(Method.Code),
+         Method.Code = NULL)
+
+# fix column names
+air_data_5_year_300_obs_corrected_colnames <-
+  air_data_5_year_300_obs %>% 
+  colnames() %>% 
+  tolower() %>% 
+  {gsub("\\.", "_", .)}
+
+colnames(air_data_5_year_300_obs) <- 
+  air_data_5_year_300_obs_corrected_colnames
+
+# fix column types
+air_data_5_year_300_obs <- 
+  air_data_5_year_300_obs %>% 
+  mutate(parameter_code = as.character(parameter_code),
+         method_code = as.character(method_code))
+
+# merge speciation methods with detection limits
+air_data_5_year_300_obs_mdl <- 
+  air_data_5_year_300_obs %>% 
+  left_join(methods_speciation, 
+            by = c("parameter_code", 
+                   "method_code"))
+rm(air_data_5_year_300_obs)
+gc()
+
+# figure out percent above mdl for each species
+air_5_year_300_obs_mdl_num <- 
+  air_data_5_year_300_obs_mdl %>%   # this takes observations as the default
+  group_by(parameter_code) %>% 
+  dplyr::select(parameter_code,
+                arithmetic_mean,
+                federal_mdl) %>% 
+  count(arithmetic_mean < federal_mdl) %>% 
+  mutate(observations = sum(n), 
+         percent_of_total = n/sum(n))
+  
+air_5_year_300_obs_mdl_percent <- 
+  air_5_year_300_obs_mdl_num %>% 
+  group_by(parameter_code) %>% 
+  filter(`arithmetic_mean < federal_mdl` == FALSE) %>% 
+  dplyr::select(parameter_code, 
+                observations_5_year = observations,
+                percent_above_mdl_5_year = percent_of_total) %>% 
+  left_join(elements_and_codes, 
+            by = "parameter_code") %>% 
+  arrange()
+
+# figure out percent zero for each species
+air_5_year_300_obs_zero_num <- 
+  air_data_5_year_300_obs_mdl %>%   # this takes observations as the default
+  group_by(parameter_code) %>% 
+  dplyr::select(parameter_code,
+                arithmetic_mean) %>% 
+  count(arithmetic_mean == 0) %>% 
+  mutate(observations = sum(n), 
+    percent_of_total = n/sum(n))
+  
+air_5_year_300_obs_zero_percent <- 
+  air_5_year_300_obs_zero_num %>% 
+  group_by(parameter_code) %>% 
+  filter(`arithmetic_mean == 0` == FALSE) %>% 
+  dplyr::select(parameter_code, 
+                observations_5_year = observations,
+                percent_non_zero_5_year = percent_of_total) %>% 
+  left_join(elements_and_codes, 
+            by = "parameter_code") %>% 
+  arrange()
+
+save(air_data_5_year_300_obs_mdl, 
+     file = "air_data_5_year_300_obs_mdl.rdata")
+
+save(air_5_year_300_obs_mdl_num, 
+     file = "air_5_year_300_obs_mdl_num.rdata")
+save(air_5_year_300_obs_mdl_percent, 
+     file = "air_5_year_300_obs_mdl_percent.rdata")
+
+save(air_5_year_300_obs_zero_num, 
+     file = "air_5_year_300_obs_zero_num.rdata")
+save(air_5_year_300_obs_zero_percent, 
+     file = "air_5_year_300_obs_zero_percent.rdata")
+
+# make table of all 3
+load(file = "air_5_year_300_obs_mdl_percent.rdata")
+load(file = "air_3_year_180_obs_mdl_percent.rdata")
+load(file = "air_all_obs_mdl_percent.rdata")
+
+mdl_percent_tibbles <- 
+ c(air_all_obs_mdl_percent, 
+         air_3_year_180_obs_mdl_percent, 
+         air_5_year_300_obs_mdl_percent
+         )
+  
+all_mdl_percents <- 
+  reduce(mdl_percent_tibbles, 
+      full_join, 
+      by = c("parameter_code", 
+             "component"))
+
+View(all_mdl_percents)
+
+str(air_5_year_300_obs_mdl_percent)
+
 ```
 
 ## make racial isolation indices
 
-```{r racial isolation indices}
+```{r racial isolation indices, eval=FALSE, include=FALSE}
 
 # Guide to this section:
 # 1. List of groups of census tracts
@@ -2027,6 +2399,12 @@ rm(atleast3years180obs)
 censusadjacent <- 
   read.csv("censusadjacent.csv", 
            header = TRUE)
+
+# import full census data
+load(file = "fullcensus.rdata")
+
+# import ruca data
+load(file = "onlyurbanruca.rdata")
 
 censusadjacent <- 
   censusadjacent[c(-1)]
@@ -2060,18 +2438,23 @@ censusadjacentnonodes$nbr_GEOID10 <- as.factor(censusadjacentnonodes$nbr_GEOID10
 
 # get adjacent blocks into single column as single character w/ commas
 require(data.table)
-canncon <- setDT(censusadjacentnonodes)[,.(nbr_GEOID10=paste(nbr_GEOID10, collapse = ",")), by=src_GEOID10]
+canncon <- 
+  setDT(censusadjacentnonodes)[,.(nbr_GEOID10=paste(nbr_GEOID10, 
+                                                    collapse = ",")),
+                               by=src_GEOID10]
+
 canncon$src_GEOID10 <- as.character(canncon$src_GEOID10)
 
 # add own census tract to tracts
-canncon$selfandfriends <- paste(canncon$src_GEOID10, canncon$nbr_GEOID10, sep=",")
-str(canncon)
+canncon$selfandfriends <- 
+  paste(canncon$src_GEOID10, 
+        canncon$nbr_GEOID10, 
+        sep=",")
 
 # save file to disk
-save(canncon,file="canncon.rdata")
+save(canncon,
+     file="canncon.rdata")
 # load(file="canncon.rdata")
-
-
 
 
 #### with nodes ####
@@ -2080,8 +2463,10 @@ save(canncon,file="canncon.rdata")
 censusadjacentyesnodes <- censusadjacent
 censusadjacentyesnodes <- censusadjacentyesnodes[c(-4)]
 censusadjacentyesnodes <- as.data.frame(censusadjacentyesnodes[c(-3)])
-censusadjacentyesnodes$src_GEOID10 <- as.factor(censusadjacentyesnodes$src_GEOID10)
-censusadjacentyesnodes$nbr_GEOID10 <- as.factor(censusadjacentyesnodes$nbr_GEOID10)
+censusadjacentyesnodes$src_GEOID10 <- 
+  as.factor(censusadjacentyesnodes$src_GEOID10)
+censusadjacentyesnodes$nbr_GEOID10 <- 
+  as.factor(censusadjacentyesnodes$nbr_GEOID10)
 
 # get adjacent blocks into single column as single character w/ commas
 require(data.table)
@@ -2093,7 +2478,8 @@ cayncon$selfandfriends <- paste(cayncon$src_GEOID10, cayncon$nbr_GEOID10, sep=",
 str(cayncon)
 
 # save file to disk
-save(cayncon,file="cayncon.rdata")
+save(cayncon,
+     file="cayncon.rdata")
 # load(file="cayncon.rdata")
 
 
@@ -2101,7 +2487,8 @@ save(cayncon,file="cayncon.rdata")
 
 #### racial isolation index with nodes urban tracts ####
 
-monitorct <- cayncon[which(cayncon$src_GEOID10 %in% onlyurbanruca$tract_ID),]
+monitorct <- 
+  cayncon[which(cayncon$src_GEOID10 %in% onlyurbanruca$tract_ID),]
 
 # neighbors for each census tract plus itself
 temp <- strsplit(monitorct$selfandfriends, split=",")
@@ -2119,22 +2506,47 @@ for (i in 2:length(temp)) {
 segindcalcbasis <- merge(segregationvars, ct.nb, by="selfneighbor")
 
 # aggregate by census tract
-aggregatevars <- segindcalcbasis[c("censustract", "DP0080001", "DP0080004", "allbutblack")]
-as.numeric(aggregatevars$DP0080001, aggregatevars$DP0080004, aggregatevars$allbutblack)
-aggregatedcensus <- aggregate(. ~ censustract, data = aggregatevars, sum)
-aggregatedcensus$finalsegregationindex <- aggregatedcensus$DP0080004/aggregatedcensus$DP0080001
+aggregatevars <- segindcalcbasis[c("censustract", 
+                                   "DP0080001", 
+                                   "DP0080004", 
+                                   "allbutblack")]
+as.numeric(aggregatevars$DP0080001, 
+           aggregatevars$DP0080004, 
+           aggregatevars$allbutblack)
+
+aggregatedcensus <- 
+  aggregate(. ~ censustract, 
+            data = aggregatevars, sum)
+
+aggregatedcensus$finalsegregationindex <- 
+  aggregatedcensus$DP0080004/aggregatedcensus$DP0080001
+
 aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
-RI_nodes_urban_tracts <- aggregatedcensus[c("GEOID10","finalsegregationindex")]
+
+RI_nodes_urban_tracts <- 
+  aggregatedcensus[c("GEOID10",
+                     "finalsegregationindex")]
+
 RI_nodes_urban_tracts$GEOID10 <- as.factor(RI_nodes_urban_tracts$GEOID10)
+
 colnames(RI_nodes_urban_tracts) <- c("tract_ID","RI_nodes_urban")
 # View(RI_nodes_urban_tracts)
 
 # save RI for all urban tracts with nodes
-save(RI_nodes_urban_tracts, file="RI_nodes_urban_tracts.rdata")
+save(RI_nodes_urban_tracts, 
+     file="RI_nodes_urban_tracts.rdata")
 load(file="RI_nodes_urban_tracts.rdata")
 
 # remove temporary files
-rm(segindcalcbasis, aggregatevars, aggregatedcensus, ct.nb, temp, ltemp, st, i, monitorct)
+rm(segindcalcbasis, 
+   aggregatevars, 
+   aggregatedcensus, 
+   ct.nb, 
+   temp, 
+   ltemp, 
+   st, 
+   i, 
+   monitorct)
 
 
 
@@ -2211,7 +2623,8 @@ colnames(RI_yes_nodes_all_tracts) <- c("tract_ID","RI_nodes_all")
 # View(RI_yes_nodes_all_tracts)
 
 # save RI for all tracts with nodes
-save(RI_yes_nodes_all_tracts, file="RI_yes_nodes_all_tracts.rdata")
+save(RI_yes_nodes_all_tracts, 
+     file="RI_yes_nodes_all_tracts.rdata")
 load(file="RI_yes_nodes_all_tracts.rdata")
 # View(RI_yes_nodes_all_tracts)
 
@@ -2253,71 +2666,109 @@ colnames(RI_no_nodes_all_tracts) <- c("tract_ID","RI_no_nodes_all")
 # View(RI_no_nodes_all_tracts)
 
 # save RI for all tracts w/o nodes
-save(RI_no_nodes_all_tracts, file="RI_no_nodes_all_tracts.rdata")
-load(file="RI_no_nodes_all_tracts.rdata")
+save(RI_no_nodes_all_tracts, 
+     file="RI_no_nodes_all_tracts.rdata")
+# load(file="RI_no_nodes_all_tracts.rdata")
 # View(RI_no_nodes_all_tracts)
 
 # remove temporary files
-rm(segindcalcbasis, aggregatevars, aggregatedcensus, ct.nb, temp, ltemp, st, i, monitorct)
+rm(segindcalcbasis, 
+   aggregatevars, 
+   aggregatedcensus, 
+   ct.nb, 
+   temp, 
+   ltemp, 
+   st, 
+   i, 
+   monitorct)
+```
 
-##### makes sense through here
 
+```{r racial isolation quintiles, eval=FALSE, include=FALSE}
 
+# load necesssary files
+load(file="RI_yes_nodes_all_tracts.rdata")
+load(file="fullcensus.rdata")
 
-
-
-
-
-
-
-
-# split RI into quantiles overall
-racialisolationallwithnodesquantile <- within(racialisolationindexallwithnodes, RI_quantile <- as.integer(cut2(isolationindex, quantile(isolationindex, c(0.000000000000000000,0.2,0.4,0.6,0.8,1),na.rm=TRUE)),include.lowest=TRUE))
+#### split RI into quantiles overall
+RI_yes_nodes_all_tracts_quantile <- 
+  within(RI_yes_nodes_all_tracts, 
+         RI_quantile <- 
+           as.integer(cut2(RI_nodes_all, 
+                           quantile(RI_nodes_all, 
+                                    c(0.000000000000000000,
+                                      0.2,
+                                      0.4,
+                                      0.6,
+                                      0.8,
+                                      1),
+                                    na.rm=TRUE)),
+                      include.lowest=TRUE))
 
 # check quantiles
-table(racialisolationallwithnodesquantile$RI_quantile)
-# View(racialisolationallwithnodesquantile)
+table(RI_yes_nodes_all_tracts_quantile$RI_quantile)
 
 
 
-
-#### split RI into quantiles by region ####
+#### split RI into quantiles by region
 
 # make new dataframe to edit the full census file
-editablecensus <- fullcensus
+editablecensus <- 
+  fullcensus
 
 # pad GEOIDs so 10-digit ones are now 11 digits
-editablecensus$GEOID10pad0 <- str_pad(editablecensus$GEOID10, 11, pad = "0")
+editablecensus$GEOID10pad0 <- 
+  str_pad(editablecensus$GEOID10, 
+          11, 
+          pad = "0")
 
 # pull digits for state
-editablecensus$state2digits <- substr(editablecensus$GEOID10pad0, start = 1, stop = 2)
-editablecensus$state2digits
+editablecensus$state2digits <- 
+  substr(editablecensus$GEOID10pad0, 
+         start = 1, 
+         stop = 2)
 
 # import list of states and state codes
-states_and_counties <- read.csv(file="states_and_counties.csv")
-states_and_codes <- unique(states_and_counties[c("State.Name","State.Code")])
-states_and_codes$State.Code <- as.character(states_and_codes$State.Code)
-states_and_codes$State.Name <- as.character(states_and_codes$State.Name)
+states_and_counties <- 
+  read.csv(file="states_and_counties.csv")
+states_and_codes <- 
+  unique(states_and_counties[c("State.Name",
+                               "State.Code")])
+states_and_codes$State.Code <- 
+  as.character(states_and_codes$State.Code)
+states_and_codes$State.Name <- 
+  as.character(states_and_codes$State.Name)
 
 # change state code for Canada to the number 81 in states_and_codes
 states_and_codes$State.Code[states_and_codes$State.Code == "CC"] <- "81"
 # View(states_and_codes)
 
 # make new state code file for isolation index
-states_for_isolation_index <- states_and_codes
+states_for_isolation_index <- 
+  states_and_codes
 
 # make variable name the same
-states_for_isolation_index$state2digits <- states_for_isolation_index$State.Code
-states_for_isolation_index$State.Code <- NULL
+states_for_isolation_index$state2digits <- 
+  states_for_isolation_index$State.Code
+states_for_isolation_index$State.Code <- 
+  NULL
 # View(states_for_isolation_index)
 
 # add states to editable census
-editablecensuswithstates <- merge(editablecensus,states_for_isolation_index,by="state2digits",all.x=TRUE)
+editablecensuswithstates <- 
+  merge(editablecensus,
+        states_for_isolation_index,
+        by="state2digits",
+        all.x=TRUE)
 # View(editablecensuswithstates[,190:198])
 # View(editablecensuswithstates)
 
 # extract state and GEOID10 from editable census
-states_and_GEOIDs <- editablecensuswithstates[,c("state2digits","GEOID10","State.Name","GEOID10pad0")]
+states_and_GEOIDs <- 
+  editablecensuswithstates[,c("state2digits",
+                              "GEOID10",
+                              "State.Name",
+                              "GEOID10pad0")]
 # View(states_and_GEOIDs)
 
 # read in regions
@@ -2331,56 +2782,72 @@ states_and_GEOIDs$State.Name <- NULL
 # View(states_and_GEOIDs)
 
 # merge states, GEOIDs, and regions
-states_GEOIDs_and_regions <- merge(states_and_GEOIDs,rawregion,by="State",all.x=TRUE)
+states_GEOIDs_and_regions <- 
+  merge(states_and_GEOIDs,
+        rawregion,
+        by="State",
+        all.x=TRUE)
 # View(states_GEOIDs_and_regions)
 
 # make tract_ID for merging
-states_GEOIDs_and_regions$tract_ID <- states_GEOIDs_and_regions$GEOID10
-
-# save file before merging with RI so we can merge with all RIs
-
-load(file="racialisolationindexall.rdata")
+states_GEOIDs_and_regions$tract_ID <- 
+  states_GEOIDs_and_regions$GEOID10
 
 # merge states, GEOIDs, regions, and RI
-racial_iso_region_nodes <- merge(states_GEOIDs_and_regions,racialisolationindexallwithnodes,by="tract_ID",all.x=TRUE)
+racial_iso_region_nodes <- 
+  merge(states_GEOIDs_and_regions,
+        RI_yes_nodes_all_tracts,
+        by="tract_ID",
+        all.x=TRUE)
 # View(is.na(racial_iso_region_nodes))
 
 # make region into a character
-racial_iso_region_nodes$Region <- as.character(racial_iso_region_nodes$Region)
+racial_iso_region_nodes$Region <- 
+  as.character(racial_iso_region_nodes$Region)
 
 # fix DC to be in the south
-racial_iso_region_nodes$Region[racial_iso_region_nodes$State=='District Of Columbia'] <-'South'
+racial_iso_region_nodes$Region[
+  racial_iso_region_nodes$State=='District Of Columbia'] <-'South'
 
 # fix Puerto Rico
-racial_iso_region_nodes$Region[racial_iso_region_nodes$State=='Puerto Rico'] <- 'Other'
+racial_iso_region_nodes$Region[
+  racial_iso_region_nodes$State=='Puerto Rico'] <- 'Other'
 
 # make table of isolation NAs before fixing
-racial_iso_region_nodes_NAs_for_iso <- racial_iso_region_nodes[is.na(racial_iso_region_nodes$isolationindex),]
-save(racial_iso_region_nodes_NAs_for_iso,file="racial_iso_region_nodes_NAs_for_iso.rdata")
+racial_iso_region_nodes_NAs_for_iso <- 
+  racial_iso_region_nodes[is.na(racial_iso_region_nodes$RI_nodes_all),]
+
+save(racial_iso_region_nodes_NAs_for_iso,
+     file = "racial_iso_region_nodes_NAs_for_iso.rdata")
 # View(racial_iso_region_nodes_NAs_for_iso)
 
 # split into quantiles by region
-racial_iso_nodes_quantiles_by_region <- racial_iso_region_nodes %>%
+racial_iso_nodes_quantiles_by_region <- 
+  racial_iso_region_nodes %>%
   group_by(Region) %>% 
-  mutate(RegionQuantile = as.integer(cut2(isolationindex, 
-                                 (quantile(isolationindex, probs=0:5/5,na.rm=TRUE)))))
+  mutate(RegionQuantile = 
+           as.integer(cut2(RI_nodes_all, 
+                           (quantile(RI_nodes_all, 
+                                     probs = 0:5/5,
+                                     na.rm = TRUE)))))
 
 # split into overall quantiles
-racial_iso_nodes_quantiles_by_region$OverallQuantile <- as.integer(cut2(racial_iso_nodes_quantiles_by_region$isolationindex, quantile(racial_iso_nodes_quantiles_by_region$isolationindex, probs=0:5/5,na.rm=TRUE)))
+racial_iso_nodes_quantiles_by_region$OverallQuantile <- 
+  as.integer(cut2(racial_iso_nodes_quantiles_by_region$RI_nodes_all, 
+                  quantile(racial_iso_nodes_quantiles_by_region$RI_nodes_all, 
+                           probs = 0:5/5,
+                           na.rm = TRUE)))
 
 # View(racial_iso_nodes_quantiles_by_region)
 
 # save and load
-save(racial_iso_nodes_quantiles_by_region,file="racial_iso_nodes_quantiles_by_region.rdata")
+save(racial_iso_nodes_quantiles_by_region,
+     file="racial_iso_nodes_quantiles_by_region.rdata")
 load(file="racial_iso_nodes_quantiles_by_region.rdata")
-
-#### done to here 2018-04-17 ####
-
+```
 
 
-
-
-
+```{r making the dataset for at least 3 years/180 observations}
 load(file="atleast3years180obs.rdata")
 #### THREE-YEAR DATA RUN ####
 
