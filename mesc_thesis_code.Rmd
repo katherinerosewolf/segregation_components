@@ -2364,10 +2364,10 @@ load(file = "air_3_year_180_obs_mdl_percent.rdata")
 load(file = "air_all_obs_mdl_percent.rdata")
 
 mdl_percent_tibbles <- 
- c(air_all_obs_mdl_percent, 
-         air_3_year_180_obs_mdl_percent, 
-         air_5_year_300_obs_mdl_percent
-         )
+ list(air_all_obs_mdl_percent, 
+      air_3_year_180_obs_mdl_percent, 
+      air_5_year_300_obs_mdl_percent
+ )
   
 all_mdl_percents <- 
   reduce(mdl_percent_tibbles, 
@@ -2523,19 +2523,19 @@ aggregatedcensus$finalsegregationindex <-
 
 aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
 
-RI_nodes_urban_tracts <- 
+RI_yes_nodes_urban_tracts <- 
   aggregatedcensus[c("GEOID10",
                      "finalsegregationindex")]
 
-RI_nodes_urban_tracts$GEOID10 <- as.factor(RI_nodes_urban_tracts$GEOID10)
+RI_yes_nodes_urban_tracts$GEOID10 <- as.factor(RI_yes_nodes_urban_tracts$GEOID10)
 
-colnames(RI_nodes_urban_tracts) <- c("tract_ID","RI_nodes_urban")
-# View(RI_nodes_urban_tracts)
+colnames(RI_yes_nodes_urban_tracts) <- c("tract_ID","RI_nodes_urban")
+# View(RI_yes_nodes_urban_tracts)
 
 # save RI for all urban tracts with nodes
-save(RI_nodes_urban_tracts, 
-     file="RI_nodes_urban_tracts.rdata")
-load(file="RI_nodes_urban_tracts.rdata")
+save(RI_yes_nodes_urban_tracts, 
+     file="RI_yes_nodes_urban_tracts.rdata")
+load(file="RI_yes_nodes_urban_tracts.rdata")
 
 # remove temporary files
 rm(segindcalcbasis, 
@@ -2687,10 +2687,13 @@ rm(segindcalcbasis,
 ```{r racial isolation quintiles, eval=FALSE, include=FALSE}
 
 # load necesssary files
-load(file="RI_yes_nodes_all_tracts.rdata")
-load(file="fullcensus.rdata")
+load(file = "RI_yes_nodes_all_tracts.rdata")
+load(file = "RI_yes_nodes_urban_tracts.rdata")
+load(file = "fullcensus.rdata")
 
 #### split RI into quantiles overall
+
+## all tracts
 RI_yes_nodes_all_tracts_quantile <- 
   within(RI_yes_nodes_all_tracts, 
          RI_quantile <- 
@@ -2707,6 +2710,24 @@ RI_yes_nodes_all_tracts_quantile <-
 
 # check quantiles
 table(RI_yes_nodes_all_tracts_quantile$RI_quantile)
+
+## urban tracts only
+RI_yes_nodes_urban_tracts_quantile <- 
+  within(RI_yes_nodes_urban_tracts, 
+         RI_quantile <- 
+           as.integer(cut2(RI_nodes_urban, 
+                           quantile(RI_nodes_urban, 
+                                    c(0.000000000000000000,
+                                      0.2,
+                                      0.4,
+                                      0.6,
+                                      0.8,
+                                      1),
+                                    na.rm=TRUE)),
+                      include.lowest=TRUE))
+
+# check quantiles
+table(RI_nodes_all_tracts_quantile$RI_quantile)
 
 
 
