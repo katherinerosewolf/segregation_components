@@ -34,6 +34,9 @@ library(userfriendlyscience)
 library(extrafontdb)
 library(extrafont)
 library(NADA)
+library(gridExtra)
+library(grid)
+library(lattice)
 
 library(tidyverse)
 
@@ -1538,136 +1541,6 @@ rm(list = ls())
 ```
 
 
-```{r deal with mdls, eval=FALSE, include=FALSE}
-
-load(file = "onlytheonesIwant.rdata")
-
-air_data_corrections <- 
-  as_tibble(onlytheonesIwant)
-
-# fix column types
-air_data_corrections <-
-  air_data_corrections %>% 
-  mutate_if(is.factor, 
-            as.character) %>% 
-  mutate(method_code = as.character(method_code))
-
-# fix column names
-air_data_corrected_colnames <-
-  air_data_corrections %>% 
-  colnames() %>% 
-  tolower() %>% 
-  {gsub("\\.", "_", .)}
-
-colnames(air_data_corrections) <- 
-  air_data_corrected_colnames
-
-# fix column types
-air_data_corrections <- 
-  air_data_corrections %>% 
-  mutate(parameter_code = as.character(parameter_code),
-         method_code = as.character(method_code))
-
-
-methods_speciation <- 
-  read_csv(file = "methods_speciation.csv",
-           col_types = 
-             cols(Parameter = col_character(),
-                  `Parameter Code` = col_character(),
-                  `Method Code` = col_double(),
-                  `Recording Mode` = col_character(),
-                  `Collection Description` = col_character(),
-                  `Analysis Description` = col_character(),
-                  `Method Type` = col_character(),
-                  `Reference Method ID` = col_character(),
-                  `Equivalent Method` = col_character(),
-                  `Federal MDL` = col_double(),
-                  `Min Value` = col_double(),
-                  `Max Value` = col_double(),
-                  Digits = col_double(),
-                  `Round Truncate Indicator` = col_character(),
-                  Units = col_character()))
-
-# fix column names
-methods_speciation_fixed_column_names <-
-  methods_speciation %>%
-  colnames() %>% 
-  tolower() %>% 
-  {gsub(" ", "_", .)}
-
-colnames(methods_speciation) <- 
-  methods_speciation_fixed_column_names
-
-# add half detection limit column
-methods_speciation <- 
-  methods_speciation %>% 
-  mutate(half_mdl = federal_mdl/2)
-
-# merge speciation methods with detection limits
-air_data_corrections_mdl <- 
-  air_data_corrections %>% 
-  left_join(methods_speciation, 
-            by = c("parameter_code", 
-                   "method_code"))
-
-# figure out percent above mdl for each species
-percent_below_mdl <- 
-  air_data_corrections_mdl %>%   # this takes observations as the default
-  group_by(parameter_code) %>% 
-  dplyr::select(parameter_code,
-                arithmetic_mean,
-                federal_mdl) %>% 
-  count(arithmetic_mean < federal_mdl) %>% 
-  mutate(observations = sum(n), 
-         percent_of_total = n/sum(n))
-  
-final_percent_above_mdl <- 
-  percent_below_mdl %>% 
-  group_by(parameter_code) %>% 
-  filter(`arithmetic_mean < federal_mdl` == FALSE) %>% 
-  dplyr::select(parameter_code, 
-                observations,
-                percent_above_mdl = percent_of_total) %>% 
-  left_join(elements_and_codes, 
-            by = "parameter_code") %>% 
-  arrange(percent_above_mdl)
-
-# figure out percent zero for each species
-percent_zero <- 
-  air_data_corrections %>%   # this takes observations as the default
-  group_by(parameter_code) %>% 
-  dplyr::select(parameter_code,
-                arithmetic_mean) %>% 
-  count(arithmetic_mean == 0) %>% 
-  mutate(observations = sum(n), 
-    percent_of_total = n/sum(n))
-  
-final_percent_non_zero <- 
-  percent_zero %>% 
-  group_by(parameter_code) %>% 
-  filter(`arithmetic_mean == 0` == FALSE) %>% 
-  dplyr::select(parameter_code, 
-                observations,
-                percent_non_zero = percent_of_total) %>% 
-  left_join(elements_and_codes, 
-            by = "parameter_code") %>% 
-  arrange(percent_non_zero)
-
-# percent_na <-   # there are no nas
-#   air_data_corrections %>% 
-#   group_by(parameter_code) %>% 
-#    dplyr::select(parameter_code,
-#                  arithmetic_mean) %>% 
-#   count(is.na(arithmetic_mean)) %>% 
-#   mutate(observations = sum(n), 
-#      percent_of_total = n/sum(n))
-
-save(air_data_corrections_mdl, 
-     file = "air_data_corrections_mdl.rdata")
-  
-```
-
-
 ```{r correct carbon, eval=FALSE, include=FALSE}
 
 load(file = "onlytheonesIwant.rdata")
@@ -1858,6 +1731,21 @@ rm(all_air_data_corrected,
 save(allairdataandruca,
      file = "allairdataandruca.rdata")
 gc()
+
+# count observations
+countthisdata <- 
+  allairdataandruca %>%
+  group_by(Parameter.Code, 
+           tract_ID) %>%
+  mutate(count = n())
+
+countthisdatasimple <- 
+  countthisdata[,c("Parameter.Code",
+                   "tract_ID",
+                   "count")]
+countthisdatasimple <- 
+  unique(countthisdatasimple[,1:3])
+# View(countthisdatasimple)
 ```
 
 
@@ -2336,10 +2224,8 @@ save(air_5_year_300_obs_zero_percent,
 
 ```{r counting monitors and tracts, eval=FALSE, include=FALSE}
 
-# load countthisdata if not running straight
+# load if not running straight
 # observations and mdls
-load(file = 
-     "air_data_all_obs_mdl.rdata")
 load(file = "fullcensus.rdata")
 
 components_for_paper <- 
@@ -2364,6 +2250,7 @@ components_for_paper <-
     "88301",
     "88306",
     "88403",
+    "99321",
     "88307",
     "88316", 
     "88321",
@@ -2379,6 +2266,16 @@ colnames(census_total_population) <-
     "total_population_DP0010001")
 census_total_population <- 
   as_tibble(census_total_population)
+save(census_total_population, 
+     file = "census_total_population.rdata")
+
+rm(fullcensus)
+gc()
+
+
+
+load(file = 
+     "air_data_all_obs_mdl.rdata")
 
 # add total population column to main dataset
 full_data_for_exclusions <- 
@@ -2396,15 +2293,18 @@ counting_data_all <-
   filter(urban == urban) %>% 
   filter(total_population_DP0010001 > 100)
 
+rm(full_data_for_exclusions)
+gc()
+
 pollutants_and_monitors <- 
-  counting_data_all[,c("Parameter.Code",
-                                "monitor_ID")] %>% 
+  counting_data_all[,c("parameter_code",
+                       "monitor_id")] %>% 
   unique()
 
 # count monitors per pollutant
 monitors_per_pollutant <- 
   pollutants_and_monitors %>% # make the counts
-  group_by(Parameter.Code) %>%
+  group_by(parameter_code) %>%
   mutate(count = n())
 
 # reduce to parameters and monitors
@@ -2416,35 +2316,34 @@ monitors_per_pollutant_ordered <-
   monitors_per_pollutant[
     match(
       components_for_paper, 
-      monitors_per_pollutant$Parameter.Code
-      )
+      monitors_per_pollutant$parameter_code
+      ),
     ]
 
 write.csv(monitors_per_pollutant_ordered,
           file = "results/monitors_per_pollutant_ordered.csv")
 
-
 # count tracts per pollutant in raw data without exclusions
 pollutants_and_tracts <- 
-  counting_data_all[,c("Parameter.Code",
-                                "tract_ID")] %>% 
+  counting_data_all[,c("parameter_code",
+                                "tract_id")] %>% 
   unique()
 
 tracts_per_pollutant <- 
   pollutants_and_tracts %>%
-  group_by(Parameter.Code) %>%
+  group_by(parameter_code) %>%
   mutate(count = n())
 
 tracts_per_pollutant <- 
-  unique(tractsperpollutant[,c(1,3)])
+  unique(tracts_per_pollutant[,c(1,3)])
 
 # make ordered list of tracts per pollutant
 tracts_per_pollutant_ordered <- 
   tracts_per_pollutant[
     match(
       components_for_paper, 
-      tracts_per_pollutant$Parameter.Code
-      )
+      tracts_per_pollutant$parameter_code
+      ),
     ]
 
 write.csv(tracts_per_pollutant_ordered,
@@ -2459,10 +2358,306 @@ save(tracts_per_pollutant_ordered,
 
 
 
+# figure out percent above mdl for each species
+air_all_obs_mdl_num <- 
+  counting_data_all %>%   # this takes observations as the default
+  group_by(parameter_code) %>% 
+  dplyr::select(parameter_code,
+                arithmetic_mean,
+                federal_mdl) %>% 
+  count(arithmetic_mean < federal_mdl) %>% 
+  mutate(observations = sum(n), 
+         percent_of_total = n/sum(n))
+
+# fix pm2.5
+pm25_nas_below_mdl <- 
+  counting_data_all %>% 
+    filter(parameter_code == "88101", 
+           is.na(method_code)) %>% 
+    dplyr::select(parameter_code, 
+           federal_mdl, 
+           arithmetic_mean, 
+           method_name, 
+           method_code) %>% 
+  filter(arithmetic_mean <= 0) %>% 
+  tally()
+
+pm25_nas_above_mdl <- 
+  counting_data_all %>% 
+    filter(parameter_code == "88101", 
+           is.na(method_code)) %>% 
+    dplyr::select(parameter_code, 
+           federal_mdl, 
+           arithmetic_mean, 
+           method_name, 
+           method_code) %>% 
+  filter(arithmetic_mean > 0) %>% 
+  tally()
+
+pm25_non_nas_below_mdl <- 
+  air_all_obs_mdl_num %>% 
+  filter(parameter_code == "88101",
+           `arithmetic_mean < federal_mdl` == TRUE) %>% 
+  pull(n)
+
+pm25_non_nas_above_mdl <- 
+  air_all_obs_mdl_num %>% 
+  filter(parameter_code == "88101",
+           `arithmetic_mean < federal_mdl` == FALSE) %>% 
+  pull(n)
+
+air_all_obs_mdl_num <- 
+  air_all_obs_mdl_num %>%
+  mutate(n = 
+           replace(n, 
+                   parameter_code == "88101" & 
+                     `arithmetic_mean < federal_mdl` == TRUE, 
+                   pm25_non_nas_below_mdl + pm25_nas_below_mdl)) %>% 
+   mutate(n = 
+           replace(n, 
+                   parameter_code == "88101" & 
+                     `arithmetic_mean < federal_mdl` == FALSE, 
+                   pm25_non_nas_above_mdl + pm25_nas_above_mdl)) %>% 
+  mutate(n = as.numeric(n)) %>% 
+  mutate(percent_of_total = n / observations)
+
+nondetects_all_exclusions <- 
+  air_all_obs_mdl_num %>% 
+  filter(`arithmetic_mean < federal_mdl` == TRUE) %>% 
+  arrange(match(parameter_code, 
+                components_for_paper))
+
+write.csv(nondetects_all_exclusions, 
+          file = 
+            "results/nondetects_all_exclusions.csv")
+write.csv(air_all_obs_mdl_num, 
+          file = 
+            "results/air_all_obs_mdl_num.csv")
 
 
-#### three-year 180-day data
-load(file = "air_data_3_year_180_obs_mdl.rdata")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# #### three-year 180-day data
+# load(file = 
+#        "air_data_3_year_180_obs_mdl.rdata")
+# load(file = 
+#        "fullcensus.rdata")
+# 
+# census_total_population <- 
+#   fullcensus[
+#     c("GEOID10", 
+#       "DP0010001")]
+# colnames(census_total_population) <- 
+#   c("tract_ID",
+#     "total_population_DP0010001")
+# census_total_population <- 
+#   as_tibble(census_total_population)
+# 
+# # add total population column to main dataset
+# three_year_data_for_exclusions <- 
+#   air_data_3_year_180_obs_mdl %>% 
+#   left_join(census_total_population, 
+#             by = c("tract_id" = "tract_ID"), 
+#             copy = TRUE)
+# 
+# rm(air_data_3_year_180_obs_mdl)
+# rm(fullcensus)
+# gc()
+# 
+# counting_data_three <- 
+#   three_year_data_for_exclusions %>% 
+#   filter(urban == urban) %>% 
+#   filter(total_population_DP0010001 > 100)
+# 
+# rm(three_year_data_for_exclusions)
+# gc()
+
+save(counting_data_three, 
+     file = 
+       "counting_data_three.rdata")
+load(file = 
+       "counting_data_three.rdata")
+
+pollutants_and_monitors_three <- 
+  counting_data_three[,c("parameter_code",
+                        "monitor_id")] %>% 
+  unique()
+
+# count monitors per pollutant
+monitors_per_pollutant_three <- 
+  pollutants_and_monitors_three %>% # make the counts
+  group_by(parameter_code) %>%
+  mutate(count = n())
+
+# total monitors
+total_monitors_three <- 
+  counting_data_three %>% 
+  filter(parameter_code %in% 
+           components_for_paper) %>% 
+  dplyr::select(monitor_id) %>% 
+  unique() %>% 
+  tally()
+
+# total tracts
+total_tracts_three <- 
+  counting_data_three %>% 
+  filter(parameter_code %in% 
+           components_for_paper) %>% 
+  dplyr::select(tract_id) %>% 
+  unique() %>% 
+  tally()
+
+
+
+# reduce to parameters and monitors
+monitors_per_pollutant_three <- 
+  unique(monitors_per_pollutant_three[,c(1,3)])
+
+# make ordered list of monitors per pollutant
+monitors_per_pollutant_ordered_three <- 
+  monitors_per_pollutant_three[
+    match(
+      components_for_paper, 
+      monitors_per_pollutant_three$parameter_code
+      ),
+    ]
+
+write.csv(monitors_per_pollutant_ordered_three,
+          file = "results/monitors_per_pollutant_ordered_three.csv")
+
+# count tracts per pollutant in raw data without exclusions
+pollutants_and_tracts_three <- 
+  counting_data_three[,c("parameter_code",
+                                "tract_id")] %>% 
+  unique()
+
+tracts_per_pollutant_three <- 
+  pollutants_and_tracts_three %>%
+  group_by(parameter_code) %>%
+  mutate(count = n())
+
+tracts_per_pollutant_three <- 
+  unique(tracts_per_pollutant_three[,c(1,3)])
+
+# make ordered list of tracts per pollutant
+tracts_per_pollutant_ordered_three <- 
+  tracts_per_pollutant_three[
+    match(
+      components_for_paper, 
+      tracts_per_pollutant_three$parameter_code
+      ),
+    ]
+
+write.csv(tracts_per_pollutant_ordered_three,
+          file = "results/tracts_per_pollutant_ordered_three.csv")
+
+# save files to disk
+save(monitors_per_pollutant_ordered_three,
+     file = "monitors_per_pollutant_ordered_three.rdata")
+save(tracts_per_pollutant_ordered_three,
+     file = "tracts_per_pollutant_ordered_three.rdata")
+
+
+# figure out percent above mdl for each species
+air_all_obs_mdl_num_three <- 
+  counting_data_three %>%   # this takes observations as the default
+  group_by(parameter_code) %>% 
+  dplyr::select(parameter_code,
+                arithmetic_mean,
+                federal_mdl) %>% 
+  count(arithmetic_mean < federal_mdl) %>% 
+  mutate(observations = sum(n), 
+         percent_of_total = n/sum(n))
+
+# fix pm2.5
+pm25_nas_below_mdl_three <- 
+  counting_data_three %>% 
+    filter(parameter_code == "88101", 
+           is.na(method_code)) %>% 
+    dplyr::select(parameter_code, 
+           federal_mdl, 
+           arithmetic_mean, 
+           method_name, 
+           method_code) %>% 
+  filter(arithmetic_mean <= 0) %>% 
+  tally()
+
+pm25_nas_above_mdl_three <- 
+  counting_data_three %>% 
+    filter(parameter_code == "88101", 
+           is.na(method_code)) %>% 
+    dplyr::select(parameter_code, 
+           federal_mdl, 
+           arithmetic_mean, 
+           method_name, 
+           method_code) %>% 
+  filter(arithmetic_mean > 0) %>% 
+  tally()
+
+pm25_non_nas_below_mdl_three <- 
+  air_all_obs_mdl_num_three %>% 
+  filter(parameter_code == "88101",
+           `arithmetic_mean < federal_mdl` == TRUE) %>% 
+  pull(n)
+
+pm25_non_nas_above_mdl_three <- 
+  air_all_obs_mdl_num_three %>% 
+  filter(parameter_code == "88101",
+           `arithmetic_mean < federal_mdl` == FALSE) %>% 
+  pull(n)
+
+air_all_obs_mdl_num_three <- 
+  air_all_obs_mdl_num_three %>%
+  mutate(n = 
+           replace(n, 
+                   parameter_code == "88101" & 
+                     `arithmetic_mean < federal_mdl` == TRUE, 
+                   pm25_non_nas_below_mdl_three + pm25_nas_below_mdl_three)) %>% 
+   mutate(n = 
+           replace(n, 
+                   parameter_code == "88101" & 
+                     `arithmetic_mean < federal_mdl` == FALSE, 
+                   pm25_non_nas_above_mdl_three + pm25_nas_above_mdl_three)) %>% 
+  mutate(n = as.numeric(n)) %>% 
+  mutate(percent_of_total = n / observations)
+
+nondetects_all_exclusions_three <- 
+  air_all_obs_mdl_num_three %>% 
+  filter(`arithmetic_mean < federal_mdl` == TRUE) %>% 
+  arrange(match(parameter_code, 
+                components_for_paper))
+
+write.csv(nondetects_all_exclusions_three, 
+          file = 
+            "results/nondetects_all_exclusions_three.csv")
+write.csv(air_all_obs_mdl_num_three, 
+          file = 
+            "results/air_all_obs_mdl_num_three.csv")
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2493,7 +2688,8 @@ air_3_year_180_obs_mdl_percent <-
 
 ``` 
 
-```{r count data detritus}
+
+```{r count data detritus, eval=FALSE, include=FALSE}
 
 # count monitors per pollutant in raw data without exclusions
 pollutantsandmonitors <- 
@@ -2699,7 +2895,7 @@ tractsperpollutant <-
 ```
 
 
-```{r mdl analysis}
+```{r mdl analysis, eval=FALSE, include=FALSE}
 
 # make table of all 3
 load(file = "air_5_year_300_obs_mdl_percent.rdata")
@@ -3435,9 +3631,16 @@ RI_nodes_urban_region_quantiles_by_region$overall_quantile <-
                            probs = 0:5/5,
                            na.rm = TRUE)))
 
+# print cutoffs for paper
+quantile(RI_nodes_urban_region_quantiles_by_region$RI_nodes_urban, 
+                           probs = 0:5/5,
+                           na.rm = TRUE)
+
 # save and load
 save(RI_nodes_urban_region_quantiles_by_region,
      file="RI_nodes_urban_region_quantiles_by_region.rdata")
+
+
 ```
 
 
@@ -3514,6 +3717,8 @@ tractaverageonlyurbanover1003 <-
 #count tracts again
 monitorcountonlyurbanover1003 <- 
   colSums(!is.na(tractaverageonlyurbanover1003))
+monitorcountonlyurbanover1003_org <- 
+  monitorcountonlyurbanover1003 
 write.csv(monitorcountonlyurbanover1003,
           file = "monitorcountonlyurbanover1003.csv")
 
@@ -3540,7 +3745,7 @@ threeyearsplusregionRInodes <-
 # View(threeyearsplusregionRInodes)
 
 table(threeyearsplusregionRInodes$overall_quantile)
-
+load(file = "fullcensus.rdata")
 # pull census data
 censusfullracedata <- fullcensus[c("GEOID10","DP0080001","DP0080002","DP0080003","DP0080004","DP0080005","DP0080006","DP0080007","DP0080008","DP0080009","DP0080010","DP0080011","DP0080012","DP0080013","DP0080014","DP0080015","DP0080016","DP0080017","DP0080018","DP0080019","DP0080020","DP0080021","DP0080022","DP0080023","DP0080024")]
 
@@ -3702,19 +3907,116 @@ load(file="finaldatanodrops.rdata")
 ```
 
 
-```{r salvaged plot code, eval=FALSE, include=FALSE}
+```{r make summaries for plots}
 
+# fix component names
+load(file = "finaldatanodrops.rdata")
+
+final_data_no_drops_test <- 
+  finaldatanodrops
+
+numbers_only <- 
+  function(x) !grepl("\\D", x)
+
+final_data_no_drops_test <- 
+  final_data_no_drops_test %>% 
+  dplyr::rename_at(vars(starts_with('8')), 
+                   funs(paste0('c', .))) %>% 
+  dplyr::rename_at(vars(starts_with('9')), 
+                   funs(paste0('c', .)))
+                   
+summarizer <- 
+  function(component_number) 
+  {output <- 
+    ddply(final_data_no_drops_test, 
+          c("overall_quantile"), 
+          summarise,
+          N = sum(!is.na(eval(parse(text = component_number)))),
+          mean = mean(eval(parse(text = component_number)), na.rm=TRUE),
+          sd   = sd(eval(parse(text = component_number)), na.rm=TRUE),
+          se   = sd / sqrt(N),
+          ciM  = qt(.95/2 + .5, N-1),
+          ci   = se*ciM)
+  }
+
+final_components_for_paper <- 
+  c("88101",
+    "88104",
+    "88103",
+    "88109",
+    "88110",
+    "88111",
+    "88115",
+    "88114",
+    "88126",
+    "88128",
+    "88142",
+    "88136",
+    "88165",
+    "88184",
+    "88161",
+    "88164",
+    "88167",
+    "88301",
+    "88302",
+    "88306",
+    "88403",
+    "99321")
+
+component_names <- 
+  c(
+    "PM2.5",
+    "aluminum", 
+    "arsenic", 
+    "bromine",  
+    "cadmium",
+    "calcium", 
+    "chlorine", 
+    "copper", 
+    "iron", 
+    "lead",
+    "mercury", 
+    "nickel", 
+    "silicon", 
+    "sodium",
+    "titanium", 
+    "vanadium", 
+    "zinc",
+    "ammonium_ion", 
+    "sodium_ion", 
+    "nitrate_ion", 
+    "sulfate_ion",
+    "elemental_carbon")
+
+final_components_for_paper_with_cs <- 
+  paste0("c", 
+         final_components_for_paper)
+
+summaries <- 
+  map(final_components_for_paper_with_cs, 
+      summarizer)
+  
+names(summaries) <- 
+  component_names
+
+summaries
+  
+```
+
+
+```{r make big plot}
+
+# pm
 pm_plot <- 
-  ggplot(PM25summary, 
+  ggplot(summaries$PM2.5, 
          aes(x=factor(overall_quantile), 
              y=mean,color=overall_quantile)) +
 scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
 geom_point() +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1, vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
+geom_text(aes(label=format(mean,digits=2)),hjust=-.1, vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
 scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
 theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
 theme(plot.title = element_text(size=24,hjust = 0.5)) +
 theme(axis.line = element_line(),
 axis.title.x = element_blank(),
@@ -3723,21 +4025,24 @@ panel.grid.major = element_blank(),
 panel.grid.minor = element_blank(),
 panel.border = element_blank(),
 panel.background = element_blank(),
-legend.position="none")
-pm_plot
-ggsave("pm_plot.png",plot=pm_plot,width=20,height=20,units="cm")
+legend.position="none") +
+  coord_cartesian(clip = 'off')
 
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+ggsave("plots/pm_plot.png",plot=pm_plot,width=20,height=20,units="cm")
+
+
+# al
+al_plot<-ggplot(summaries$aluminum, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
 scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=meaWheren-se, ymax=mean+se), width=.1, size=.7) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
 geom_point() +
 ggtitle("Aluminum") +
 ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
+geom_text(aes(label=format(mean,digits=2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
 scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
 theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
 theme(axis.line = element_line(),
 axis.title.x = element_blank(),
 axis.title.y = element_blank(),
@@ -3746,80 +4051,401 @@ panel.grid.major = element_blank(),
 panel.grid.minor = element_blank(),
 panel.border = element_blank(),
 panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-al_plot
-am_plot<-ggplot(Amsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/al_plot.png",plot=al_plot,width=20,height=20,units="cm")
+
+
+# as
+as_plot <- 
+  ggplot(summaries$arsenic, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
 scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Arsenic (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits=2)),hjust=-.1, vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+
+ggsave("plots/as_plot.png",plot=as_plot,width=20,height=20,units="cm")
+
+
+# bromine
+br_plot<-ggplot(summaries$bromine, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Bromine (",italic("n")," = 274)"))) +
+geom_text(aes(label=format(mean,digits=2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/br_plot.png",plot=br_plot,width=20,height=20,units="cm")
+
+
+# cadmium
+cd_plot<-ggplot(summaries$cadmium, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Cadmium (",italic("n")," = 206)"))) +
+geom_text(aes(label=format(mean,digits=2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/cd_plot.png",plot=cd_plot,width=20,height=20,units="cm")
+
+
+# calcium
+ca_plot<-ggplot(summaries$calcium, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Calcium (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits=2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/ca_plot.png",plot=ca_plot,width=20,height=20,units="cm")
+
+
+# chlorine
+cl_plot<-ggplot(summaries$chlorine, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Chlorine (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits=2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/cl_plot.png",plot=cl_plot,width=20,height=20,units="cm")
+
+
+# copper
+cu_plot<-ggplot(summaries$copper, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Copper (",italic("n")," = 275)"))) +
+geom_text(aes(label=format(mean,digits=2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/cu_plot.png",plot=cu_plot,width=20,height=20,units="cm")
+
+
+# iron
+fe_plot<-ggplot(summaries$iron, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Iron (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/fe_plot.png",plot=fe_plot,width=20,height=20,units="cm")
+
+
+# lead
+pb_plot<-ggplot(summaries$lead, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Lead (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/pb_plot.png",plot=pb_plot,width=20,height=20,units="cm")
+
+
+# mercury
+hg_plot<-ggplot(summaries$mercury, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Mercury (",italic("n")," = 162)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=1,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/hg_plot.png",plot=hg_plot,width=20,height=20,units="cm")
+
+
+# nickel
+ni_plot<-ggplot(summaries$nickel, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Nickel (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/ni_plot.png",plot=ni_plot,width=20,height=20,units="cm")
+
+
+# silicon
+si_plot<-ggplot(summaries$silicon, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Silicon (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/si_plot.png",plot=si_plot,width=20,height=20,units="cm")
+
+
+# sodium
+na_plot<-ggplot(summaries$sodium, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Sodium (",italic("n")," = 264)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/na_plot.png",plot=na_plot,width=20,height=20,units="cm")
+
+
+# titanium
+ti_plot<-ggplot(summaries$titanium, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Titanium (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/ti_plot.png",plot=ti_plot,width=20,height=20,units="cm")
+
+
+# vanadium plot
+v_plot<-ggplot(summaries$vanadium, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Vanadium (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/v_plot.png",plot=v_plot,width=20,height=20,units="cm")
+
+
+# zinc plot
+zn_plot<-ggplot(summaries$zinc, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
+geom_point() +
+ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
+scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
+theme_bw() +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
+theme(axis.line = element_line(),
+axis.title.x = element_blank(),
+axis.title.y = element_blank(),
+axis.text.x = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+panel.border = element_blank(),
+panel.background = element_blank(),
+legend.position="none") +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/zn_plot.png",plot=zn_plot,width=20,height=20,units="cm")
+
+
+# ammonium
+am_plot<-ggplot(summaries$ammonium_ion, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+scale_color_gradientn(colors = rainbow(4)) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
 geom_point() +
 ggtitle("Aluminum") +
 ggtitle(expression(paste("Ammonium Ion (",italic("n")," = 213)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
 scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
 theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-am_plot
-as_plot<-ggplot(Assummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Arsenic (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1, vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-as_plot
-br_plot<-ggplot(Brsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Bromine (",italic("n")," = 274)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-br_plot
-ca_plot<-ggplot(Casummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Calcium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
 theme(axis.line = element_line(),
 axis.title.x = element_blank(),
 axis.title.y = element_blank(),
@@ -3829,240 +4455,23 @@ panel.grid.minor = element_blank(),
 panel.border = element_blank(),
 panel.background = element_blank(),
 legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-ca_plot
-cl_plot<-ggplot(Clsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+plot.margin = unit(c(5.5,5.5,5.5,10),"pt")) +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/am_plot.png",plot=am_plot,width=20,height=20,units="cm")
+
+
+# sodium ion plot
+nai_plot<-ggplot(summaries$sodium_ion, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
 scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Chlorine (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-cl_plot
-cu_plot<-ggplot(Cusummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Copper (",italic("n")," = 275)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-cu_plot
-ec_plot<-ggplot(ECsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Elemental Carbon (",italic("n")," = 201)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ec_plot
-fe_plot<-ggplot(Fesummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Iron (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-fe_plot
-pb_plot<-ggplot(Pbsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Lead (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-pb_plot
-hg_plot<-ggplot(Hgsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Mercury (",italic("n")," = 162)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-hg_plot
-ni_plot<-ggplot(Nisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Nickel (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ni_plot
-no_plot<-ggplot(NO3summary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Nitrate Ion (",italic("n")," = 267)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-no_plot
-si_plot<-ggplot(Sisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Silicon (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-si_plot
-na_plot<-ggplot(Nasummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sodium (",italic("n")," = 264)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-na_plot
-nai_plot<-ggplot(NaIsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
 geom_point() +
 ggtitle(expression(paste("Sodium Ion (",italic("n")," = 213)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
 scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
 theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-nai_plot
-so_plot<-ggplot(SO4summary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sulfate Ion (",italic("n")," = 277)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
 theme(axis.line = element_line(),
 axis.title.x = element_blank(),
 axis.title.y = element_blank(),
@@ -4071,483 +4480,48 @@ panel.grid.minor = element_blank(),
 panel.border = element_blank(),
 panel.background = element_blank(),
 legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-so_plot
-ti_plot<-ggplot(Tisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+plot.margin = unit(c(5.5,5.5,5.5,10),"pt")) +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/nai_plot.png",plot=nai_plot,width=20,height=20,units="cm")
+
+
+# nitrate
+no_plot<-ggplot(summaries$nitrate_ion, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
 scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Titanium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30, hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ti_plot
-v_plot<-ggplot(Vasummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Vanadium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-v_plot
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none"
-)
-zn_plot
-ti_plot<-ggplot(Tisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Titanium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=8) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=30)) +
-theme(plot.title = element_text(size=30,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ti_plot
-all_plots_3<-grid.arrange(rbind(ggplotGrob(al_plot), ggplotGrob(ca_plot),ggplotGrob(fe_plot), ggplotGrob(no_plot),ggplotGrob(so_plot),size="last"),rbind(ggplotGrob(am_plot),ggplotGrob(cl_plot), ggplotGrob(pb_plot), ggplotGrob(si_plot),ggplotGrob(ti_plot),size="last"),rbind(ggplotGrob(as_plot), ggplotGrob(cu_plot), ggplotGrob(hg_plot), ggplotGrob(na_plot),ggplotGrob(v_plot), size = "last"),rbind(ggplotGrob(br_plot), ggplotGrob(ec_plot), ggplotGrob(ni_plot), ggplotGrob(nai_plot),ggplotGrob(zn_plot), size = "last"),ncol=4)
-ggsave("all_plots_3.png",plot=all_plots_3,width=60,height=60,units="cm")
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none"
-)
-zn_plot
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=7) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none"
-)
-zn_plot
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none"
-)
-zn_plot
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-al_plot
-am_plot<-ggplot(Amsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Ammonium Ion (",italic("n")," = 213)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-am_plot
-as_plot<-ggplot(Assummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Arsenic (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1, vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-as_plot
-br_plot<-ggplot(Brsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Bromine (",italic("n")," = 274)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-br_plot
-ca_plot<-ggplot(Casummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Calcium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-ca_plot
-cl_plot<-ggplot(Clsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Chlorine (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-cl_plot
-cu_plot<-ggplot(Cusummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Copper (",italic("n")," = 275)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-cu_plot
-ec_plot<-ggplot(ECsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Elemental Carbon (",italic("n")," = 201)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ec_plot
-fe_plot<-ggplot(Fesummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Iron (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-fe_plot
-pb_plot<-ggplot(Pbsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Lead (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-pb_plot
-hg_plot<-ggplot(Hgsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Mercury (",italic("n")," = 162)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-hg_plot
-ni_plot<-ggplot(Nisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Nickel (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ni_plot
-no_plot<-ggplot(NO3summary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
 geom_point() +
 ggtitle(expression(paste("Nitrate Ion (",italic("n")," = 267)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
 scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
 theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
 theme(axis.line = element_line(),
 axis.title.x = element_blank(),
 axis.title.y = element_blank(),
-axis.text.x = element_blank(),
 panel.grid.major = element_blank(),
 panel.grid.minor = element_blank(),
 panel.border = element_blank(),
 panel.background = element_blank(),
 legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-no_plot
-si_plot<-ggplot(Sisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+plot.margin = unit(c(5.5,5.5,5.5,10),"pt")) +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/no_plot.png",plot=no_plot,width=20,height=20,units="cm")
+
+
+# sulfate
+so_plot<-ggplot(summaries$sulfate_ion, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
 scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Silicon (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-si_plot
-na_plot<-ggplot(Nasummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sodium (",italic("n")," = 264)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-na_plot
-nai_plot<-ggplot(NaIsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sodium Ion (",italic("n")," = 213)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-nai_plot
-so_plot<-ggplot(SO4summary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
 geom_point() +
 ggtitle(expression(paste("Sulfate Ion (",italic("n")," = 277)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
+geom_text(aes(label=format(mean,digits = 3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
 scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
 theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
 theme(axis.line = element_line(),
 axis.title.x = element_blank(),
 axis.title.y = element_blank(),
@@ -4556,548 +4530,23 @@ panel.grid.minor = element_blank(),
 panel.border = element_blank(),
 panel.background = element_blank(),
 legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-so_plot
-ti_plot<-ggplot(Tisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
+plot.margin = unit(c(5.5,5.5,5.5,10),"pt")) +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/so_plot.png",plot=so_plot,width=20,height=20,units="cm")
+
+
+# elemental carbon
+ec_plot<-ggplot(summaries$elemental_carbon, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
 scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Titanium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ti_plot
-v_plot<-ggplot(Vasummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Vanadium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-v_plot
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none"
-)
-zn_plot
-all_plots_3<-grid.arrange(rbind(ggplotGrob(al_plot), ggplotGrob(ca_plot),ggplotGrob(fe_plot), ggplotGrob(no_plot),ggplotGrob(so_plot),size="last"),rbind(ggplotGrob(am_plot),ggplotGrob(cl_plot), ggplotGrob(pb_plot), ggplotGrob(si_plot),ggplotGrob(ti_plot),size="last"),rbind(ggplotGrob(as_plot), ggplotGrob(cu_plot), ggplotGrob(hg_plot), ggplotGrob(na_plot),ggplotGrob(v_plot), size = "last"),rbind(ggplotGrob(br_plot), ggplotGrob(ec_plot), ggplotGrob(ni_plot), ggplotGrob(nai_plot),ggplotGrob(zn_plot), size = "last"),ncol=4)
-ggsave("all_plots_3.png",plot=all_plots_3,width=60,height=60,units="cm")
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,15,15),"pt"))
-al_plot
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,15,5.5),"pt"))
-al_plot
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,15,100),"pt"))
-al_plot
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,100,15),"pt"))
-al_plot
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,100,5.5,15),"pt"))
-al_plot
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,15),"pt"))
-al_plot
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,15),"pt"))
-al_plot
-am_plot<-ggplot(Amsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Ammonium Ion (",italic("n")," = 213)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-am_plot
-as_plot<-ggplot(Assummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Arsenic (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1, vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-as_plot
-br_plot<-ggplot(Brsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Bromine (",italic("n")," = 274)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-br_plot
-ca_plot<-ggplot(Casummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Calcium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,15),"pt"))
-ca_plot
-cl_plot<-ggplot(Clsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Chlorine (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-cl_plot
-cu_plot<-ggplot(Cusummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Copper (",italic("n")," = 275)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-cu_plot
-ec_plot<-ggplot(ECsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
+geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.1, size=.7) +
 geom_point() +
 ggtitle(expression(paste("Elemental Carbon (",italic("n")," = 201)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
+geom_text(aes(label=format(mean,digits = 2)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size = 4.5) +
 scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
 theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-ec_plot
-fe_plot<-ggplot(Fesummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Iron (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-fe_plot
-pb_plot<-ggplot(Pbsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Lead (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,15),"pt"))
-pb_plot
-hg_plot<-ggplot(Hgsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Mercury (",italic("n")," = 162)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-hg_plot
-ni_plot<-ggplot(Nisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Nickel (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-ni_plot
-no_plot<-ggplot(NO3summary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Nitrate Ion (",italic("n")," = 267)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,15),"pt"))
-no_plot
-si_plot<-ggplot(Sisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Silicon (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-si_plot
-na_plot<-ggplot(Nasummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sodium (",italic("n")," = 264)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-na_plot
-nai_plot<-ggplot(NaIsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sodium Ion (",italic("n")," = 213)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-nai_plot
-so_plot<-ggplot(SO4summary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sulfate Ion (",italic("n")," = 277)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
+theme(text=element_text(family="Bahnschrift", size = 18)) +
+theme(plot.title = element_text(size = 18,hjust = 0.5)) +
 theme(axis.line = element_line(),
 axis.title.x = element_blank(),
 axis.title.y = element_blank(),
@@ -5106,529 +4555,62 @@ panel.grid.minor = element_blank(),
 panel.border = element_blank(),
 panel.background = element_blank(),
 legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,15),"pt"))
-so_plot
-ti_plot<-ggplot(Tisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Titanium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-ti_plot
-v_plot<-ggplot(Vasummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Vanadium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt"))
-v_plot
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6.5) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=24)) +
-theme(plot.title = element_text(size=24,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,15,5.5,5.5),"pt")
-)
-zn_plot
-all_plots_3<-grid.arrange(rbind(ggplotGrob(al_plot), ggplotGrob(ca_plot),ggplotGrob(fe_plot), ggplotGrob(no_plot),ggplotGrob(so_plot),size="last"),rbind(ggplotGrob(am_plot),ggplotGrob(cl_plot), ggplotGrob(pb_plot), ggplotGrob(si_plot),ggplotGrob(ti_plot),size="last"),rbind(ggplotGrob(as_plot), ggplotGrob(cu_plot), ggplotGrob(hg_plot), ggplotGrob(na_plot),ggplotGrob(v_plot), size = "last"),rbind(ggplotGrob(br_plot), ggplotGrob(ec_plot), ggplotGrob(ni_plot), ggplotGrob(nai_plot),ggplotGrob(zn_plot), size = "last"),ncol=4)
-ggsave("all_plots_3.png",plot=all_plots_3,width=60,height=60,units="cm")
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-)
-zn_plot
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-zn_plot
-al_plot<-ggplot(Alsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Aluminum (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-al_plot
-am_plot<-ggplot(Amsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle("Aluminum") +
-ggtitle(expression(paste("Ammonium Ion (",italic("n")," = 213)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-am_plot
-as_plot<-ggplot(Assummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Arsenic (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1, vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-as_plot
-br_plot<-ggplot(Brsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Bromine (",italic("n")," = 274)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-br_plot
-ca_plot<-ggplot(Casummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Calcium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-ca_plot
-cl_plot<-ggplot(Clsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Chlorine (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-cl_plot
-cu_plot<-ggplot(Cusummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Copper (",italic("n")," = 275)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-cu_plot
-ec_plot<-ggplot(ECsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Elemental Carbon (",italic("n")," = 201)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ec_plot
-fe_plot<-ggplot(Fesummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Iron (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-fe_plot
-pb_plot<-ggplot(Pbsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Lead (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-pb_plot
-hg_plot<-ggplot(Hgsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Mercury (",italic("n")," = 162)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-hg_plot
-ni_plot<-ggplot(Nisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Nickel (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ni_plot
-no_plot<-ggplot(NO3summary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Nitrate Ion (",italic("n")," = 267)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-no_plot
-si_plot<-ggplot(Sisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Silicon (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-si_plot
-na_plot<-ggplot(Nasummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sodium (",italic("n")," = 264)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-na_plot
-nai_plot<-ggplot(NaIsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sodium Ion (",italic("n")," = 213)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-axis.text.x = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-nai_plot
-so_plot<-ggplot(SO4summary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Sulfate Ion (",italic("n")," = 277)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none",
-plot.margin = unit(c(5.5,5.5,5.5,10),"pt"))
-so_plot
-ti_plot<-ggplot(Tisummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Titanium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-ti_plot
-v_plot<-ggplot(Vasummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Vanadium (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-v_plot
-zn_plot<-ggplot(Znsummary, aes(x=factor(overall_quantile), y=mean,color=overall_quantile)) +
-scale_color_gradientn(colors = rainbow(4)) +
-geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1, size=.7) +
-geom_point() +
-ggtitle(expression(paste("Zinc (",italic("n")," = 276)"))) +
-geom_text(aes(label=format(mean,digits=3)),hjust=-.1,vjust=0,show.legend=FALSE,family="Bahnschrift",size=6) +
-scale_x_discrete(breaks = 1:5, labels=c("1st","2nd","3rd","4th","5th")) +
-theme_bw() +
-theme(text=element_text(family="Bahnschrift", size=21)) +
-theme(plot.title = element_text(size=21,hjust = 0.5)) +
-theme(axis.line = element_line(),
-axis.title.x = element_blank(),
-axis.title.y = element_blank(),
-panel.grid.major = element_blank(),
-panel.grid.minor = element_blank(),
-panel.border = element_blank(),
-panel.background = element_blank(),
-legend.position="none")
-zn_plot
-all_plots_3<-grid.arrange(rbind(ggplotGrob(al_plot), ggplotGrob(ca_plot),ggplotGrob(fe_plot), ggplotGrob(no_plot),ggplotGrob(so_plot),size="last"),rbind(ggplotGrob(am_plot),ggplotGrob(cl_plot), ggplotGrob(pb_plot), ggplotGrob(si_plot),ggplotGrob(ti_plot),size="last"),rbind(ggplotGrob(as_plot), ggplotGrob(cu_plot), ggplotGrob(hg_plot), ggplotGrob(na_plot),ggplotGrob(v_plot), size = "last"),rbind(ggplotGrob(br_plot), ggplotGrob(ec_plot), ggplotGrob(ni_plot), ggplotGrob(nai_plot),ggplotGrob(zn_plot), size = "last"),ncol=4)
-ggsave("all_plots_3.png",plot=all_plots_3,width=60,height=60,units="cm")
+plot.margin = unit(c(5.5,5.5,5.5,10),"pt")) +
+  coord_cartesian(clip = 'off')
+
+ggsave("plots/ec_plot.png",
+       plot=ec_plot,width=20,height=20,units="cm")
+
+
+
+# plot all the plots together
+all_plots <- 
+  grid.arrange(rbind(ggplotGrob(al_plot), 
+                     ggplotGrob(ca_plot),
+                     ggplotGrob(pb_plot),
+                     ggplotGrob(ti_plot),
+                     ggplotGrob(nai_plot),
+                     size="last"),
+               rbind(ggplotGrob(as_plot),
+                     ggplotGrob(cl_plot), 
+                     ggplotGrob(hg_plot), 
+                     ggplotGrob(v_plot),
+                     ggplotGrob(no_plot),
+                     size="last"),
+               rbind(ggplotGrob(br_plot), 
+                     ggplotGrob(cu_plot), 
+                     ggplotGrob(ni_plot), 
+                     ggplotGrob(zn_plot),
+                     ggplotGrob(so_plot), 
+                     size = "last"),
+               rbind(ggplotGrob(cd_plot), 
+                     ggplotGrob(fe_plot), 
+                     ggplotGrob(si_plot), 
+                     ggplotGrob(am_plot),
+                     ggplotGrob(ec_plot), 
+                     size = "last"),ncol=4)
+
+ggsave("plots/all_plots.png",
+       plot=all_plots,
+       width=60,
+       height=60,
+       units="cm")
+
+
 
 ```
 
+
+```{r salvaged plot code, eval=FALSE, include=FALSE}
+
+
+
+```
 
 
 ```{r stats}
 
 #### begin statistical analysis ####
-
-
-
-
-
-
 
 table(finaldatanodrops$Region)
 
