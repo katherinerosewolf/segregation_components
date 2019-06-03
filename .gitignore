@@ -2,5 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-unzip_raw_downloads_2019_04_24/
-arcmap/
+hide_from_travis/
+mesc_thesis_code_2019_05_12.Rmd
+
