@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.com/katherinerosewolf/mesc_thesis.svg?token=DTxgzr9n8yRcxMBznjnq&branch=master)](https://travis-ci.com/katherinerosewolf/mesc_thesis)
 
 ## TITLE
 
