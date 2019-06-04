@@ -11,26 +11,15 @@ output: html_document
 
 library(rmarkdown)
 library(knitr)
-library(dtplyr)
 library(plyr)
 library(data.table)
-library(rlist)
-library(graphics)
-library(MASS)
-library(DiscriMiner)
-library(klaR)
-library(contrast)
-library(sandwich)
-library(car)
 library(Hmisc)
-library(userfriendlyscience)
 library(extrafontdb)
 library(extrafont)
 library(NADA)
-library(gridExtra)
 library(grid)
+library(gridExtra)
 library(lattice)
-library(reshape2)
 library(tmap)
 library(sf)
 library(tidycensus)
@@ -60,209 +49,23 @@ options(tigris_use_cache = TRUE)
 
 ```
 
+# LOAD NECESSARY FILES
 
-```{r write functions}
+```{r census data}
 
-#### load statistical functions ####
-
-# games howell test
-games.howell <- 
-  function(grp, obs) {
-  
-  #Create combinations
-  combs <- combn(unique(grp), 2)
-  
-  # Statistics that will be used throughout the calculations:
-  # n = sample size of each group
-  # groups = number of groups in data
-  # Mean = means of each group sample
-  # std = variance of each group sample
-  n <- tapply(obs, grp, length)
-  groups <- length(tapply(obs, grp, length))
-  Mean <- tapply(obs, grp, mean)
-  std <- tapply(obs, grp, var)
-  
-  statistics <- lapply(1:ncol(combs), function(x) {
-    
-    mean.diff <- Mean[combs[2,x]] - Mean[combs[1,x]]
-    
-    #t-values
-    t <- abs(Mean[combs[1,x]] - Mean[combs[2,x]]) / sqrt((std[combs[1,x]] / n[combs[1,x]]) + (std[combs[2,x]] / n[combs[2,x]]))
-    
-    # Degrees of Freedom
-    df <- (std[combs[1,x]] / n[combs[1,x]] + std[combs[2,x]] / n[combs[2,x]])^2 / # Numerator Degrees of Freedom
-      ((std[combs[1,x]] / n[combs[1,x]])^2 / (n[combs[1,x]] - 1) + # Part 1 of Denominator Degrees of Freedom 
-         (std[combs[2,x]] / n[combs[2,x]])^2 / (n[combs[2,x]] - 1)) # Part 2 of Denominator Degrees of Freedom
-    
-    #p-values
-    p <- ptukey(t * sqrt(2), groups, df, lower.tail = FALSE)
-    
-    # Sigma standard error
-    se <- sqrt(0.5 * (std[combs[1,x]] / n[combs[1,x]] + std[combs[2,x]] / n[combs[2,x]]))
-    
-    # Upper Confidence Limit
-    upper.conf <- lapply(1:ncol(combs), function(x) {
-      mean.diff + qtukey(p = 0.95, nmeans = groups, df = df) * se
-    })[[1]]
-    
-    # Lower Confidence Limit
-    lower.conf <- lapply(1:ncol(combs), function(x) {
-      mean.diff - qtukey(p = 0.95, nmeans = groups, df = df) * se
-    })[[1]]
-    
-    # Group Combinations
-    grp.comb <- paste(combs[1,x], ':', combs[2,x])
-    
-    # Collect all statistics into list
-    stats <- list(grp.comb, mean.diff, se, t, df, p, upper.conf, lower.conf)
-  })
-  
-  # Unlist statistics collected earlier
-  stats.unlisted <- lapply(statistics, function(x) {
-    unlist(x)
-  })
-  
-  # Create dataframe from flattened list
-  results <- data.frame(matrix(unlist(stats.unlisted), nrow = length(stats.unlisted), byrow=TRUE))
-  
-  # Select columns set as factors that should be numeric and change with as.numeric
-  results[c(2, 3:ncol(results))] <- round(as.numeric(as.matrix(results[c(2, 3:ncol(results))])), digits = 6)
-  
-  # Rename data frame columns
-  colnames(results) <- c('groups', 'Mean Difference', 'Standard Error', 't', 'df', 'p', 'upper limit', 'lower limit')
-  
-  return(results)
-}
-
-# another version of games-howell
-posthoc.tgh <- function(y, x, method=c("games-howell", "tukey"), digits=2) {
-  ### Based on http://www.psych.yorku.ca/cribbie/6130/games_howell.R
-  method <- tolower(method);
-  tryCatch(method <- match.arg(method), error=function(err) {
-    stop("Argument for 'method' not valid!");
-  });
-  
-  res <- list(input = list(x=x, y=y, method=method, digits=digits));
-  
-  res$intermediate <- list(x = factor(x[complete.cases(x,y)]),
-                           y = y[complete.cases(x,y)]);
-  res$intermediate$n <- tapply(y, x, length);
-  res$intermediate$groups <- length(res$intermediate$n);
-  res$intermediate$df <- sum(res$intermediate$n) - res$intermediate$groups;
-  res$intermediate$means <- tapply(y, x, mean);
-  res$intermediate$variances <- tapply(y, x, var);
-  
-  res$intermediate$pairNames <- combn(levels(res$intermediate$x),
-                                      2, paste0, collapse=":");
-  
-  res$intermediate$descriptives <- cbind(res$intermediate$n,
-                                         res$intermediate$means,
-                                         res$intermediate$variances);
-  rownames(res$intermediate$descriptives) <- levels(res$intermediate$x);
-  colnames(res$intermediate$descriptives) <- c('n', 'means', 'variances');
-  
-  ### Start on Tukey
-  res$intermediate$errorVariance <-
-    sum((res$intermediate$n-1) * res$intermediate$variances) /
-    res$intermediate$df;
-  res$intermediate$t <- combn(res$intermediate$groups, 2, function(ij) {
-    abs(diff(res$intermediate$means[ij]))/
-      sqrt(res$intermediate$errorVariance*sum(1/res$intermediate$n[ij]));
-  } );
-  res$intermediate$p.tukey <- ptukey(res$intermediate$t*sqrt(2),
-                                     res$intermediate$groups,
-                                     res$intermediate$df,
-                                     lower.tail=FALSE);
-  res$output <- list();
-  res$output$tukey <- cbind(res$intermediate$t,
-                            res$intermediate$df,
-                            res$intermediate$p.tukey)                                     
-  rownames(res$output$tukey) <- res$intermediate$pairNames;
-  colnames(res$output$tukey) <- c('t', 'df', 'p');
-  
-  ### Start on Games-Howell
-  res$intermediate$df.corrected <- combn(res$intermediate$groups, 2, function(ij) {               
-    sum(res$intermediate$variances[ij] /
-          res$intermediate$n[ij])^2 / 
-      sum((res$intermediate$variances[ij] /
-             res$intermediate$n[ij])^2 / 
-            (res$intermediate$n[ij]-1));
-  } );
-  res$intermediate$t.corrected <- combn(res$intermediate$groups, 2, function(ij) {               
-    abs(diff(res$intermediate$means[ij]))/
-      sqrt(sum(res$intermediate$variances[ij] /
-                 res$intermediate$n[ij]));
-  } );    
-  res$intermediate$p.gameshowell <- ptukey(res$intermediate$t.corrected*sqrt(2),
-                                           res$intermediate$groups,
-                                           res$intermediate$df.corrected,
-                                           lower.tail=FALSE)  
-  res$output$games.howell <- cbind(res$intermediate$t.corrected,
-                                   res$intermediate$df.corrected,
-                                   res$intermediate$p.gameshowell);
-  rownames(res$output$games.howell) <- res$intermediate$pairNames;
-  colnames(res$output$games.howell) <- c('t', 'df', 'p');
-  
-  ### Set class and return object
-  class(res) <- 'posthocTukeyGamesHowell';
-  return(res);
-  
-}
-
-print.posthocTukeyGamesHowell <- function(x, digits=x$input$digits, ...) {
-  print(x$intermediate$descriptives, digits=digits);
-  cat('\n');
-  if (x$input$method == 'tukey') {
-    print(x$output$tukey);
-  }
-  else if (x$input$method == 'games-howell') {
-    print(x$output$games.howell, digits=digits);
-  }
-}
-
-# function that summarize data for graphing
-## Gives count, mean, standard deviation, standard error of the mean, and confidence interval (default 95%).
-##   data: a data frame.
-##   measurevar: the name of a column that contains the variable to be summariezed
-##   groupvars: a vector containing names of columns that contain grouping variables
-##   na.rm: a boolean that indicates whether to ignore NA's
-##   conf.interval: the percent range of the confidence interval (default is 95%)
-summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
-                      conf.interval=.95, .drop=TRUE) {
-  library(plyr)
-  
-  # New version of length which can handle NA's: if na.rm==T, don't count them
-  length2 <- function (x, na.rm=FALSE) {
-    if (na.rm) sum(!is.na(x))
-    else       length(x)
-  }
-  
-  # This does the summary. For each group's data frame, return a vector with
-  # N, mean, and sd
-  datac <- ddply(data, groupvars, .drop=.drop,
-                 .fun = function(xx, col) {
-                   c(N    = length2(xx[[col]], na.rm=na.rm),
-                     mean = mean   (xx[[col]], na.rm=na.rm),
-                     sd   = sd     (xx[[col]], na.rm=na.rm)
-                   )
-                 },
-                 measurevar
-  )
-  
-  # Rename the "mean" column    
-  datac <- rename(datac, c("mean" = measurevar))
-  
-  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
-  
-  # Confidence interval multiplier for standard error
-  # Calculate t-statistic for confidence interval: 
-  # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
-  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
-  datac$ci <- datac$se * ciMult
-  
-  return(datac)
-}
+http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip
 
 ```
 
-## data creation
+```{r ruca data}
+
+```
+
+```{r speciation parameter codes}
+
+```
+
+```{r speciation data files}
+
+```
+
