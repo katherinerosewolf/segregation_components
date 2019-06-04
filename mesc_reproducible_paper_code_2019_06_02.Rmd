@@ -53,7 +53,7 @@ options(tigris_use_cache = TRUE)
 
 ```{r census data}
 
-http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip
+# http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip
 
 ```
 

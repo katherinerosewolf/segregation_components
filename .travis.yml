@@ -3,6 +3,7 @@
 language: R
 sudo: true
 sudo: required
+cache: packages
 dist: trusty
 
 before_install:
