@@ -89,7 +89,7 @@ file_downloader <-
 ```
 
 
-```{r census data}
+```{r census data, results = "hide"}
 
 # last updated by census bureau 	19-Jul-2012 07:01	391M
 
@@ -140,7 +140,7 @@ ruca_2010_raw <-
 
 ```
 
-```{r speciation parameter codes}
+```{r speciation parameter codes, results = "hide"}
 
 # downloaded June 5, 2019, 8:45 p.m. PT, last updated June 5, 2019, per EPA website
 
@@ -163,6 +163,9 @@ speciation_parameter_codes <-
 
 
 ```{r download and format air pollution data files, results = "hide"}
+
+# files downloaded 2019-06-05 ~ 10 p.m. PT, 
+# updated 2019-05-28 per the internet
 
 # make a list of the web addresses of the total particulate matter and speciation data files
 list_of_speciation_files_to_download <-   
@@ -237,7 +240,14 @@ list_of_tibble_names <-
       "")
 
 # read .csv files into tibbles!
-if(!file.exists("list_of_air_pollution_tibbles.rdata")) {  # checks if tibbles already exist
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data",
+      "list_of_air_pollution_tibbles.rdata"
+      )
+    )
+  ) {  # checks if tibbles already exist
   list_of_air_pollution_tibbles <-  # if not reads .csv files into tibbles
     map(
       file.path(
