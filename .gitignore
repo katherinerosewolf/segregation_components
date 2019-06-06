@@ -3,5 +3,7 @@
 .RData
 .Ruserdata
 hide_from_travis/
+raw_data/
+intermediate_data/
 mesc_thesis_code_2019_05_12.Rmd
 
