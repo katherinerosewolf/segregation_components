@@ -215,90 +215,90 @@ map2(list_of_zip_filenames,
      file_downloader, 
      folder_as_string = "raw_data")
 
-# unzip all the files and save them to disk
-map(
-  file.path(
-    "raw_data", 
-    list_of_zip_filenames
-    ),
-  unzip,
-  exdir = "intermediate_data"
-  )
-
-# replace ".zip" with ".csv" in list_of_zip_filenames
-list_of_csv_filenames <-
-  map(list_of_zip_filenames,
-      str_replace,
-      "zip",  # also technically a regular expression!  Be proud!  (OK, fine.)
-      "csv")
-
-# make list of tibble names by removing the ".zip" extension
-list_of_tibble_names <-
-  map(list_of_zip_filenames,
-      str_replace,
-      ".zip",
-      "")
-
-# read .csv files into tibbles!
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data",
-      "list_of_air_pollution_tibbles.rdata"
-      )
-    )
-  ) {  # checks if tibbles already exist
-  list_of_air_pollution_tibbles <-  # if not reads .csv files into tibbles
-    map(
-      file.path(
-        "intermediate_data", 
-        list_of_csv_filenames), 
-      read_csv
-      )  
-  names(list_of_air_pollution_tibbles) <-  # names the tibbles
-    list_of_tibble_names
-  save(
-    list_of_air_pollution_tibbles,  # saves the tibbles to disk to avoid doing this again
-    file = file.path(
-      "intermediate_data",
-      "list_of_air_pollution_tibbles.rdata"
-      )
-    )
-} else {
-    load(file = "list_of_air_pollution_tibbles.rdata")  # loads the tibbles if they don't already exist
-}
-
-
-# function to convert column names to snake case
-column_name_fixer <- 
-  function(tibble) {
-  new_names <- 
-    tibble %>% 
-    colnames() %>%  # gets the column names from the tibble
-    tolower() %>%  # converts the column names to lowercase
-    {gsub(" ", "_", .)}  # replaces spaces with "_"
-  colnames(tibble) <-  
-    new_names  # rename the columns in the original tibble
-  return(tibble)
-  }
-
-# fix air data column names
-list_of_air_pollution_tibbles_renamed <-
-  map(list_of_air_pollution_tibbles,
-      column_name_fixer)
-
-# combine air data tibbles into one big tibble
-all_air_data <-
-  bind_rows(list_of_air_pollution_tibbles_renamed)
-
-# save all air data to disk
-save(
-    all_air_data,  # saves the tibbles to disk to avoid doing this again
-    file = file.path(
-      "intermediate_data",
-      "all_air_data.rdata"
-      )
-    )
+# # unzip all the files and save them to disk
+# map(
+#   file.path(
+#     "raw_data", 
+#     list_of_zip_filenames
+#     ),
+#   unzip,
+#   exdir = "intermediate_data"
+#   )
+# 
+# # replace ".zip" with ".csv" in list_of_zip_filenames
+# list_of_csv_filenames <-
+#   map(list_of_zip_filenames,
+#       str_replace,
+#       "zip",  
+#       "csv")
+# 
+# # make list of tibble names by removing the ".zip" extension
+# list_of_tibble_names <-
+#   map(list_of_zip_filenames,
+#       str_replace,
+#       ".zip",
+#       "")
+# 
+# # read .csv files into tibbles!
+# if(
+#   !file.exists(
+#     file.path(
+#       "intermediate_data",
+#       "list_of_air_pollution_tibbles.rdata"
+#       )
+#     )
+#   ) {  # checks if tibbles already exist
+#   list_of_air_pollution_tibbles <-  # if not reads .csv files into tibbles
+#     map(
+#       file.path(
+#         "intermediate_data", 
+#         list_of_csv_filenames), 
+#       read_csv
+#       )  
+#   names(list_of_air_pollution_tibbles) <-  # names the tibbles
+#     list_of_tibble_names
+#   save(
+#     list_of_air_pollution_tibbles,  # saves the tibbles to disk to avoid doing this again
+#     file = file.path(
+#       "intermediate_data",
+#       "list_of_air_pollution_tibbles.rdata"
+#       )
+#     )
+# } else {
+#     load(file = "list_of_air_pollution_tibbles.rdata")  # loads the tibbles if they don't already exist
+# }
+# 
+# 
+# # function to convert column names to snake case
+# column_name_fixer <- 
+#   function(tibble) {
+#   new_names <- 
+#     tibble %>% 
+#     colnames() %>%  # gets the column names from the tibble
+#     tolower() %>%  # converts the column names to lowercase
+#     {gsub(" ", "_", .)}  # replaces spaces with "_"
+#   colnames(tibble) <-  
+#     new_names  # rename the columns in the original tibble
+#   return(tibble)
+#   }
+# 
+# # fix air data column names
+# list_of_air_pollution_tibbles_renamed <-
+#   map(list_of_air_pollution_tibbles,
+#       column_name_fixer)
+# 
+# # combine air data tibbles into one big tibble
+# all_air_data <-
+#   bind_rows(list_of_air_pollution_tibbles_renamed)
+# 
+# # save all air data to disk
+# save(
+#     all_air_data,  # saves the tibbles to disk to avoid doing this again
+#     file = file.path(
+#       "intermediate_data",
+#       "all_air_data.rdata"
+#       )
+#     )
 
 
 ```
