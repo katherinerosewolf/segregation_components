@@ -306,7 +306,7 @@ gc()
 ```
 
 
-```{r speciation, eval=FALSE, include=FALSE}
+```{r speciation}
 
 speciation_files <-
   c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
@@ -428,7 +428,6 @@ rm(list_of_speciation_tibbles)
 
 # clear memory
 gc()
-
 
 ```
 
