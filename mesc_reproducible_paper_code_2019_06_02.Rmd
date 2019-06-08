@@ -199,13 +199,13 @@ pm_25_frm_files <-
 
 
 # make a list of filenames for the downloaded data using the above filenames
-list_of_zip_filenames <-  # make list of what the filenames will be
+list_of_pm_25_frm_zip_filenames <-  # make list of what the filenames will be
   map_chr(pm_25_frm_files,  # witness the `map` function
           str_extract, 
           "daily_.+\\.zip")   # witness the regular expression!
 
 # download the files
-map2(list_of_zip_filenames, 
+map2(list_of_pm_25_frm_zip_filenames, 
      pm_25_frm_files, 
      file_downloader, 
      folder_as_string = "raw_data")
@@ -214,22 +214,22 @@ map2(list_of_zip_filenames,
 map(
   file.path(
     "raw_data",
-    list_of_zip_filenames
+    list_of_pm_25_frm_zip_filenames
     ),
   unzip,
   exdir = "intermediate_data"
   )
 
-# replace ".zip" with ".csv" in list_of_zip_filenames
-list_of_csv_filenames <-
-  map(list_of_zip_filenames,
+# replace ".zip" with ".csv" in list_of_pm_25_frm_zip_filenames
+list_of_pm_25_frm_csv_filenames <-
+  map(list_of_pm_25_frm_zip_filenames,
       str_replace,
       "zip",
       "csv")
 
 # make list of tibble names by removing the ".zip" extension
-list_of_tibble_names <-
-  map(list_of_zip_filenames,
+list_of_pm_25_frm_tibble_names <-
+  map(list_of_pm_25_frm_zip_filenames,
       str_replace,
       ".zip",
       "")
@@ -247,11 +247,11 @@ if(
     map(
       file.path(
         "intermediate_data",
-        list_of_csv_filenames),
+        list_of_pm_25_frm_csv_filenames),
       read_csv
       )
   names(list_of_pm_25_frm_tibbles) <-  # names the tibbles
-    list_of_tibble_names
+    list_of_pm_25_frm_tibble_names
   save(
     list_of_pm_25_frm_tibbles,  # saves the tibbles to disk to avoid doing this again
     file = file.path(
@@ -274,136 +274,160 @@ list_of_pm_25_frm_tibbles <-
       column_name_fixer)
 
 # combine air data tibbles into one big tibble
-pm_25_frm_data <-
+pm_25_frm_tibble <-
   bind_rows(list_of_pm_25_frm_tibbles)
-
-# remove list of tibbles
-rm(list_of_pm_25_frm_tibbles)
-gc()   # clear memory
 
 # save all air data to disk
 save(
-    pm_25_frm_data,  # saves the tibbles to disk to avoid doing this again
+    pm_25_frm_tibble,  # saves the tibbles to disk to avoid doing this again
     file = file.path(
       "intermediate_data",
-      "pm_25_frm_data.rdata"
+      "pm_25_frm_tibble.rdata"
       )
     )
+
+# memory and disk clearance ----------------------------------------------------
+
+# remove list of tibbles from memory
+rm(list_of_pm_25_frm_tibbles)
+
+# delete individual .csv files from disk
+map(
+  file.path(
+    "intermediate_data",
+    list_of_pm_25_frm_csv_filenames
+    ),
+  file.remove
+  )
+
+# clear memory
+gc()
 
 ```
 
 
-```{r speciation}
+```{r speciation, eval=FALSE, include=FALSE}
 
-# speciation_files <-
-#   c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2006.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2007.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2008.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2009.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2010.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2011.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2012.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2013.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2014.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2015.zip")
-# 
-# # make a list of filenames to which to save the downloaded data by using the above filenames and regular expressions
-# list_of_zip_filenames <-  # make list of what the filenames will be
-#   map_chr(list_of_speciation_files_to_download,  # witness the `map` function
-#           str_extract,
-#           "daily_.+\\.zip")   # witness the regular expression!
-# 
-# # download the total particulate matter and speciation data files
-# map2(list_of_zip_filenames,
-#      list_of_speciation_files_to_download,
-#      file_downloader,
-#      folder_as_string = "raw_data")
-# 
-# # unzip all the files and save them to disk
-# map(
-#   file.path(
-#     "raw_data",
-#     list_of_zip_filenames
-#     ),
-#   unzip,
-#   exdir = "intermediate_data"
-#   )
-# 
-# # replace ".zip" with ".csv" in list_of_zip_filenames
-# list_of_csv_filenames <-
-#   map(list_of_zip_filenames,
-#       str_replace,
-#       "zip",
-#       "csv")
-# 
-# # make list of tibble names by removing the ".zip" extension
-# list_of_tibble_names <-
-#   map(list_of_zip_filenames,
-#       str_replace,
-#       ".zip",
-#       "")
-# 
-# # read .csv files into tibbles!
-# if(
-#   !file.exists(
-#     file.path(
-#       "intermediate_data",
-#       "list_of_air_pollution_tibbles.rdata"
-#       )
-#     )
-#   ) {  # checks if tibbles already exist
-#   list_of_air_pollution_tibbles <-  # if not reads .csv files into tibbles
-#     map(
-#       file.path(
-#         "intermediate_data",
-#         list_of_csv_filenames),
-#       read_csv
-#       )
-#   names(list_of_air_pollution_tibbles) <-  # names the tibbles
-#     list_of_tibble_names
-#   save(
-#     list_of_air_pollution_tibbles,  # saves the tibbles to disk to avoid doing this again
-#     file = file.path(
-#       "intermediate_data",
-#       "list_of_air_pollution_tibbles.rdata"
-#       )
-#     )
-# } else {
-#     load(file = "list_of_air_pollution_tibbles.rdata")  # loads the tibbles if they don't already exist
-# }
-# 
-# 
-# # function to convert column names to snake case
-# column_name_fixer <-
-#   function(tibble) {
-#   new_names <-
-#     tibble %>%
-#     colnames() %>%  # gets the column names from the tibble
-#     tolower() %>%  # converts the column names to lowercase
-#     {gsub(" ", "_", .)}  # replaces spaces with "_"
-#   colnames(tibble) <-
-#     new_names  # rename the columns in the original tibble
-#   return(tibble)
-#   }
-# 
-# # fix air data column names
-# list_of_air_pollution_tibbles_renamed <-
-#   map(list_of_air_pollution_tibbles,
-#       column_name_fixer)
-# 
-# # combine air data tibbles into one big tibble
-# all_air_data <-
-#   bind_rows(list_of_air_pollution_tibbles_renamed)
-# 
-# # save all air data to disk
-# save(
-#     all_air_data,  # saves the tibbles to disk to avoid doing this again
-#     file = file.path(
-#       "intermediate_data",
-#       "all_air_data.rdata"
-#       )
-#     )
+speciation_files <-
+  c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2006.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2007.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2008.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2009.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2010.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2011.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2012.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2013.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2014.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2015.zip")
+
+# make a list of filenames for the downloaded data using the above filenames
+list_of_speciation_zip_filenames <-  # make list of what the filenames will be
+  map_chr(speciation_files,  # witness the `map` function
+          str_extract, 
+          "daily_.+\\.zip")   # witness the regular expression!
+
+# download the files
+map2(list_of_speciation_zip_filenames, 
+     speciation_files, 
+     file_downloader, 
+     folder_as_string = "raw_data")
+
+# unzip all the files and save them to disk
+map(
+  file.path(
+    "raw_data",
+    list_of_speciation_zip_filenames
+    ),
+  unzip,
+  exdir = "intermediate_data"
+  )
+
+# replace ".zip" with ".csv" in list_of_speciation_zip_filenames
+list_of_speciation_csv_filenames <-
+  map(list_of_speciation_zip_filenames,
+      str_replace,
+      "zip",
+      "csv")
+
+# make list of tibble names by removing the ".zip" extension
+list_of_speciation_tibble_names <-
+  map(list_of_speciation_zip_filenames,
+      str_replace,
+      ".zip",
+      "")
+
+# read .csv files into tibbles!
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data",
+      "list_of_speciation_tibbles.rdata"
+      )
+    )
+  ) {  # checks if tibbles already exist
+  list_of_speciation_tibbles <-  # if not reads .csv files into tibbles
+    map(
+      file.path(
+        "intermediate_data",
+        list_of_speciation_csv_filenames),
+      read_csv
+      )
+  names(list_of_speciation_tibbles) <-  # names the tibbles
+    list_of_speciation_tibble_names
+  save(
+    list_of_speciation_tibbles,  # saves the tibbles to disk to avoid doing this again
+    file = file.path(
+      "intermediate_data",
+      "list_of_speciation_tibbles.rdata"
+      )
+    )
+} else {
+    load(
+      file = file.path(
+      "intermediate_data",
+      "list_of_speciation_tibbles.rdata"
+      )
+      )  # loads the tibbles if they don't already exist
+}
+
+# delete individual .csv files from disk
+map(
+  file.path(
+    "intermediate_data",
+    list_of_speciation_csv_filenames
+    ),
+  file.remove
+  )
+
+# clear memory
+gc()
+
+# fix air data column names
+list_of_speciation_tibbles <-
+  map(list_of_speciation_tibbles,
+      column_name_fixer)
+
+# combine air data tibbles into one big tibble
+speciation_tibble <-
+  bind_rows(list_of_speciation_tibbles)
+
+# save all air data to disk
+save(
+    speciation_tibble,  # saves the tibbles to disk to avoid doing this again
+    file = file.path(
+      "intermediate_data",
+      "speciation_tibble.rdata"
+      )
+    )
+
+# memory and disk clearance ----------------------------------------------------
+
+# remove list of tibbles from memory
+rm(list_of_speciation_tibbles)
+
+# clear memory
+gc()
 
 
 ```
