@@ -69,24 +69,6 @@ column_name_fixer <-
   return(tibble)
   }
 
-```
-
-
-# CREATE SUBDIRECTORIES
-
-```{r create subdirectories}
-if(!dir.exists("raw_data"))
-  dir.create("raw_data")
-
-if(!dir.exists("intermediate_data"))
-  dir.create("intermediate_data")
-```
-
-
-# LOAD NECESSARY FILES
-
-```{r create file download function}
-
 # create function that downloads files
 file_downloader <-
   function(desired_filename_as_string, 
@@ -106,6 +88,19 @@ file_downloader <-
 
 ```
 
+
+# CREATE SUBDIRECTORIES
+
+```{r create subdirectories}
+if(!dir.exists("raw_data"))
+  dir.create("raw_data")
+
+if(!dir.exists("intermediate_data"))
+  dir.create("intermediate_data")
+```
+
+
+# LOAD NECESSARY FILES
 
 ```{r census data, results = "hide"}
 
@@ -305,8 +300,117 @@ gc()
 
 ```
 
+```{r speciation individual}
 
-```{r speciation}
+# link to speciation file
+speciation_file_link <- 
+  "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip"
+
+# extract the file name from the link
+speciation_zip_file_name <- 
+  str_extract(
+    speciation_file_link, 
+    "daily_.+\\.zip"
+    )
+
+# download the file
+file_downloader(
+  desired_filename_as_string = speciation_zip_file_name,
+  web_address_as_string = speciation_file_link,
+  folder_as_string = "raw_data"
+)
+
+# unzip the file
+unzip(
+  file.path(
+    "raw_data",
+    speciation_zip_file_name
+    ), 
+  exdir = "intermediate_data"
+  )
+
+# replace ".zip" with ".csv" in list_of_speciation_zip_filenames
+speciation_csv_file_name <- 
+  str_replace(
+    speciation_zip_file_name, 
+    "zip", 
+    "csv")
+
+speciation_tibble_name <- 
+  str_replace(
+    speciation_zip_file_name, 
+    ".zip",
+      ""
+  )
+
+speciation_rdata_file_name <- 
+  str_replace(
+    speciation_zip_file_name, 
+    "zip",
+    "rdata"
+  )
+
+# read .csv file into a tibble
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      speciation_rdata_file_name
+      )
+    )
+  ) {
+  speciation_tibble <- read_csv(
+    file.path(
+      "intermediate_data",
+      speciation_csv_file_name)
+    )
+  save(
+    speciation_tibble,  # save tibble to disk
+    file = file.path(
+      "intermediate_data",
+      speciation_rdata_file_name
+      )
+    )
+} else {
+    load(  # loads tibble if it exists
+    file.path(
+      "intermediate_data",
+      speciation_rdata_file_name
+      )
+      )
+}
+
+# delete .csv file from disk
+map(
+  file.path(
+    "intermediate_data",
+    speciation_csv_file_name
+    ),
+  file.remove
+  )
+
+# clear memory
+gc()
+
+# fix air data column names
+speciation_tibble <-
+  column_name_fixer(
+    speciation_tibble
+  )
+
+# keep only actual component measurements
+speciation_tibble_species_only <- 
+  speciation_tibble %>% 
+  filter(parameter_code > 88100)
+
+# remove bigger one
+rm(speciation_tibble)
+gc()
+
+```
+
+
+```{r speciation, eval=FALSE, include=FALSE}
 
 speciation_files <-
   c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
