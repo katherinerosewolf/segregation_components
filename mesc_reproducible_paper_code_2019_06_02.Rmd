@@ -106,29 +106,51 @@ if(!dir.exists("intermediate_data"))
 
 # last updated by census bureau 	19-Jul-2012 07:01	391M
 
-# download zip file of census dp1 shapefiles
-file_downloader(
-  desired_filename_as_string = "tract_2010_census_dp1.zip",
-  web_address_as_string = 
-    "http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip", 
-  folder_as_string = "raw_data"
-  )
-
-# unzip it to the intermediate file directory
-unzip(
-  file.path(
-    "raw_data", 
-    "tract_2010_census_dp1.zip"), 
-  exdir = "intermediate_data")
-
-# read the shapefile
-census_data_shapefile <- 
-  read_sf(
+if(
+  !file.exists(
     file.path(
       "intermediate_data", 
-      "Tract_2010Census_DP1.shp"
+      "census_data_shapefile.rdata"
       )
     )
+) {
+  # download zip file of census dp1 shapefiles
+  file_downloader(
+    desired_filename_as_string = "tract_2010_census_dp1.zip",
+    web_address_as_string = 
+      "http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip", 
+    folder_as_string = "raw_data"
+    )
+
+# unzip it to the intermediate file directory
+  unzip(
+    file.path(
+      "raw_data", 
+      "tract_2010_census_dp1.zip"), 
+    exdir = "intermediate_data")
+
+  # read the shapefile
+  census_data_shapefile <- 
+    read_sf(
+      file.path(
+        "intermediate_data", 
+        "Tract_2010Census_DP1.shp"
+        )
+      )
+
+  # save the shapefile
+  save(
+    census_data_shapefile,
+    file = file.path(
+      "intermediate_data", 
+      "census_data_shapefile.rdata"
+    )
+  )
+
+  # remove the shapefile from memory
+  rm(census_data_shapefile)
+  gc()
+}
 
 ```
 
@@ -136,41 +158,84 @@ census_data_shapefile <-
 
 # last tested 2019-06-05 1:17 a.m. PT
 
-file_downloader(
-  desired_filename_as_string = "ruca_2010_raw.xlsx", 
-  web_address_as_string = 
-    "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
-  folder_as_string = "raw_data"
-  )
-
-ruca_2010_raw <- 
-  read_xlsx(
+if(
+  !file.exists(
     file.path(
-      "raw_data", 
-      "ruca_2010_raw.xlsx"
+      "intermediate_data", 
+      "ruca_2010_raw.rdata"
       )
     )
+  ) {
+  file_downloader(
+    desired_filename_as_string = "ruca_2010_raw.xlsx", 
+    web_address_as_string = 
+      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
+    folder_as_string = "raw_data"
+    )
+
+  ruca_2010_raw <- 
+    read_xlsx(
+      file.path(
+        "raw_data", 
+        "ruca_2010_raw.xlsx"
+        )
+      )
+
+  # save the shapefile
+  save(
+    ruca_2010_raw,
+    file = file.path(
+      "intermediate_data", 
+      "ruca_2010_raw.rdata"
+    )
+  )
+
+  # remove the shapefile from memory
+  rm(ruca_2010_raw)
+  gc()
+}
 
 ```
 
 ```{r speciation parameter codes, results = "hide"}
 
-# downloaded June 5, 2019, 8:45 p.m. PT, last updated June 5, 2019, per EPA website
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+      )
+    )
+  ) {
+  
+  # download the speciation paramter codes
+  file_downloader(
+    desired_filename_as_string = "speciation_parameter_codes.csv",
+    web_address_as_string = "https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv", 
+    folder_as_string = "raw_data"
+    )
 
-# download the speciation paramter codes
-file_downloader(
-  desired_filename_as_string = "speciation_parameter_codes.csv",
-  web_address_as_string = "https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv", 
-  folder_as_string = "raw_data"
+  # read the parameter codes into memory
+  speciation_parameter_codes <- 
+    read_csv(
+      file.path("raw_data", 
+                "speciation_parameter_codes.csv"
+                )
+    )
+
+  # save the rdata file
+  save(
+    speciation_parameter_codes,
+    file = file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+    )
   )
 
-# read the parameter codes into memory
-speciation_parameter_codes <- 
-  read_csv(
-    file.path("raw_data", 
-              "speciation_parameter_codes.csv"
-              )
-  )
+  # remove the rdata from memory
+  rm(speciation_parameter_codes)
+  gc()
+}
 
 ```
 
@@ -178,127 +243,143 @@ speciation_parameter_codes <-
 
 ```{r pm2.5 total frm}
 
-# make list of files to download
-pm_25_frm_files <- 
-  c("https://aqs.epa.gov/aqsweb/airdata/daily_88101_2005.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2006.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2007.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2008.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2009.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2010.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2011.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2012.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2013.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2014.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2015.zip")
-
-
-# make a list of filenames for the downloaded data using the above filenames
-list_of_pm_25_frm_zip_filenames <-  # make list of what the filenames will be
-  map_chr(pm_25_frm_files,  # witness the `map` function
-          str_extract, 
-          "daily_.+\\.zip")   # witness the regular expression!
-
-# download the files
-map2(list_of_pm_25_frm_zip_filenames, 
-     pm_25_frm_files, 
-     file_downloader, 
-     folder_as_string = "raw_data")
-
-# unzip all the files and save them to disk
-map(
-  file.path(
-    "raw_data",
-    list_of_pm_25_frm_zip_filenames
-    ),
-  unzip,
-  exdir = "intermediate_data"
-  )
-
-# replace ".zip" with ".csv" in list_of_pm_25_frm_zip_filenames
-list_of_pm_25_frm_csv_filenames <-
-  map(list_of_pm_25_frm_zip_filenames,
-      str_replace,
-      "zip",
-      "csv")
-
-# make list of tibble names by removing the ".zip" extension
-list_of_pm_25_frm_tibble_names <-
-  map(list_of_pm_25_frm_zip_filenames,
-      str_replace,
-      ".zip",
-      "")
-
-# read .csv files into tibbles!
 if(
   !file.exists(
     file.path(
-      "intermediate_data",
-      "list_of_pm_25_frm_tibbles.rdata"
-      )
-    )
-  ) {  # checks if tibbles already exist
-  list_of_pm_25_frm_tibbles <-  # if not reads .csv files into tibbles
-    map(
-      file.path(
-        "intermediate_data",
-        list_of_pm_25_frm_csv_filenames),
-      read_csv
-      )
-  names(list_of_pm_25_frm_tibbles) <-  # names the tibbles
-    list_of_pm_25_frm_tibble_names
-  save(
-    list_of_pm_25_frm_tibbles,  # saves the tibbles to disk to avoid doing this again
-    file = file.path(
-      "intermediate_data",
-      "list_of_pm_25_frm_tibbles.rdata"
-      )
-    )
-} else {
-    load(
-      file = file.path(
-      "intermediate_data",
-      "list_of_pm_25_frm_tibbles.rdata"
-      )
-      )  # loads the tibbles if they don't already exist
-}
-
-# fix air data column names
-list_of_pm_25_frm_tibbles <-
-  map(list_of_pm_25_frm_tibbles,
-      column_name_fixer)
-
-# combine air data tibbles into one big tibble
-pm_25_frm_tibble <-
-  bind_rows(list_of_pm_25_frm_tibbles)
-
-# save all air data to disk
-save(
-    pm_25_frm_tibble,  # saves the tibbles to disk to avoid doing this again
-    file = file.path(
-      "intermediate_data",
+      "intermediate_data", 
       "pm_25_frm_tibble.rdata"
       )
     )
+  ) {
 
-# memory and disk clearance ----------------------------------------------------
+  # make list of files to download
+  pm_25_frm_files <- 
+    c("https://aqs.epa.gov/aqsweb/airdata/daily_88101_2005.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2006.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2007.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2008.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2009.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2010.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2011.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2012.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2013.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2014.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2015.zip")
+  
+  
+  # make a list of filenames for the downloaded data using the above filenames
+  list_of_pm_25_frm_zip_filenames <-  # make list of what the filenames will be
+    map_chr(pm_25_frm_files,  # witness the `map` function
+            str_extract, 
+            "daily_.+\\.zip")   # witness the regular expression!
+  
+  # download the files
+  map2(list_of_pm_25_frm_zip_filenames, 
+       pm_25_frm_files, 
+       file_downloader, 
+       folder_as_string = "raw_data")
+  
+  # unzip all the files and save them to disk
+  map(
+    file.path(
+      "raw_data",
+      list_of_pm_25_frm_zip_filenames
+      ),
+    unzip,
+    exdir = "intermediate_data"
+    )
+  
+  # replace ".zip" with ".csv" in list_of_pm_25_frm_zip_filenames
+  list_of_pm_25_frm_csv_filenames <-
+    map(list_of_pm_25_frm_zip_filenames,
+        str_replace,
+        "zip",
+        "csv")
+  
+  # make list of tibble names by removing the ".zip" extension
+  list_of_pm_25_frm_tibble_names <-
+    map(list_of_pm_25_frm_zip_filenames,
+        str_replace,
+        ".zip",
+        "")
+  
+  # read .csv files into tibbles!
+  if(
+    !file.exists(
+      file.path(
+        "intermediate_data",
+        "list_of_pm_25_frm_tibbles.rdata"
+        )
+      )
+    ) {  # checks if tibbles already exist
+    list_of_pm_25_frm_tibbles <-  # if not reads .csv files into tibbles
+      map(
+        file.path(
+          "intermediate_data",
+          list_of_pm_25_frm_csv_filenames),
+        read_csv
+        )
+    names(list_of_pm_25_frm_tibbles) <-  # names the tibbles
+      list_of_pm_25_frm_tibble_names
+    save(
+      list_of_pm_25_frm_tibbles,  # saves the tibbles to disk to avoid doing this again
+      file = file.path(
+        "intermediate_data",
+        "list_of_pm_25_frm_tibbles.rdata"
+        )
+      )
+    
+  } else {
+      load(
+        file = file.path(
+        "intermediate_data",
+        "list_of_pm_25_frm_tibbles.rdata"
+        )
+        )  # loads the tibbles if they don't already exist
+  }
+  
+  # fix air data column names
+  list_of_pm_25_frm_tibbles <-
+    map(list_of_pm_25_frm_tibbles,
+        column_name_fixer)
+  
+  # combine air data tibbles into one big tibble
+  pm_25_frm_tibble <-
+    bind_rows(list_of_pm_25_frm_tibbles)
+  
+  # save all air data to disk
+  save(
+      pm_25_frm_tibble,  # saves the tibbles to disk to avoid doing this again
+      file = file.path(
+        "intermediate_data",
+        "pm_25_frm_tibble.rdata"
+        )
+      )
+  
+  # memory and disk clearance --------------------------------------------------
+  
+  # delete individual .csv files from disk
+  map(
+    file.path(
+      "intermediate_data",
+      list_of_pm_25_frm_csv_filenames
+      ),
+    file.remove
+    )
+  
+  # remove list of tibbles from memory
+  rm(list_of_pm_25_frm_tibbles)
+  
+  # remove big tibble from memory
+  rm(pm_25_frm_tibble)
+  
+  # clear memory
+  gc()
 
-# remove list of tibbles from memory
-rm(list_of_pm_25_frm_tibbles)
-
-# delete individual .csv files from disk
-map(
-  file.path(
-    "intermediate_data",
-    list_of_pm_25_frm_csv_filenames
-    ),
-  file.remove
-  )
-
-# clear memory
-gc()
+}
 
 ```
+
 
 ```{r speciation individual}
 
@@ -412,126 +493,126 @@ gc()
 
 ```{r speciation, eval=FALSE, include=FALSE}
 
-speciation_files <-
-  c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2006.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2007.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2008.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2009.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2010.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2011.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2012.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2013.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2014.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2015.zip")
-
-# make a list of filenames for the downloaded data using the above filenames
-list_of_speciation_zip_filenames <-  # make list of what the filenames will be
-  map_chr(speciation_files,  # witness the `map` function
-          str_extract, 
-          "daily_.+\\.zip")   # witness the regular expression!
-
-# download the files
-map2(list_of_speciation_zip_filenames, 
-     speciation_files, 
-     file_downloader, 
-     folder_as_string = "raw_data")
-
-# unzip all the files and save them to disk
-map(
-  file.path(
-    "raw_data",
-    list_of_speciation_zip_filenames
-    ),
-  unzip,
-  exdir = "intermediate_data"
-  )
-
-# replace ".zip" with ".csv" in list_of_speciation_zip_filenames
-list_of_speciation_csv_filenames <-
-  map(list_of_speciation_zip_filenames,
-      str_replace,
-      "zip",
-      "csv")
-
-# make list of tibble names by removing the ".zip" extension
-list_of_speciation_tibble_names <-
-  map(list_of_speciation_zip_filenames,
-      str_replace,
-      ".zip",
-      "")
-
-# read .csv files into tibbles!
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data",
-      "list_of_speciation_tibbles.rdata"
-      )
-    )
-  ) {  # checks if tibbles already exist
-  list_of_speciation_tibbles <-  # if not reads .csv files into tibbles
-    map(
-      file.path(
-        "intermediate_data",
-        list_of_speciation_csv_filenames),
-      read_csv
-      )
-  names(list_of_speciation_tibbles) <-  # names the tibbles
-    list_of_speciation_tibble_names
-  save(
-    list_of_speciation_tibbles,  # saves the tibbles to disk to avoid doing this again
-    file = file.path(
-      "intermediate_data",
-      "list_of_speciation_tibbles.rdata"
-      )
-    )
-} else {
-    load(
-      file = file.path(
-      "intermediate_data",
-      "list_of_speciation_tibbles.rdata"
-      )
-      )  # loads the tibbles if they don't already exist
-}
-
-# delete individual .csv files from disk
-map(
-  file.path(
-    "intermediate_data",
-    list_of_speciation_csv_filenames
-    ),
-  file.remove
-  )
-
-# clear memory
-gc()
-
-# fix air data column names
-list_of_speciation_tibbles <-
-  map(list_of_speciation_tibbles,
-      column_name_fixer)
-
-# combine air data tibbles into one big tibble
-speciation_tibble <-
-  bind_rows(list_of_speciation_tibbles)
-
-# save all air data to disk
-save(
-    speciation_tibble,  # saves the tibbles to disk to avoid doing this again
-    file = file.path(
-      "intermediate_data",
-      "speciation_tibble.rdata"
-      )
-    )
-
-# memory and disk clearance ----------------------------------------------------
-
-# remove list of tibbles from memory
-rm(list_of_speciation_tibbles)
-
-# clear memory
-gc()
+# speciation_files <-
+#   c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2006.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2007.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2008.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2009.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2010.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2011.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2012.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2013.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2014.zip",
+#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2015.zip")
+# 
+# # make a list of filenames for the downloaded data using the above filenames
+# list_of_speciation_zip_filenames <-  # make list of what the filenames will be
+#   map_chr(speciation_files,  # witness the `map` function
+#           str_extract, 
+#           "daily_.+\\.zip")   # witness the regular expression!
+# 
+# # download the files
+# map2(list_of_speciation_zip_filenames, 
+#      speciation_files, 
+#      file_downloader, 
+#      folder_as_string = "raw_data")
+# 
+# # unzip all the files and save them to disk
+# map(
+#   file.path(
+#     "raw_data",
+#     list_of_speciation_zip_filenames
+#     ),
+#   unzip,
+#   exdir = "intermediate_data"
+#   )
+# 
+# # replace ".zip" with ".csv" in list_of_speciation_zip_filenames
+# list_of_speciation_csv_filenames <-
+#   map(list_of_speciation_zip_filenames,
+#       str_replace,
+#       "zip",
+#       "csv")
+# 
+# # make list of tibble names by removing the ".zip" extension
+# list_of_speciation_tibble_names <-
+#   map(list_of_speciation_zip_filenames,
+#       str_replace,
+#       ".zip",
+#       "")
+# 
+# # read .csv files into tibbles!
+# if(
+#   !file.exists(
+#     file.path(
+#       "intermediate_data",
+#       "list_of_speciation_tibbles.rdata"
+#       )
+#     )
+#   ) {  # checks if tibbles already exist
+#   list_of_speciation_tibbles <-  # if not reads .csv files into tibbles
+#     map(
+#       file.path(
+#         "intermediate_data",
+#         list_of_speciation_csv_filenames),
+#       read_csv
+#       )
+#   names(list_of_speciation_tibbles) <-  # names the tibbles
+#     list_of_speciation_tibble_names
+#   save(
+#     list_of_speciation_tibbles,  # saves the tibbles to disk to avoid doing this again
+#     file = file.path(
+#       "intermediate_data",
+#       "list_of_speciation_tibbles.rdata"
+#       )
+#     )
+# } else {
+#     load(
+#       file = file.path(
+#       "intermediate_data",
+#       "list_of_speciation_tibbles.rdata"
+#       )
+#       )  # loads the tibbles if they don't already exist
+# }
+# 
+# # delete individual .csv files from disk
+# map(
+#   file.path(
+#     "intermediate_data",
+#     list_of_speciation_csv_filenames
+#     ),
+#   file.remove
+#   )
+# 
+# # clear memory
+# gc()
+# 
+# # fix air data column names
+# list_of_speciation_tibbles <-
+#   map(list_of_speciation_tibbles,
+#       column_name_fixer)
+# 
+# # combine air data tibbles into one big tibble
+# speciation_tibble <-
+#   bind_rows(list_of_speciation_tibbles)
+# 
+# # save all air data to disk
+# save(
+#     speciation_tibble,  # saves the tibbles to disk to avoid doing this again
+#     file = file.path(
+#       "intermediate_data",
+#       "speciation_tibble.rdata"
+#       )
+#     )
+# 
+# # memory and disk clearance ----------------------------------------------------
+# 
+# # remove list of tibbles from memory
+# rm(list_of_speciation_tibbles)
+# 
+# # clear memory
+# gc()
 
 ```
 
