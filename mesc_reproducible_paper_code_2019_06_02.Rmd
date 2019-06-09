@@ -137,6 +137,13 @@ if(
         "Tract_2010Census_DP1.shp"
         )
       )
+  
+  # fix column names
+  census_data_shapefile <-
+    column_name_fixer(
+      census_data_shapefile
+    )
+
 
   # save the shapefile
   save(
@@ -156,13 +163,11 @@ if(
 
 ```{r ruca data}
 
-# last tested 2019-06-05 1:17 a.m. PT
-
 if(
   !file.exists(
     file.path(
       "intermediate_data", 
-      "ruca_2010_raw.rdata"
+      "ruca_2010.rdata"
       )
     )
   ) {
@@ -180,18 +185,24 @@ if(
         "ruca_2010_raw.xlsx"
         )
       )
+  
+  # fix column names
+  ruca_2010 <-
+    column_name_fixer(
+      ruca_2010_raw
+    )
 
   # save the shapefile
   save(
-    ruca_2010_raw,
+    ruca_2010,
     file = file.path(
       "intermediate_data", 
-      "ruca_2010_raw.rdata"
+      "ruca_2010.rdata"
     )
   )
 
   # remove the shapefile from memory
-  rm(ruca_2010_raw)
+  rm(ruca_2010_raw, ruca_2010)
   gc()
 }
 
@@ -221,6 +232,12 @@ if(
       file.path("raw_data", 
                 "speciation_parameter_codes.csv"
                 )
+    )
+  
+  # fix column names
+  speciation_parameter_codes <-
+    column_name_fixer(
+     speciation_parameter_codes
     )
 
   # save the rdata file
@@ -338,7 +355,7 @@ if(
         )  # loads the tibbles if they don't already exist
   }
   
-  # fix air data column names
+  # fix column names
   list_of_pm_25_frm_tibbles <-
     map(list_of_pm_25_frm_tibbles,
         column_name_fixer)
@@ -473,7 +490,7 @@ map(
 # clear memory
 gc()
 
-# fix air data column names
+# fix column names
 speciation_tibble <-
   column_name_fixer(
     speciation_tibble
@@ -484,8 +501,20 @@ speciation_tibble_species_only <-
   speciation_tibble %>% 
   filter(parameter_code > 88100)
 
-# remove bigger one
-rm(speciation_tibble)
+save(
+  speciation_tibble_species_only, 
+  file = 
+    file.path(
+      "intermediate_data",
+      speciation_rdata_file_name
+      )
+)
+
+# remove files
+rm(
+  speciation_tibble, 
+  speciation_tibble_species_only
+)
 gc()
 
 ```
