@@ -99,7 +99,6 @@ if(!dir.exists("intermediate_data"))
   dir.create("intermediate_data")
 ```
 
-
 # LOAD NECESSARY FILES
 
 ```{r census data, results = "hide"}
@@ -161,6 +160,7 @@ if(
 
 ```
 
+
 ```{r ruca data}
 
 if(
@@ -207,6 +207,7 @@ if(
 }
 
 ```
+
 
 ```{r speciation parameter codes, results = "hide"}
 
@@ -398,7 +399,140 @@ if(
 ```
 
 
-```{r speciation individual}
+```{r functionalize the speciation}
+
+speciator <- 
+  function(speciation_file_link) {
+    
+    # extract the file name from the link
+    speciation_zip_file_name <-
+      str_extract(
+        speciation_file_link,
+        "daily_.+\\.zip"
+        )
+    
+    # create rdata file name
+    speciation_rdata_file_name <- 
+      str_replace(
+        speciation_zip_file_name,
+        "zip",
+        "rdata"
+        )
+    
+     if(
+      !file.exists(  # checks if tibble already exists
+        file.path(
+          "intermediate_data",
+          speciation_rdata_file_name
+          )
+        )
+      ) {
+       
+       # download the file
+       file_downloader(
+         desired_filename_as_string = speciation_zip_file_name,
+         web_address_as_string = speciation_file_link,
+         folder_as_string = "raw_data"
+       )
+    
+       # unzip the file
+       unzip(
+         file.path(
+           "raw_data",
+           speciation_zip_file_name
+           ), 
+         exdir = "intermediate_data"
+         )
+      
+       # replace ".zip" with ".csv" in list_of_speciation_zip_filenames
+       speciation_csv_file_name <- 
+         str_replace(
+           speciation_zip_file_name, 
+           "zip", 
+           "csv")
+      
+       speciation_tibble_name <- 
+         str_replace(
+           speciation_zip_file_name, 
+           ".zip",
+           ""
+         )
+      
+       # read .csv file into a tibble
+         speciation_tibble <- 
+           read_csv(
+             file.path(
+               "intermediate_data",
+               speciation_csv_file_name
+               )
+             )
+         
+       # fix column names
+       speciation_tibble <-
+         column_name_fixer(
+           speciation_tibble
+         )
+        
+       # keep only actual component measurements
+       speciation_tibble_species_only <- 
+         speciation_tibble %>% 
+         filter(parameter_code > 88100)
+       
+       # rename it to its filename
+       assign(
+         speciation_tibble_name, 
+         speciation_tibble_species_only
+       )
+        
+       # save the result to disk
+       save(
+         list = speciation_tibble_name,
+         file = 
+           file.path(
+             "intermediate_data",
+             speciation_rdata_file_name
+             )
+       )
+       
+       # delete .csv file from disk
+       map(
+         file.path(
+           "intermediate_data",
+           speciation_csv_file_name
+           ),
+         file.remove
+         )
+      
+       # remove files
+       rm(
+         speciation_tibble, 
+         speciation_tibble_species_only
+       )
+       gc()
+     }
+    
+    # remove files
+    rm(
+      speciation_zip_file_name, 
+      speciation_rdata_file_name
+    )
+    gc()
+  }
+
+speciator("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip")
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "daily_SPEC_2005.rdata"
+      )
+  )
+
+```
+
+
+```{r speciation individual, eval=FALSE, include=FALSE}
 
 # link to speciation file
 speciation_file_link <- 
