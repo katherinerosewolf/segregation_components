@@ -506,8 +506,7 @@ speciator <-
        # remove files
        rm(
          speciation_tibble, 
-         speciation_tibble_species_only
-       )
+         speciation_tibble_species_only)
        gc()
      }
     
@@ -519,263 +518,127 @@ speciator <-
     gc()
   }
 
-speciator("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip")
+```
 
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "daily_SPEC_2005.rdata"
-      )
-  )
+
+```{r implement speciator en masse}
+
+# make list of speciation web addresses
+speciation_files <-
+  c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2006.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2007.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2008.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2009.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2010.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2011.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2012.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2013.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2014.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2015.zip")
+
+map(
+  .x = speciation_files, 
+  .f = speciator
+)
 
 ```
 
 
-```{r speciation individual, eval=FALSE, include=FALSE}
+```{r combine the air pollution data files}
 
-# link to speciation file
-speciation_file_link <- 
-  "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip"
-
-# extract the file name from the link
-speciation_zip_file_name <- 
-  str_extract(
-    speciation_file_link, 
-    "daily_.+\\.zip"
-    )
-
-# download the file
-file_downloader(
-  desired_filename_as_string = speciation_zip_file_name,
-  web_address_as_string = speciation_file_link,
-  folder_as_string = "raw_data"
-)
-
-# unzip the file
-unzip(
-  file.path(
-    "raw_data",
-    speciation_zip_file_name
-    ), 
-  exdir = "intermediate_data"
-  )
-
-# replace ".zip" with ".csv" in list_of_speciation_zip_filenames
-speciation_csv_file_name <- 
-  str_replace(
-    speciation_zip_file_name, 
-    "zip", 
-    "csv")
-
-speciation_tibble_name <- 
-  str_replace(
-    speciation_zip_file_name, 
-    ".zip",
-      ""
-  )
-
-speciation_rdata_file_name <- 
-  str_replace(
-    speciation_zip_file_name, 
-    "zip",
-    "rdata"
-  )
-
-# read .csv file into a tibble
 if(
   !file.exists(  # checks if tibble already exists
     file.path(
       "intermediate_data",
-      speciation_rdata_file_name
+      "big_speciation_tibble.rdata"
       )
     )
   ) {
-  speciation_tibble <- read_csv(
+  # make list of speciation file names except the file names of the first two
+  speciation_file_names_except_2005_2006 <- 
+    sprintf("daily_SPEC_%d.rdata", 
+            seq(2007, 2015, 1))
+
+  # load 2005 speciation file
+  load(
     file.path(
-      "intermediate_data",
-      speciation_csv_file_name)
+      "intermediate_data", 
+      "daily_SPEC_2005.rdata"
+      )
     )
+  
+  # load 2006 speciation file
+  load(
+    file.path(
+      "intermediate_data", 
+      "daily_SPEC_2006.rdata"
+      )
+    )
+  
+  # create the first edition of the big speciation tibble by a row bind
+  big_speciation_tibble <- 
+    bind_rows(
+      daily_SPEC_2005, 
+      daily_SPEC_2006
+    )
+  
+  # remove the 2005 and 2006 tibbles from memory
+  rm(
+    daily_SPEC_2005, 
+    daily_SPEC_2006)
+  gc()
+  
+  # make a function to bind the rest of the speciation tibbles
+  speciebinder <- 
+    function(speciation_file_name) {
+      
+      # make variable of tibble name
+      speciation_tibble_name <- 
+        str_replace(
+          speciation_file_name, 
+          ".rdata",
+          ""
+          )
+      
+      # load next speciation file
+      load(
+        file.path(
+          "intermediate_data", 
+          speciation_file_name
+        )
+      )
+      
+      # bind the speciation file to the big tibble
+      big_speciation_tibble <<- 
+        bind_rows(  
+          big_speciation_tibble, 
+          eval(as.symbol(speciation_tibble_name)))
+      
+      # remove the speciation file and clear the memory
+      rm(speciation_file_name, 
+         list = speciation_tibble_name)
+      gc()
+      
+    }
+  
+  # make the big speciation dataset
+  map(speciation_file_names_except_2005_2006, speciebinder)
+  
+  # save the big speciation dataset
   save(
-    speciation_tibble,  # save tibble to disk
-    file = file.path(
-      "intermediate_data",
-      speciation_rdata_file_name
-      )
-    )
-} else {
-    load(  # loads tibble if it exists
-    file.path(
-      "intermediate_data",
-      speciation_rdata_file_name
-      )
-      )
-}
-
-# delete .csv file from disk
-map(
-  file.path(
-    "intermediate_data",
-    speciation_csv_file_name
-    ),
-  file.remove
+    big_speciation_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "big_speciation_tibble.rdata"
+        )
   )
-
-# clear memory
-gc()
-
-# fix column names
-speciation_tibble <-
-  column_name_fixer(
-    speciation_tibble
-  )
-
-# keep only actual component measurements
-speciation_tibble_species_only <- 
-  speciation_tibble %>% 
-  filter(parameter_code > 88100)
-
-save(
-  speciation_tibble_species_only, 
-  file = 
-    file.path(
-      "intermediate_data",
-      speciation_rdata_file_name
-      )
-)
-
-# remove files
-rm(
-  speciation_tibble, 
-  speciation_tibble_species_only
-)
-gc()
-
-```
-
-
-```{r speciation, eval=FALSE, include=FALSE}
-
-# speciation_files <-
-#   c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2006.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2007.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2008.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2009.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2010.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2011.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2012.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2013.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2014.zip",
-#     "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2015.zip")
-# 
-# # make a list of filenames for the downloaded data using the above filenames
-# list_of_speciation_zip_filenames <-  # make list of what the filenames will be
-#   map_chr(speciation_files,  # witness the `map` function
-#           str_extract, 
-#           "daily_.+\\.zip")   # witness the regular expression!
-# 
-# # download the files
-# map2(list_of_speciation_zip_filenames, 
-#      speciation_files, 
-#      file_downloader, 
-#      folder_as_string = "raw_data")
-# 
-# # unzip all the files and save them to disk
-# map(
-#   file.path(
-#     "raw_data",
-#     list_of_speciation_zip_filenames
-#     ),
-#   unzip,
-#   exdir = "intermediate_data"
-#   )
-# 
-# # replace ".zip" with ".csv" in list_of_speciation_zip_filenames
-# list_of_speciation_csv_filenames <-
-#   map(list_of_speciation_zip_filenames,
-#       str_replace,
-#       "zip",
-#       "csv")
-# 
-# # make list of tibble names by removing the ".zip" extension
-# list_of_speciation_tibble_names <-
-#   map(list_of_speciation_zip_filenames,
-#       str_replace,
-#       ".zip",
-#       "")
-# 
-# # read .csv files into tibbles!
-# if(
-#   !file.exists(
-#     file.path(
-#       "intermediate_data",
-#       "list_of_speciation_tibbles.rdata"
-#       )
-#     )
-#   ) {  # checks if tibbles already exist
-#   list_of_speciation_tibbles <-  # if not reads .csv files into tibbles
-#     map(
-#       file.path(
-#         "intermediate_data",
-#         list_of_speciation_csv_filenames),
-#       read_csv
-#       )
-#   names(list_of_speciation_tibbles) <-  # names the tibbles
-#     list_of_speciation_tibble_names
-#   save(
-#     list_of_speciation_tibbles,  # saves the tibbles to disk to avoid doing this again
-#     file = file.path(
-#       "intermediate_data",
-#       "list_of_speciation_tibbles.rdata"
-#       )
-#     )
-# } else {
-#     load(
-#       file = file.path(
-#       "intermediate_data",
-#       "list_of_speciation_tibbles.rdata"
-#       )
-#       )  # loads the tibbles if they don't already exist
-# }
-# 
-# # delete individual .csv files from disk
-# map(
-#   file.path(
-#     "intermediate_data",
-#     list_of_speciation_csv_filenames
-#     ),
-#   file.remove
-#   )
-# 
-# # clear memory
-# gc()
-# 
-# # fix air data column names
-# list_of_speciation_tibbles <-
-#   map(list_of_speciation_tibbles,
-#       column_name_fixer)
-# 
-# # combine air data tibbles into one big tibble
-# speciation_tibble <-
-#   bind_rows(list_of_speciation_tibbles)
-# 
-# # save all air data to disk
-# save(
-#     speciation_tibble,  # saves the tibbles to disk to avoid doing this again
-#     file = file.path(
-#       "intermediate_data",
-#       "speciation_tibble.rdata"
-#       )
-#     )
-# 
-# # memory and disk clearance ----------------------------------------------------
-# 
-# # remove list of tibbles from memory
-# rm(list_of_speciation_tibbles)
-# 
-# # clear memory
-# gc()
+  
+  # remove non-needed files from memory
+  rm(speciation_files, speciation_file_names_except_2005_2006)
+  gc()
+  }
 
 ```
 
