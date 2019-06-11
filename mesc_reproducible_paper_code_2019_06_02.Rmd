@@ -473,10 +473,27 @@ speciator <-
            speciation_tibble
          )
         
-       # keep only actual component measurements
+       # keep only actual component measurements and necessary columns
        speciation_tibble_species_only <- 
          speciation_tibble %>% 
-         filter(parameter_code > 88100)
+         filter(parameter_code > 88100) %>% 
+         select(
+           -c(
+             pollutant_standard, 
+             units_of_measure, 
+             aqi, 
+             method_name, 
+             local_site_name, 
+             address)
+         )
+       
+       # select only necessary columns
+       speciation_tibble_shrunk <-
+         speciation_tibble_species_only %>%
+         select(
+           -c(pollutant_standard,
+             )
+         )
        
        # rename it to its filename
        assign(
@@ -567,6 +584,8 @@ if(
       "daily_SPEC_2005.rdata"
       )
     )
+  
+  daily_SPEC_2005
   
   # load 2006 speciation file
   load(
