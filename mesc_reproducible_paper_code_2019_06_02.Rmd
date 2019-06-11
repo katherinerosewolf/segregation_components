@@ -265,7 +265,7 @@ if(
   !file.exists(
     file.path(
       "intermediate_data", 
-      "pm_25_frm_tibble.rdata"
+      "big_pm_25_frm_tibble.rdata"
       )
     )
   ) {
@@ -362,15 +362,15 @@ if(
         column_name_fixer)
   
   # combine air data tibbles into one big tibble
-  pm_25_frm_tibble <-
+  big_pm_25_frm_tibble <-
     bind_rows(list_of_pm_25_frm_tibbles)
   
   # save all air data to disk
   save(
-      pm_25_frm_tibble,  # saves the tibbles to disk to avoid doing this again
+      big_pm_25_frm_tibble,  # saves the tibbles to disk to avoid doing this again
       file = file.path(
         "intermediate_data",
-        "pm_25_frm_tibble.rdata"
+        "big_pm_25_frm_tibble.rdata"
         )
       )
   
@@ -389,7 +389,7 @@ if(
   rm(list_of_pm_25_frm_tibbles)
   
   # remove big tibble from memory
-  rm(pm_25_frm_tibble)
+  rm(big_pm_25_frm_tibble)
   
   # clear memory
   gc()
@@ -623,7 +623,24 @@ if(
     }
   
   # make the big speciation dataset
-  map(speciation_file_names_except_2005_2006, speciebinder)
+  speciebinder("daily_SPEC_2007.rdata")
+  gc()
+  speciebinder("daily_SPEC_2008.rdata")
+  gc()
+  speciebinder("daily_SPEC_2009.rdata")
+  gc()
+  speciebinder("daily_SPEC_2010.rdata")
+  gc()
+  speciebinder("daily_SPEC_2011.rdata")
+  gc()
+  speciebinder("daily_SPEC_2012.rdata")
+  gc()
+  speciebinder("daily_SPEC_2013.rdata")
+  gc()
+  speciebinder("daily_SPEC_2014.rdata")
+  gc()
+  speciebinder("daily_SPEC_2015.rdata")
+  gc()
   
   # save the big speciation dataset
   save(
@@ -636,9 +653,31 @@ if(
   )
   
   # remove non-needed files from memory
-  rm(speciation_files, speciation_file_names_except_2005_2006)
+  rm(speciation_files, 
+     speciation_file_names_except_2005_2006,
+     big_speciation_tibble)
   gc()
   }
+
+```
+
+
+```{r join pm25 total and speciation data}
+# 
+# load(
+#   file.path(
+#     "intermediate_data", 
+#     "big_pm_25_frm_tibble.rdata"
+#   )
+# )
+# 
+# load(
+#   file.path(
+#     "intermediate_data", 
+#     "big_speciation_tibble.rdata"
+#   )
+# )
+#   
 
 ```
 
