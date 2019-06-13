@@ -54,6 +54,7 @@ options(tigris_use_cache = TRUE)
 
 ```
 
+
 ```{r functions for later use}
 
 # function to convert column names to snake case
@@ -87,7 +88,6 @@ file_downloader <-
   }
 
 ```
-
 
 # CREATE SUBDIRECTORIES
 
@@ -256,6 +256,58 @@ if(
 }
 
 ```
+
+
+```{r make parameter and species lists}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+      )
+)
+
+# make a list of all the species and their codes
+species_and_codes <- 
+  speciation_parameter_codes %>% 
+  select(parameter, parameter_code) %>% 
+  distinct
+
+# make a list of the organic carbon species and codes
+organic_carbon_rows <- 
+  species_and_codes %>% 
+  filter(str_detect(parameter, "OC"))
+
+# make a numeric vector of the organic carbon species and codes
+organic_carbon_codes <-
+  organic_carbon_rows %>% 
+  select(parameter_code) %>% 
+  pull()
+
+save(
+  species_and_codes, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "species_and_codes.rdata"
+    )
+  )
+
+save(
+  organic_carbon_codes, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "organic_carbon_codes.rdata"
+    )
+  )
+
+rm(species_and_codes, organic_carbon_codes)
+gc()
+
+```
+
 
 ## air pollution data files
 
@@ -485,11 +537,23 @@ speciator <-
          column_name_fixer(
            speciation_tibble
          )
+       
+       # load organic carbon codes
+       if (!exists("organic_carbon_codes")) {
+       load(
+         file = 
+           file.path(
+             "intermediate_data", 
+             "organic_carbon_codes.rdata"
+             )
+         )
+       }
         
        # keep only actual component measurements and necessary columns
        speciation_tibble_shrunk <- 
          speciation_tibble %>% 
          filter(parameter_code > 88100) %>% 
+         filter(!(parameter_code %in% organic_carbon_codes)) %>% 
          select(
            -c(
              pollutant_standard, 
@@ -590,8 +654,6 @@ if(
       "daily_SPEC_2005.rdata"
       )
     )
-  
-  daily_SPEC_2005
   
   # load 2006 speciation file
   load(
