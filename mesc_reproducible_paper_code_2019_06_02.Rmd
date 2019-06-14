@@ -29,6 +29,7 @@ library(sjPlot)
 library(stargazer)
 library(readxl)
 library(tidyverse)
+library(totalcensus)
 
 ```
 
@@ -755,55 +756,203 @@ if(
 
 ```{r join pm25 total and speciation data}
 
-if(
-  !file.exists(  # checks if tibble already exists
-    file.path(
-      "intermediate_data",
-      "big_air_tibble.rdata"
-      )
-    )
-  ) {
-  
-  # load the total pm2.5 tibble
-  load(
-    file.path(
-      "intermediate_data",
-      "big_pm_25_frm_tibble.rdata"
-    )
-  )
-
-  # load the pm2.5 speciation tibble
-  load(
-    file.path(
-      "intermediate_data",
-      "big_speciation_tibble.rdata"
-    )
-  )
-
-  # and in the darkness bind them
-  big_air_tibble <- 
-    bind_rows(  
-      big_pm_25_frm_tibble,
-      big_speciation_tibble)
-  
-  # remove extraneous files
-  rm(big_pm_25_frm_tibble, 
-     big_speciation_tibble)
-  gc()
-  
-  # save the big tibble
-  save(
-    big_air_tibble, 
-    file = 
-      file.path(
-        "intermediate_data", 
-        "big_air_tibble.rdata"
-      ))
-  
-}
+# if(
+#   !file.exists(  # checks if tibble already exists
+#     file.path(
+#       "intermediate_data",
+#       "big_air_tibble.rdata"
+#       )
+#     )
+#   ) {
+#   
+#   # load the total pm2.5 tibble
+#   load(
+#     file.path(
+#       "intermediate_data",
+#       "big_pm_25_frm_tibble.rdata"
+#     )
+#   )
+# 
+#   # load the pm2.5 speciation tibble
+#   load(
+#     file.path(
+#       "intermediate_data",
+#       "big_speciation_tibble.rdata"
+#     )
+#   )
+# 
+#   # and in the darkness bind them
+#   big_air_tibble <- 
+#     bind_rows(  
+#       big_pm_25_frm_tibble,
+#       big_speciation_tibble)
+#   
+#   # remove extraneous files
+#   rm(big_pm_25_frm_tibble, 
+#      big_speciation_tibble)
+#   gc()
+#   
+#   # save the big tibble
+#   save(
+#     big_air_tibble, 
+#     file = 
+#       file.path(
+#         "intermediate_data", 
+#         "big_air_tibble.rdata"
+#       ))
+#   
+# }
 
 ```
 
+## american community survey data
+
+```{r american community survey data}
+
+# set path to census data
+Sys.setenv(PATH_TO_CENSUS = tempdir())
+# 
+# acs_data_2008_2012_via_totalcensus <-
+#   read_acs5year(
+#     year = 2012,
+#     states = "AL",
+#     table_contents =
+#       "B01003",
+#     summary_level = "tract",
+#     with_margin = TRUE
+# )
+
+
+
+# #### raw acs data import ####
+#
+# variable_names <-
+#   readLines(
+#     "acs_2013_2017_data_supplements/comma_separated_variables.csv")
+# variable_names
+#
+# variable_names_to_include <-
+#   readLines(
+#     "acs_2013_2017_data_supplements/variable_names_to_include.csv")
+# variable_names_to_include
+#
+# variable_names_to_exclude <-
+#   readLines("acs_2013_2017_data_supplements/variable_names_to_exclude.csv"
+#             )
+# variable_names_to_exclude
+#
+# true_variable_candidates <-
+#   variable_names[
+#     grepl(
+#       paste(
+#         variable_names_to_include,
+#         collapse="|"),
+#       variable_names)]
+#
+# true_variable_candidates
+#
+# variable_names_for_totalcensus <-
+#   true_variable_candidates[
+#     !grepl(
+#       paste(
+#         variable_names_to_exclude,
+#         collapse="|"),
+#       true_variable_candidates)]
+#
+# additional_exclusions <-
+#   c("\\.",
+#     "B15002A",
+#     "B15002B",
+#     "B15002C",
+#     "B15002D",
+#     "B15002E",
+#     "B15002F",
+#     "B15002G",
+#     "B15002H",
+#     "B15002I",
+#     "B21001A",
+#     "B21001B",
+#     "B21001C",
+#     "B21001D",
+#     "B21001E",
+#     "B21001F",
+#     "B21001G",
+#     "B21001H",
+#     "B21001I")
+#
+# final_variable_names_for_totalcensus <-
+#   variable_names_for_totalcensus[
+#     !grepl(
+#       paste(
+#         additional_exclusions,
+#         collapse="|"),
+#       variable_names_for_totalcensus
+#       )
+#     ]
+#
+# final_variable_names_for_totalcensus
+#
+# # set_path_to_census("acs_2013_2017_data")
+#
+# acs_data_2013_2017_via_totalcensus <-
+#   read_acs5year(
+#     year = 2017,
+#     states = "KS",
+#     table_contents =
+#       final_variable_names_for_totalcensus,
+#     summary_level = "block group",
+#     with_margin = TRUE
+# )
+#
+#
+# save(
+#   acs_data_2013_2017_via_totalcensus,
+#   file = "acs_data_2013_2017_via_totalcensus.rdata"
+#   )
+#
+# write.csv(
+#   acs_data_2013_2017_via_totalcensus,
+#   file = "acs_data_2013_2017_via_totalcensus.csv"
+#   )
+
+
+# acs_pop_no_marg <- 
+#   ACS_simplified_raw_data[c <- c("GEOID","B00001e1")]
+# 
+# acs_earnings_no_marg <- ACS_raw_data[c("GEOID","B20001e1","B20001e2","B20001e3","B20001e4","B20001e5","B20001e6","B20001e7","B20001e8","B20001e9","B20001e10","B20001e11","B20001e12","B20001e13","B20001e14","B20001e15","B20001e16","B20001e17","B20001e18","B20001e19","B20001e20","B20001e21","B20001e22","B20001e23","B20001e24","B20001e25","B20001e26","B20001e27","B20001e28","B20001e29","B20001e30","B20001e31","B20001e32","B20001e33","B20001e34","B20001e35","B20001e36","B20001e37","B20001e38","B20001e39","B20001e40","B20001e41","B20001e42","B20001e43")]
+# 
+# acs_median_earnings_no_marg <- ACS_raw_data[c("GEOID","B20002e1")]
+# 
+# # education variables
+# acs_education_variables <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003m1","B15003e2","B15003m2","B15003e3","B15003m3","B15003e4","B15003m4","B15003e5","B15003m5","B15003e6","B15003m6","B15003e7","B15003m7","B15003e8","B15003m8","B15003e9","B15003m9","B15003e10","B15003m10","B15003e11","B15003m11","B15003e12","B15003m12","B15003e13","B15003m13","B15003e14","B15003m14","B15003e15","B15003m15","B15003e16","B15003m16","B15003e17","B15003m17","B15003e18","B15003m18","B15003e19","B15003m19","B15003e20","B15003m20","B15003e21","B15003m21","B15003e22","B15003m22","B15003e23","B15003m23","B15003e24","B15003m24","B15003e25","B15003m25")]
+# 
+# education_labels <- c("tract_ID","ed_pop","ed_pop_margin","ed_no_school","ed_no_school_margin","ed_nurse","ed_nurse_margin","ed_kinder","ed_kinder_margin","ed_1","ed_1_margin","ed_2","ed_2_margin","ed_3","ed_3_margin","ed_4","ed_4_margin","ed_5","ed_5_margin","ed_6","ed_6_margin","ed_7","ed_7_margin","ed_8","ed_8_margin","ed_9","ed_9_margin","ed_10","ed_10_margin","ed_11","ed_11_margin","ed_12","ed_12_margin","ed_hsdip","ed_hsdip_margin","ed_GED","ed_GED_margin","ed_<1_college","ed_<1_college_margin","ed_1+_college","ed_1+_college_margin","ed_associate","ed_associate_margin","ed_bachelor","ed_bachelor_margin","ed_master","ed_master_margin","ed_prof","ed_prof_marg","ed_doctor","ed_doctor_marg")
+# 
+# acs_education_variables_no_margins <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003e2","B15003e3","B15003e4","B15003e5","B15003e6","B15003e7","B15003e8","B15003e9","B15003e10","B15003e11","B15003e12","B15003e13","B15003e14","B15003e15","B15003e16","B15003e17","B15003e18","B15003e19","B15003e20","B15003e21","B15003e22","B15003e23","B15003e24","B15003e25")]
+# # View(acs_education_variables_no_margins)
+# 
+# education_labels_no_margins <- c("GEOID","ed_pop","ed_no_school","ed_nurse","ed_kinder","ed_1","ed_2","ed_3","ed_4","ed_5","ed_6","ed_7","ed_8","ed_9","ed_10","ed_11","ed_12","ed_hsdip","ed_GED","ed_<1_college","ed_1+_college","ed_associate","ed_bachelor","ed_master","ed_prof","ed_doctor")
+# 
+# colnames(acs_education_variables_no_margins) <- education_labels_no_margins
+# 
+# # household value
+# acs_median_househ_value_no_marg <- ACS_raw_data[c("GEOID","B25077e1")]
+# 
+# # household income
+# acs_median_household_income_no_marg <- ACS_raw_data[c("GEOID","B19013e1")]
+# 
+# # poverty
+# acs_poverty <- ACS_raw_data[c("GEOID","B17001e1","B17001e2")]
+# 
+# # unemployment
+# acs_unemp_no_marg <- ACS_simplified_raw_data[c("GEOID","B23025e1","B23025e2","B23025e3","B23025e4","B23025e5","B23025e6","B23025e7")]
+
+
+
+
+```
+
+
 ## clean air pollution data
 
-## american community survey data
+
