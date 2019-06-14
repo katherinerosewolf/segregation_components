@@ -303,7 +303,11 @@ save(
     )
   )
 
-rm(species_and_codes, organic_carbon_codes)
+# remove created data from memory
+rm(
+  organic_carbon_codes, 
+  speciation_parameter_codes,
+  species_and_codes)
 gc()
 
 ```
@@ -750,21 +754,53 @@ if(
 
 
 ```{r join pm25 total and speciation data}
-# 
-# load(
-#   file.path(
-#     "intermediate_data", 
-#     "big_pm_25_frm_tibble.rdata"
-#   )
-# )
-# 
-# load(
-#   file.path(
-#     "intermediate_data", 
-#     "big_speciation_tibble.rdata"
-#   )
-# )
-#   
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "big_air_tibble.rdata"
+      )
+    )
+  ) {
+  
+  # load the total pm2.5 tibble
+  load(
+    file.path(
+      "intermediate_data",
+      "big_pm_25_frm_tibble.rdata"
+    )
+  )
+
+  # load the pm2.5 speciation tibble
+  load(
+    file.path(
+      "intermediate_data",
+      "big_speciation_tibble.rdata"
+    )
+  )
+
+  # and in the darkness bind them
+  big_air_tibble <- 
+    bind_rows(  
+      big_pm_25_frm_tibble,
+      big_speciation_tibble)
+  
+  # remove extraneous files
+  rm(big_pm_25_frm_tibble, 
+     big_speciation_tibble)
+  gc()
+  
+  # save the big tibble
+  save(
+    big_air_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "big_air_tibble.rdata"
+      ))
+  
+}
 
 ```
 
