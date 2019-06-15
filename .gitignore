@@ -5,5 +5,6 @@
 hide_from_travis/
 raw_data/
 intermediate_data/
+documentation/
 mesc_thesis_code_2019_05_12.Rmd
 

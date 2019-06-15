@@ -805,150 +805,741 @@ if(
 
 ```
 
-## american community survey data
+## demographic and ses data
+
+```{r census variable lists}
+
+# # view census variables
+# census_variables_sf1 <- 
+#   load_variables(
+#     2010, 
+#     "sf1", 
+#     cache = TRUE
+#     )
+# census_variables_sf3 <- 
+#   load_variables(
+#     2000, 
+#     "sf3", 
+#     cache = TRUE
+#     )
+# acs_variables <- 
+#   load_variables(
+#     2012, 
+#     "acs", 
+#     cache = TRUE
+#   )
+
+# define categories for variables
+
+# total population (SF1 P1)
+# universe: total population
+total_pop_sf1_p1 <-
+  c("P0010001")
+
+# hispanic or latino origin by race (SF1 P5)
+# universe: total population
+race_sf1_p5 <-
+  sprintf("P00500%0.2d", 1:17)
+
+# P0050001  Total population:
+# P0050002    Not Hispanic or Latino:
+# P0050003      White alone
+# P0050004      Black or African American alone
+# P0050005      American Indian and Alaska Native alone
+# P0050006      Asian alone
+# P0050007      Native Hawaiian and Other Pacific Islander alone
+# P0050008      Some Other Race alone
+# P0050009      Two or More Races
+# P0050010    Hispanic or Latino:
+# P0050011      White alone
+# P0050012      Black or African American alone
+# P0050013      American Indian and Alaska Native alone
+# P0050014      Asian alone
+# P0050015      Native Hawaiian and Other Pacific Islander alone
+# P0050016      Some Other Race alone
+# P0050017      Two or More Races
+
+# sex by age (SF1 P12)
+# universe: total population
+sex_cat_sf1_p12 <-
+  c("P0120002",  # male
+    "P0120026")  # female
+
+# sex by age (SF1 P12)
+# universe: total population
+sex_by_age_sf1_p12 <- 
+  sprintf("P01200%0.2d", 1:49)
+
+# P0120001  Total population:
+# P0120002    Male:
+# P0120003      Under 5 years
+# P0120004      5 to 9 years
+# P0120005      10 to 14 years
+# P0120006      15 to 17 years
+# P0120007      18 and 19 years
+# P0120008      20 years
+# P0120009      21 years
+# P0120010      22 to 24 years
+# P0120011      25 to 29 years
+# P0120012      30 to 34 years
+# P0120013      35 to 39 years
+# P0120014      40 to 44 years
+# P0120015      45 to 49 years
+# P0120016      50 to 54 years
+# P0120017      55 to 59 years
+# P0120018      60 and 61 years
+# P0120019      62 to 64 years
+# P0120020      65 and 66 years
+# P0120021      67 to 69 years
+# P0120022      70 to 74 years
+# P0120023      75 to 79 years
+# P0120024      80 to 84 years
+# P0120025      85 years and over
+# P0120026    Female:
+# P0120027      Under 5 years
+# P0120028      5 to 9 years
+# P0120029      10 to 14 years
+# P0120030      15 to 17 years
+# P0120031      18 and 19 years
+# P0120032      20 years
+# P0120033      21 years
+# P0120034      22 to 24 years
+# P0120035      25 to 29 years
+# P0120036      30 to 34 years
+# P0120037      35 to 39 years
+# P0120038      40 to 44 years
+# P0120039      45 to 49 years
+# P0120040      50 to 54 years
+# P0120041      55 to 59 years
+# P0120042      60 and 61 years
+# P0120043      62 to 64 years
+# P0120044      65 and 66 years
+# P0120045      67 to 69 years
+# P0120046      70 to 74 years
+# P0120047      75 to 79 years
+# P0120048      80 to 84 years
+# P0120049      85 years and over
+
+# median age (SF1 P13)
+# universe: total population
+age_median_sf1_p13 <- 
+  "P0130001"
+
+# occupancy status
+# universe: housing units
+# 1 total, 2 occupied, 3 vacant
+occupancy_sf1_h3 <-
+  sprintf("H003000%d", 1:3)
+
+# housing tenure (SF1 H4)
+# universe: occupied housing units
+# 1 total, 2 owned w/ a mortgage or loan, 3 owned free and clear, 4 renter-occupied
+housing_tenure_sf1_h4 <-  
+  sprintf("H004000%d", 1:4)
+
+# population in occupied housing units by tenure
+# universe: population in occupied housing units
+housing_tenure_people_sf1_h11 <- 
+  c("H0110001",  # total population in occupied housing units
+    "H0110002",  # owned with a mortgage or a loan 
+    "H0110003",  # owned free and clear
+    "H0110004")  # renter-occupied
+
+```
+
+
+```{r acs variable lists}
+
+# educational attainment for the population 25 years and over
+# universe: population 25 years and over
+education_cat_acs_b15003 <- 
+  c("B15003_001",  # total
+    "B15003_002",  # no schooling completed
+    "B15003_003",  # nursery school
+    "B15003_004",  # kindergarten
+    "B15003_005",  # 1st grade
+    "B15003_006",  # 2nd grade
+    "B15003_007",  # 3rd grade
+    "B15003_008",  # 4th grade
+    "B15003_009",  # 5th grade
+    "B15003_010",  # 6th grade
+    "B15003_011",  # 7th grade
+    "B15003_012",  # 8th grade
+    "B15003_013",  # 9th grade
+    "B15003_014",  # 10th grade
+    "B15003_015",  # 11th grade
+    "B15003_016",  # 12th grade
+    "B15003_017",  # regular high school diploma
+    "B15003_018",  # GED or alternative credential
+    "B15003_019",  # some college, less than 1 year
+    "B15003_020",  # some college, 1 or more years, no degree
+    "B15003_021",  # associate's degree
+    "B15003_022",  # bachelor's degree
+    "B15003_023",  # master's degree
+    "B15003_024",  # professional school degree
+    "B15003_025")  # doctorate degree
+
+# ratio of income to poverty level in the past 12 months
+# universe: population for whom poverty status is determined
+poverty_ratio_cat_c17002 <-
+  c("C17002_001",  # total
+    "C17002_002",  # under .50
+    "C17002_003",  # .50 to .99
+    "C17002_004",  # 1.00 to 1.24
+    "C17002_005",  # 1.25 to 1.49
+    "C17002_006",  # 1.50 to 1.84
+    "C17002_007",  # 1.85 to 1.99
+    "C17002_008")  # 2.00 and over
+
+# household income in the past 12 months (in 2012 inflation-adjusted dollars)
+# universe: households
+income_house_cat_b19001 <-
+  c("B19001_001",  # total
+    "B19001_002",  # less than $10,000
+    "B19001_003",  # $10,000 to $14,999
+    "B19001_004",  # $15,000 to $19,999
+    "B19001_005",  # $20,000 to $24,999
+    "B19001_006",  # $25,000 to $29,999
+    "B19001_007",  # $30,000 to $34,999
+    "B19001_008",  # $35,000 to $39,999
+    "B19001_009",  # $40,000 to $44,999
+    "B19001_010",  # $45,000 to $49,999
+    "B19001_011",  # $50,000 to $59,999
+    "B19001_012",  # $60,000 to $74,999
+    "B19001_013",  # $75,000 to $99,999
+    "B19001_014",  # $100,000 to $124,999
+    "B19001_015",  # $125,000 to $149,999
+    "B19001_016",  # $150,000 to $199,999
+    "B19001_017")  # $200,000 or more
+
+# median household income in the past 12 months (in 2012 inflation-adjusted dollars)
+# universe: households
+income_house_median_b19013 <-
+  c("B19013_001")
+
+# sex by earnings in the past 12 months (in 2012 inflation-adjusted dollars) for the population 16 years and over with earnings in the past 12 months
+# universe: population 16 years and over with earnings
+earnings_sex_cat_b20001 <-
+  c("B20001_001",  # total
+    "B20001_002",  # male
+    "B20001_003",  # $1 to $2,499 or loss
+    "B20001_004",  # $2,500 to $4,999
+    "B20001_005",  # $5,000 to $7,499
+    "B20001_006",  # $7,500 to $9,999
+    "B20001_007",  # $10,000 to $12,499
+    "B20001_008",  # $12,500 to $14,999
+    "B20001_009",  # $15,000 to $17,499
+    "B20001_010",  # $17,500 to $19,999
+    "B20001_011",  # $20,000 to $22,499
+    "B20001_012",  # $22,500 to $24,999
+    "B20001_013",  # $25,000 to $29,999
+    "B20001_014",  # $30,000 to $34,999
+    "B20001_015",  # $35,000 to $39,999
+    "B20001_016",  # $40,000 to $44,999
+    "B20001_017",  # $45,000 to $49,999
+    "B20001_018",  # $50,000 to $54,999
+    "B20001_019",  # $55,000 to $64,999
+    "B20001_020",  # $65,000 to $74,999
+    "B20001_021",  # $75,000 to $99,999
+    "B20001_022",  # $100,000 or more
+    "B20001_023",  # Female:
+    "B20001_024",  # $1 to $2,499 or loss
+    "B20001_025",  # $2,500 to $4,999
+    "B20001_026",  # $5,000 to $7,499
+    "B20001_027",  # $7,500 to $9,999
+    "B20001_028",  # $10,000 to $12,499
+    "B20001_029",  # $12,500 to $14,999
+    "B20001_030",  # $15,000 to $17,499
+    "B20001_031",  # $17,500 to $19,999
+    "B20001_032",  # $20,000 to $22,499
+    "B20001_033",  # $22,500 to $24,999
+    "B20001_034",  # $25,000 to $29,999
+    "B20001_035",  # $30,000 to $34,999
+    "B20001_036",  # $35,000 to $39,999
+    "B20001_037",  # $40,000 to $44,999
+    "B20001_038",  # $45,000 to $49,999
+    "B20001_039",  # $50,000 to $54,999
+    "B20001_040",  # $55,000 to $64,999
+    "B20001_041",  # $65,000 to $74,999
+    "B20001_042",  # $75,000 to $99,999
+    "B20001_043")  # $100,000 or more
+
+# median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
+# universe: population 16 years and over with earnings
+earnings_median_b20002 <-
+  c("B20002_001",  # total
+    "B20002_002",  # male
+    "B20002_003")  # female
+
+# employment status for the population 16 years and over
+# universe: population 16 years and over
+employment_cat_b23025 <-  # divide 5 by 3
+  c("B23025_001",  # total
+    "B23025_002",    # in labor force
+    "B23025_003",      # civilian labor force
+    "B23025_004",        # employed
+    "B23025_005",        # unemployed
+    "B23025_006",      # armed forces
+    "B23025_007")    # not in labor force
+  
+# value
+# universe: owner-occupied housing units
+home_value_cat_b25075 <-
+  c("B25075_001",  # total
+    "B25075_002",  # less than $10,000
+    "B25075_003",  # $10,000 to $14,999
+    "B25075_004",  # $15,000 to $19,999
+    "B25075_005",  # $20,000 to $24,999
+    "B25075_006",  # $25,000 to $29,999
+    "B25075_007",  # $30,000 to $34,999
+    "B25075_008",  # $35,000 to $39,999
+    "B25075_009",  # $40,000 to $49,999
+    "B25075_010",  # $50,000 to $59,999
+    "B25075_011",  # $60,000 to $69,999
+    "B25075_012",  # $70,000 to $79,999
+    "B25075_013",  # $80,000 to $89,999
+    "B25075_014",  # $90,000 to $99,999
+    "B25075_015",  # $100,000 to $124,999
+    "B25075_016",  # $125,000 to $149,999
+    "B25075_017",  # $150,000 to $174,999
+    "B25075_018",  # $175,000 to $199,999
+    "B25075_019",  # $200,000 to $249,999
+    "B25075_020",  # $250,000 to $299,999
+    "B25075_021",  # $300,000 to $399,999
+    "B25075_022",  # $400,000 to $499,999
+    "B25075_023",  # $500,000 to $749,999
+    "B25075_024",  # $750,000 to $999,999
+    "B25075_025")  # $1,000,000 or more
+
+# median value (dollars)
+# universe: owner-occupied housing units
+home_value_median <-
+  c("B25077_001")  # median value (dollars)
+
+# types of health insurance coverage by age
+# universe: civilian noninstitutionalized population
+health_insurance_cat_c27010 <-
+  c("C27010_001",  # total
+    "C27010_002",    # under 18 years
+    "C27010_003",      # with private health insurance only
+    "C27010_004",      # with public coverage only
+    "C27010_005",      # with both private and public coverage
+    "C27010_006",      # no health insurance coverage
+    "C27010_007",    # 18 to 34 years
+    "C27010_008",      # with private health insurance only
+    "C27010_009",      # with public coverage only
+    "C27010_010",      # with both private and public coverage
+    "C27010_011",      # no health insurance coverage
+    "C27010_012",    # 35 to 64 years
+    "C27010_013",      # with private health insurance only
+    "C27010_014",      # with public coverage only
+    "C27010_015",      # with both private and public coverage
+    "C27010_016",      # no health insurance coverage
+    "C27010_017",    # 65 years and over
+    "C27010_018",      # with private health insurance only
+    "C27010_019",      # with public coverage only
+    "C27010_020",      # with both private and public coverage
+    "C27010_021")      # no health insurance coverage
+
+# household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
+# universe: households
+ling_iso <-
+  c("B16002_001",  # total
+    "B16002_002",    # English only
+    "B16002_003",    # Spanish:
+    "B16002_004",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002_005",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002_006",    # Other Indo-European languages:
+    "B16002_007",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002_008",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002_009",    # Asian and Pacific Island languages:
+    "B16002_010",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002_011",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002_012",    # Other languages: 
+    "B16002_013",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002_014")     # At least one person 14 and over speaks English only or speaks English "very well"
+
+```
+
 
 ```{r american community survey data}
 
-# set path to census data
-Sys.setenv(PATH_TO_CENSUS = tempdir())
-# 
-# acs_data_2008_2012_via_totalcensus <-
-#   read_acs5year(
-#     year = 2012,
-#     states = "AL",
-#     table_contents =
-#       "B01003",
-#     summary_level = "tract",
-#     with_margin = TRUE
-# )
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "total_pop_tibble_list.rdata"
+      )
+    )
+  ) {
 
-
-
-# #### raw acs data import ####
-#
-# variable_names <-
-#   readLines(
-#     "acs_2013_2017_data_supplements/comma_separated_variables.csv")
-# variable_names
-#
-# variable_names_to_include <-
-#   readLines(
-#     "acs_2013_2017_data_supplements/variable_names_to_include.csv")
-# variable_names_to_include
-#
-# variable_names_to_exclude <-
-#   readLines("acs_2013_2017_data_supplements/variable_names_to_exclude.csv"
-#             )
-# variable_names_to_exclude
-#
-# true_variable_candidates <-
-#   variable_names[
-#     grepl(
-#       paste(
-#         variable_names_to_include,
-#         collapse="|"),
-#       variable_names)]
-#
-# true_variable_candidates
-#
-# variable_names_for_totalcensus <-
-#   true_variable_candidates[
-#     !grepl(
-#       paste(
-#         variable_names_to_exclude,
-#         collapse="|"),
-#       true_variable_candidates)]
-#
-# additional_exclusions <-
-#   c("\\.",
-#     "B15002A",
-#     "B15002B",
-#     "B15002C",
-#     "B15002D",
-#     "B15002E",
-#     "B15002F",
-#     "B15002G",
-#     "B15002H",
-#     "B15002I",
-#     "B21001A",
-#     "B21001B",
-#     "B21001C",
-#     "B21001D",
-#     "B21001E",
-#     "B21001F",
-#     "B21001G",
-#     "B21001H",
-#     "B21001I")
-#
-# final_variable_names_for_totalcensus <-
-#   variable_names_for_totalcensus[
-#     !grepl(
-#       paste(
-#         additional_exclusions,
-#         collapse="|"),
-#       variable_names_for_totalcensus
-#       )
-#     ]
-#
-# final_variable_names_for_totalcensus
-#
-# # set_path_to_census("acs_2013_2017_data")
-#
-# acs_data_2013_2017_via_totalcensus <-
-#   read_acs5year(
-#     year = 2017,
-#     states = "KS",
-#     table_contents =
-#       final_variable_names_for_totalcensus,
-#     summary_level = "block group",
-#     with_margin = TRUE
-# )
-#
-#
-# save(
-#   acs_data_2013_2017_via_totalcensus,
-#   file = "acs_data_2013_2017_via_totalcensus.rdata"
-#   )
-#
-# write.csv(
-#   acs_data_2013_2017_via_totalcensus,
-#   file = "acs_data_2013_2017_via_totalcensus.csv"
-#   )
-
-
-# acs_pop_no_marg <- 
-#   ACS_simplified_raw_data[c <- c("GEOID","B00001e1")]
-# 
-# acs_earnings_no_marg <- ACS_raw_data[c("GEOID","B20001e1","B20001e2","B20001e3","B20001e4","B20001e5","B20001e6","B20001e7","B20001e8","B20001e9","B20001e10","B20001e11","B20001e12","B20001e13","B20001e14","B20001e15","B20001e16","B20001e17","B20001e18","B20001e19","B20001e20","B20001e21","B20001e22","B20001e23","B20001e24","B20001e25","B20001e26","B20001e27","B20001e28","B20001e29","B20001e30","B20001e31","B20001e32","B20001e33","B20001e34","B20001e35","B20001e36","B20001e37","B20001e38","B20001e39","B20001e40","B20001e41","B20001e42","B20001e43")]
-# 
-# acs_median_earnings_no_marg <- ACS_raw_data[c("GEOID","B20002e1")]
-# 
-# # education variables
-# acs_education_variables <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003m1","B15003e2","B15003m2","B15003e3","B15003m3","B15003e4","B15003m4","B15003e5","B15003m5","B15003e6","B15003m6","B15003e7","B15003m7","B15003e8","B15003m8","B15003e9","B15003m9","B15003e10","B15003m10","B15003e11","B15003m11","B15003e12","B15003m12","B15003e13","B15003m13","B15003e14","B15003m14","B15003e15","B15003m15","B15003e16","B15003m16","B15003e17","B15003m17","B15003e18","B15003m18","B15003e19","B15003m19","B15003e20","B15003m20","B15003e21","B15003m21","B15003e22","B15003m22","B15003e23","B15003m23","B15003e24","B15003m24","B15003e25","B15003m25")]
-# 
-# education_labels <- c("tract_ID","ed_pop","ed_pop_margin","ed_no_school","ed_no_school_margin","ed_nurse","ed_nurse_margin","ed_kinder","ed_kinder_margin","ed_1","ed_1_margin","ed_2","ed_2_margin","ed_3","ed_3_margin","ed_4","ed_4_margin","ed_5","ed_5_margin","ed_6","ed_6_margin","ed_7","ed_7_margin","ed_8","ed_8_margin","ed_9","ed_9_margin","ed_10","ed_10_margin","ed_11","ed_11_margin","ed_12","ed_12_margin","ed_hsdip","ed_hsdip_margin","ed_GED","ed_GED_margin","ed_<1_college","ed_<1_college_margin","ed_1+_college","ed_1+_college_margin","ed_associate","ed_associate_margin","ed_bachelor","ed_bachelor_margin","ed_master","ed_master_margin","ed_prof","ed_prof_marg","ed_doctor","ed_doctor_marg")
-# 
-# acs_education_variables_no_margins <- ACS_simplified_raw_data[c("GEOID","B15003e1","B15003e2","B15003e3","B15003e4","B15003e5","B15003e6","B15003e7","B15003e8","B15003e9","B15003e10","B15003e11","B15003e12","B15003e13","B15003e14","B15003e15","B15003e16","B15003e17","B15003e18","B15003e19","B15003e20","B15003e21","B15003e22","B15003e23","B15003e24","B15003e25")]
-# # View(acs_education_variables_no_margins)
-# 
-# education_labels_no_margins <- c("GEOID","ed_pop","ed_no_school","ed_nurse","ed_kinder","ed_1","ed_2","ed_3","ed_4","ed_5","ed_6","ed_7","ed_8","ed_9","ed_10","ed_11","ed_12","ed_hsdip","ed_GED","ed_<1_college","ed_1+_college","ed_associate","ed_bachelor","ed_master","ed_prof","ed_doctor")
-# 
-# colnames(acs_education_variables_no_margins) <- education_labels_no_margins
-# 
-# # household value
-# acs_median_househ_value_no_marg <- ACS_raw_data[c("GEOID","B25077e1")]
-# 
-# # household income
-# acs_median_household_income_no_marg <- ACS_raw_data[c("GEOID","B19013e1")]
-# 
-# # poverty
-# acs_poverty <- ACS_raw_data[c("GEOID","B17001e1","B17001e2")]
-# 
-# # unemployment
-# acs_unemp_no_marg <- ACS_simplified_raw_data[c("GEOID","B23025e1","B23025e2","B23025e3","B23025e4","B23025e5","B23025e6","B23025e7")]
-
-
-
+  # list of dataframes for states
+  total_pop_tibble_list <- 
+    list()
+  
+  # al pop
+  total_pop_tibble_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "AL", 
+      year = 2012)
+  
+  total_pop_tibble_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "AK", 
+      year = 2012)
+  
+  total_pop_tibble_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "AZ", 
+      year = 2012)
+  
+  total_pop_tibble_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "AR", 
+      year = 2012)
+  
+  total_pop_tibble_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "CA", 
+      year = 2012)
+  
+  total_pop_tibble_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "CO", 
+      year = 2012)
+  
+  total_pop_tibble_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "CT", 
+      year = 2012)
+  
+  total_pop_tibble_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "DE", 
+      year = 2012)
+  
+  total_pop_tibble_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "FL", 
+      year = 2012)
+  
+  total_pop_tibble_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "GA", 
+      year = 2012)
+  
+  total_pop_tibble_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "HI", 
+      year = 2012)
+  
+  total_pop_tibble_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "ID", 
+      year = 2012)
+  
+  total_pop_tibble_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "IL", 
+      year = 2012)
+  
+  total_pop_tibble_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "IN", 
+      year = 2012)
+  
+  total_pop_tibble_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "IA", 
+      year = 2012)
+  
+  total_pop_tibble_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "KS", 
+      year = 2012)
+  
+  total_pop_tibble_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "KY", 
+      year = 2012)
+  
+  total_pop_tibble_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "LA", 
+      year = 2012)
+  
+  total_pop_tibble_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "ME", 
+      year = 2012)
+  
+  total_pop_tibble_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "MD", 
+      year = 2012)
+  
+  total_pop_tibble_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "MA", 
+      year = 2012)
+  
+  total_pop_tibble_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "MI", 
+      year = 2012)
+  
+  total_pop_tibble_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "MN", 
+      year = 2012)
+  
+  total_pop_tibble_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "MS", 
+      year = 2012)
+  
+  total_pop_tibble_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "MO", 
+      year = 2012)
+  
+  total_pop_tibble_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "MT", 
+      year = 2012)
+  
+  total_pop_tibble_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "NE", 
+      year = 2012)
+  
+  total_pop_tibble_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "NV", 
+      year = 2012)
+  
+  total_pop_tibble_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "NH", 
+      year = 2012)
+  
+  total_pop_tibble_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "NJ", 
+      year = 2012)
+  
+  total_pop_tibble_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "NM", 
+      year = 2012)
+  
+  total_pop_tibble_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "NY", 
+      year = 2012)
+  
+  total_pop_tibble_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "NC", 
+      year = 2012)
+  
+  total_pop_tibble_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "ND", 
+      year = 2012)
+  
+  total_pop_tibble_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "OH", 
+      year = 2012)
+  
+  total_pop_tibble_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "OK", 
+      year = 2012)
+  
+  total_pop_tibble_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "OR", 
+      year = 2012)
+  
+  total_pop_tibble_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "PA", 
+      year = 2012)
+  
+  total_pop_tibble_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "RI", 
+      year = 2012)
+  
+  total_pop_tibble_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "SC", 
+      year = 2012)
+  
+  total_pop_tibble_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "SD", 
+      year = 2012)
+  
+  total_pop_tibble_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "TN", 
+      year = 2012)
+  
+  total_pop_tibble_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "TX", 
+      year = 2012)
+  
+  total_pop_tibble_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "UT", 
+      year = 2012)
+  
+  total_pop_tibble_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "VT", 
+      year = 2012)
+  
+  total_pop_tibble_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "VA", 
+      year = 2012)
+  
+  total_pop_tibble_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "WA", 
+      year = 2012)
+  
+  total_pop_tibble_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "WV", 
+      year = 2012)
+  
+  total_pop_tibble_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "WI", 
+      year = 2012)
+  
+  total_pop_tibble_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = "B01003_001", 
+      state = "WY", 
+      year = 2012)
+  
+  save(
+    total_pop_tibble_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "total_pop_tibble_list.rdata"
+      )
+    )
+  
+  # rm(total_pop_tibble_list)
+  # gc()
+}    
 
 ```
 
