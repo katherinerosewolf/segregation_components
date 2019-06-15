@@ -834,12 +834,12 @@ if(
 # total population (SF1 P1)
 # universe: total population
 total_pop_sf1_p1 <-
-  c("P0010001")
+  c("P001001")
 
 # hispanic or latino origin by race (SF1 P5)
 # universe: total population
 race_sf1_p5 <-
-  sprintf("P00500%0.2d", 1:17)
+  sprintf("P0050%0.2d", 1:17)
 
 # P0050001  Total population:
 # P0050002    Not Hispanic or Latino:
@@ -868,7 +868,7 @@ sex_cat_sf1_p12 <-
 # sex by age (SF1 P12)
 # universe: total population
 sex_by_age_sf1_p12 <- 
-  sprintf("P01200%0.2d", 1:49)
+  sprintf("P0120%0.2d", 1:49)
 
 # P0120001  Total population:
 # P0120002    Male:
@@ -923,27 +923,425 @@ sex_by_age_sf1_p12 <-
 # median age (SF1 P13)
 # universe: total population
 age_median_sf1_p13 <- 
-  "P0130001"
+  "P013001"
 
 # occupancy status
 # universe: housing units
 # 1 total, 2 occupied, 3 vacant
 occupancy_sf1_h3 <-
-  sprintf("H003000%d", 1:3)
+  sprintf("H00300%d", 1:3)
 
 # housing tenure (SF1 H4)
 # universe: occupied housing units
 # 1 total, 2 owned w/ a mortgage or loan, 3 owned free and clear, 4 renter-occupied
 housing_tenure_sf1_h4 <-  
-  sprintf("H004000%d", 1:4)
+  sprintf("H00400%d", 1:4)
 
 # population in occupied housing units by tenure
 # universe: population in occupied housing units
 housing_tenure_people_sf1_h11 <- 
-  c("H0110001",  # total population in occupied housing units
-    "H0110002",  # owned with a mortgage or a loan 
-    "H0110003",  # owned free and clear
-    "H0110004")  # renter-occupied
+  c("H011001",  # total population in occupied housing units
+    "H011002",  # owned with a mortgage or a loan 
+    "H011003",  # owned free and clear
+    "H011004")  # renter-occupied
+
+```
+
+### census variable pulls
+
+```{r total_pop_sf1_p1 download}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "total_pop_sf1_p1_tibble.rdata"
+      )
+    )
+  ) {
+
+total_pop_sf1_p1_list <- 
+  list()
+
+  # pull the actual data
+  total_pop_sf1_p1_list[["AL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "AL", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["AK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "AK", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["AZ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "AZ", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["AR"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "AR", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["CA"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "CA", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["CO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "CO", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["CT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "CT", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["DE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "DE", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["FL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "FL", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["GA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "GA", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["HI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "HI", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["ID"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "ID", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["IL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "IL", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["IN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "IN", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["IA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "IA", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["KS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "KS", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["KY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "KY", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["LA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "LA", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["ME"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "ME", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["MD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "MD", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["MA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "MA", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["MI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "MI", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["MN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "MN", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["MS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "MS", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["MO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "MO", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["MT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "MT", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["NE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "NE", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["NV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "NV", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["NH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "NH", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["NJ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "NJ", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["NM"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "NM", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["NY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "NY", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["NC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "NC", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["ND"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "ND", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["OH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "OH", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["OK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "OK", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["OR"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "OR", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["PA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "PA", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["RI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "RI", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["SC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "SC", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["SD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "SD", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["TN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "TN", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["TX"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "TX", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["UT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "UT", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["VT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "VT", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["VA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "VA", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["WA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "WA", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["WV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "WV", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["WI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "WI", 
+      year = 2010)
+  
+  total_pop_sf1_p1_list[["WY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = total_pop_sf1_p1, 
+      state = "WY", 
+      year = 2010)
+  
+  total_pop_sf1_p1_tibble <- 
+    bind_rows(total_pop_sf1_p1_list)
+  
+  save(
+    total_pop_sf1_p1_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "total_pop_sf1_p1_list.rdata"
+      )
+    )
+  
+  save(
+    total_pop_sf1_p1_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "total_pop_sf1_p1_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    total_pop_sf1_p1_list, 
+    total_pop_sf1_p1_tibble
+    )
+  gc()
+}
 
 ```
 
@@ -1162,384 +1560,384 @@ ling_iso <-
 ```
 
 
-```{r american community survey data}
+```{r acs total pop b01003}
 
-if(
-  !file.exists(  # checks if tibble already exists
-    file.path(
-      "intermediate_data",
-      "total_pop_tibble_list.rdata"
-      )
-    )
-  ) {
-
-  # list of dataframes for states
-  total_pop_tibble_list <- 
-    list()
-  
-  # al pop
-  total_pop_tibble_list[["AL"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "AL", 
-      year = 2012)
-  
-  total_pop_tibble_list[["AK"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "AK", 
-      year = 2012)
-  
-  total_pop_tibble_list[["AZ"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "AZ", 
-      year = 2012)
-  
-  total_pop_tibble_list[["AR"]] <- 
-      get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "AR", 
-      year = 2012)
-  
-  total_pop_tibble_list[["CA"]] <- 
-      get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "CA", 
-      year = 2012)
-  
-  total_pop_tibble_list[["CO"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "CO", 
-      year = 2012)
-  
-  total_pop_tibble_list[["CT"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "CT", 
-      year = 2012)
-  
-  total_pop_tibble_list[["DE"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "DE", 
-      year = 2012)
-  
-  total_pop_tibble_list[["FL"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "FL", 
-      year = 2012)
-  
-  total_pop_tibble_list[["GA"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "GA", 
-      year = 2012)
-  
-  total_pop_tibble_list[["HI"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "HI", 
-      year = 2012)
-  
-  total_pop_tibble_list[["ID"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "ID", 
-      year = 2012)
-  
-  total_pop_tibble_list[["IL"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "IL", 
-      year = 2012)
-  
-  total_pop_tibble_list[["IN"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "IN", 
-      year = 2012)
-  
-  total_pop_tibble_list[["IA"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "IA", 
-      year = 2012)
-  
-  total_pop_tibble_list[["KS"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "KS", 
-      year = 2012)
-  
-  total_pop_tibble_list[["KY"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "KY", 
-      year = 2012)
-  
-  total_pop_tibble_list[["LA"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "LA", 
-      year = 2012)
-  
-  total_pop_tibble_list[["ME"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "ME", 
-      year = 2012)
-  
-  total_pop_tibble_list[["MD"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "MD", 
-      year = 2012)
-  
-  total_pop_tibble_list[["MA"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "MA", 
-      year = 2012)
-  
-  total_pop_tibble_list[["MI"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "MI", 
-      year = 2012)
-  
-  total_pop_tibble_list[["MN"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "MN", 
-      year = 2012)
-  
-  total_pop_tibble_list[["MS"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "MS", 
-      year = 2012)
-  
-  total_pop_tibble_list[["MO"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "MO", 
-      year = 2012)
-  
-  total_pop_tibble_list[["MT"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "MT", 
-      year = 2012)
-  
-  total_pop_tibble_list[["NE"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "NE", 
-      year = 2012)
-  
-  total_pop_tibble_list[["NV"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "NV", 
-      year = 2012)
-  
-  total_pop_tibble_list[["NH"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "NH", 
-      year = 2012)
-  
-  total_pop_tibble_list[["NJ"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "NJ", 
-      year = 2012)
-  
-  total_pop_tibble_list[["NM"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "NM", 
-      year = 2012)
-  
-  total_pop_tibble_list[["NY"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "NY", 
-      year = 2012)
-  
-  total_pop_tibble_list[["NC"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "NC", 
-      year = 2012)
-  
-  total_pop_tibble_list[["ND"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "ND", 
-      year = 2012)
-  
-  total_pop_tibble_list[["OH"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "OH", 
-      year = 2012)
-  
-  total_pop_tibble_list[["OK"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "OK", 
-      year = 2012)
-  
-  total_pop_tibble_list[["OR"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "OR", 
-      year = 2012)
-  
-  total_pop_tibble_list[["PA"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "PA", 
-      year = 2012)
-  
-  total_pop_tibble_list[["RI"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "RI", 
-      year = 2012)
-  
-  total_pop_tibble_list[["SC"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "SC", 
-      year = 2012)
-  
-  total_pop_tibble_list[["SD"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "SD", 
-      year = 2012)
-  
-  total_pop_tibble_list[["TN"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "TN", 
-      year = 2012)
-  
-  total_pop_tibble_list[["TX"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "TX", 
-      year = 2012)
-  
-  total_pop_tibble_list[["UT"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "UT", 
-      year = 2012)
-  
-  total_pop_tibble_list[["VT"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "VT", 
-      year = 2012)
-  
-  total_pop_tibble_list[["VA"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "VA", 
-      year = 2012)
-  
-  total_pop_tibble_list[["WA"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "WA", 
-      year = 2012)
-  
-  total_pop_tibble_list[["WV"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "WV", 
-      year = 2012)
-  
-  total_pop_tibble_list[["WI"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "WI", 
-      year = 2012)
-  
-  total_pop_tibble_list[["WY"]] <- 
-    get_acs(
-      geography = "tract", 
-      variables = "B01003_001", 
-      state = "WY", 
-      year = 2012)
-  
-  save(
-    total_pop_tibble_list, 
-    file = 
-      file.path(
-        "intermediate_data", 
-        "total_pop_tibble_list.rdata"
-      )
-    )
-  
-  # rm(total_pop_tibble_list)
-  # gc()
-}    
+# if(
+#   !file.exists(  # checks if tibble already exists
+#     file.path(
+#       "intermediate_data",
+#       "total_pop_tibble_list.rdata"
+#       )
+#     )
+#   ) {
+# 
+#   # list of dataframes for states
+#   total_pop_tibble_list <- 
+#     list()
+#   
+#   # pull the actual data
+#   total_pop_tibble_list[["AL"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "AL", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["AK"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "AK", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["AZ"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "AZ", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["AR"]] <- 
+#       get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "AR", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["CA"]] <- 
+#       get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "CA", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["CO"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "CO", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["CT"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "CT", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["DE"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "DE", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["FL"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "FL", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["GA"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "GA", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["HI"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "HI", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["ID"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "ID", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["IL"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "IL", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["IN"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "IN", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["IA"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "IA", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["KS"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "KS", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["KY"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "KY", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["LA"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "LA", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["ME"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "ME", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["MD"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "MD", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["MA"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "MA", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["MI"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "MI", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["MN"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "MN", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["MS"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "MS", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["MO"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "MO", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["MT"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "MT", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["NE"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "NE", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["NV"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "NV", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["NH"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "NH", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["NJ"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "NJ", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["NM"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "NM", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["NY"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "NY", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["NC"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "NC", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["ND"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "ND", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["OH"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "OH", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["OK"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "OK", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["OR"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "OR", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["PA"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "PA", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["RI"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "RI", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["SC"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "SC", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["SD"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "SD", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["TN"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "TN", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["TX"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "TX", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["UT"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "UT", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["VT"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "VT", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["VA"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "VA", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["WA"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "WA", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["WV"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "WV", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["WI"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "WI", 
+#       year = 2012)
+#   
+#   total_pop_tibble_list[["WY"]] <- 
+#     get_acs(
+#       geography = "tract", 
+#       variables = "B01003_001", 
+#       state = "WY", 
+#       year = 2012)
+#   
+#   save(
+#     total_pop_tibble_list, 
+#     file = 
+#       file.path(
+#         "intermediate_data", 
+#         "total_pop_tibble_list.rdata"
+#       )
+#     )
+#   
+#   # rm(total_pop_tibble_list)
+#   # gc()
+# }    
 
 ```
 
