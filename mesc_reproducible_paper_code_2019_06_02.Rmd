@@ -807,6 +807,10 @@ if(
 
 ## demographic and ses data
 
+### census
+
+#### census variable lists
+
 ```{r census variable lists}
 
 # # view census variables
@@ -861,14 +865,9 @@ race_sf1_p5 <-
 
 # sex by age (SF1 P12)
 # universe: total population
-sex_cat_sf1_p12 <-
-  c("P0120002",  # male
-    "P0120026")  # female
-
-# sex by age (SF1 P12)
-# universe: total population
 sex_by_age_sf1_p12 <- 
   sprintf("P0120%0.2d", 1:49)
+# NOTE: P0120002 is all male and P0120026 is all female
 
 # P0120001  Total population:
 # P0120002    Male:
@@ -947,7 +946,7 @@ housing_tenure_people_sf1_h11 <-
 
 ```
 
-### census variable pulls
+#### census variable pulls
 
 ```{r total_pop_sf1_p1 download}
 
@@ -1346,11 +1345,2396 @@ total_pop_sf1_p1_list <-
 ```
 
 
+```{r race_sf1_p5 download}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "race_sf1_p5_tibble.rdata"
+      )
+    )
+  ) {
+
+race_sf1_p5_list <- 
+  list()
+
+  # pull the actual data
+  race_sf1_p5_list[["AL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "AL", 
+      year = 2010)
+  
+  race_sf1_p5_list[["AK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "AK", 
+      year = 2010)
+  
+  race_sf1_p5_list[["AZ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "AZ", 
+      year = 2010)
+  
+  race_sf1_p5_list[["AR"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "AR", 
+      year = 2010)
+  
+  race_sf1_p5_list[["CA"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "CA", 
+      year = 2010)
+  
+  race_sf1_p5_list[["CO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "CO", 
+      year = 2010)
+  
+  race_sf1_p5_list[["CT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "CT", 
+      year = 2010)
+  
+  race_sf1_p5_list[["DE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "DE", 
+      year = 2010)
+  
+  race_sf1_p5_list[["FL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "FL", 
+      year = 2010)
+  
+  race_sf1_p5_list[["GA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "GA", 
+      year = 2010)
+  
+  race_sf1_p5_list[["HI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "HI", 
+      year = 2010)
+  
+  race_sf1_p5_list[["ID"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "ID", 
+      year = 2010)
+  
+  race_sf1_p5_list[["IL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "IL", 
+      year = 2010)
+  
+  race_sf1_p5_list[["IN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "IN", 
+      year = 2010)
+  
+  race_sf1_p5_list[["IA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "IA", 
+      year = 2010)
+  
+  race_sf1_p5_list[["KS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "KS", 
+      year = 2010)
+  
+  race_sf1_p5_list[["KY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "KY", 
+      year = 2010)
+  
+  race_sf1_p5_list[["LA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "LA", 
+      year = 2010)
+  
+  race_sf1_p5_list[["ME"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "ME", 
+      year = 2010)
+  
+  race_sf1_p5_list[["MD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "MD", 
+      year = 2010)
+  
+  race_sf1_p5_list[["MA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "MA", 
+      year = 2010)
+  
+  race_sf1_p5_list[["MI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "MI", 
+      year = 2010)
+  
+  race_sf1_p5_list[["MN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "MN", 
+      year = 2010)
+  
+  race_sf1_p5_list[["MS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "MS", 
+      year = 2010)
+  
+  race_sf1_p5_list[["MO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "MO", 
+      year = 2010)
+  
+  race_sf1_p5_list[["MT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "MT", 
+      year = 2010)
+  
+  race_sf1_p5_list[["NE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "NE", 
+      year = 2010)
+  
+  race_sf1_p5_list[["NV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "NV", 
+      year = 2010)
+  
+  race_sf1_p5_list[["NH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "NH", 
+      year = 2010)
+  
+  race_sf1_p5_list[["NJ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "NJ", 
+      year = 2010)
+  
+  race_sf1_p5_list[["NM"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "NM", 
+      year = 2010)
+  
+  race_sf1_p5_list[["NY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "NY", 
+      year = 2010)
+  
+  race_sf1_p5_list[["NC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "NC", 
+      year = 2010)
+  
+  race_sf1_p5_list[["ND"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "ND", 
+      year = 2010)
+  
+  race_sf1_p5_list[["OH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "OH", 
+      year = 2010)
+  
+  race_sf1_p5_list[["OK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "OK", 
+      year = 2010)
+  
+  race_sf1_p5_list[["OR"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "OR", 
+      year = 2010)
+  
+  race_sf1_p5_list[["PA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "PA", 
+      year = 2010)
+  
+  race_sf1_p5_list[["RI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "RI", 
+      year = 2010)
+  
+  race_sf1_p5_list[["SC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "SC", 
+      year = 2010)
+  
+  race_sf1_p5_list[["SD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "SD", 
+      year = 2010)
+  
+  race_sf1_p5_list[["TN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "TN", 
+      year = 2010)
+  
+  race_sf1_p5_list[["TX"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "TX", 
+      year = 2010)
+  
+  race_sf1_p5_list[["UT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "UT", 
+      year = 2010)
+  
+  race_sf1_p5_list[["VT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "VT", 
+      year = 2010)
+  
+  race_sf1_p5_list[["VA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "VA", 
+      year = 2010)
+  
+  race_sf1_p5_list[["WA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "WA", 
+      year = 2010)
+  
+  race_sf1_p5_list[["WV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "WV", 
+      year = 2010)
+  
+  race_sf1_p5_list[["WI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "WI", 
+      year = 2010)
+  
+  race_sf1_p5_list[["WY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = race_sf1_p5, 
+      state = "WY", 
+      year = 2010)
+  
+  race_sf1_p5_tibble <- 
+    bind_rows(race_sf1_p5_list)
+  
+  save(
+    race_sf1_p5_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "race_sf1_p5_list.rdata"
+      )
+    )
+  
+  save(
+    race_sf1_p5_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "race_sf1_p5_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    race_sf1_p5_list, 
+    race_sf1_p5_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r sex_by_age_sf1_p12 download}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "sex_by_age_sf1_p12_tibble.rdata"
+      )
+    )
+  ) {
+
+sex_by_age_sf1_p12_list <- 
+  list()
+
+  # pull the actual data
+  sex_by_age_sf1_p12_list[["AL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "AL", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["AK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "AK", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["AZ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "AZ", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["AR"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "AR", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["CA"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "CA", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["CO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "CO", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["CT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "CT", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["DE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "DE", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["FL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "FL", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["GA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "GA", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["HI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "HI", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["ID"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "ID", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["IL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "IL", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["IN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "IN", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["IA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "IA", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["KS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "KS", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["KY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "KY", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["LA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "LA", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["ME"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "ME", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["MD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "MD", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["MA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "MA", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["MI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "MI", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["MN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "MN", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["MS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "MS", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["MO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "MO", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["MT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "MT", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["NE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "NE", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["NV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "NV", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["NH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "NH", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["NJ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "NJ", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["NM"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "NM", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["NY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "NY", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["NC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "NC", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["ND"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "ND", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["OH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "OH", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["OK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "OK", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["OR"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "OR", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["PA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "PA", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["RI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "RI", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["SC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "SC", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["SD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "SD", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["TN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "TN", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["TX"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "TX", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["UT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "UT", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["VT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "VT", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["VA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "VA", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["WA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "WA", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["WV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "WV", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["WI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "WI", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_list[["WY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = sex_by_age_sf1_p12, 
+      state = "WY", 
+      year = 2010)
+  
+  sex_by_age_sf1_p12_tibble <- 
+    bind_rows(sex_by_age_sf1_p12_list)
+  
+  save(
+    sex_by_age_sf1_p12_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "sex_by_age_sf1_p12_list.rdata"
+      )
+    )
+  
+  save(
+    sex_by_age_sf1_p12_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "sex_by_age_sf1_p12_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    sex_by_age_sf1_p12_list, 
+    sex_by_age_sf1_p12_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r age_median_sf1_p13 download}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "age_median_sf1_p13_tibble.rdata"
+      )
+    )
+  ) {
+
+age_median_sf1_p13_list <- 
+  list()
+
+  # pull the actual data
+  age_median_sf1_p13_list[["AL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "AL", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["AK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "AK", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["AZ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "AZ", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["AR"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "AR", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["CA"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "CA", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["CO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "CO", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["CT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "CT", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["DE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "DE", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["FL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "FL", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["GA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "GA", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["HI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "HI", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["ID"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "ID", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["IL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "IL", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["IN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "IN", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["IA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "IA", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["KS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "KS", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["KY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "KY", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["LA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "LA", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["ME"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "ME", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["MD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "MD", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["MA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "MA", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["MI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "MI", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["MN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "MN", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["MS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "MS", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["MO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "MO", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["MT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "MT", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["NE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "NE", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["NV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "NV", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["NH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "NH", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["NJ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "NJ", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["NM"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "NM", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["NY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "NY", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["NC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "NC", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["ND"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "ND", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["OH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "OH", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["OK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "OK", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["OR"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "OR", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["PA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "PA", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["RI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "RI", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["SC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "SC", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["SD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "SD", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["TN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "TN", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["TX"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "TX", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["UT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "UT", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["VT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "VT", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["VA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "VA", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["WA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "WA", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["WV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "WV", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["WI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "WI", 
+      year = 2010)
+  
+  age_median_sf1_p13_list[["WY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = age_median_sf1_p13, 
+      state = "WY", 
+      year = 2010)
+  
+  age_median_sf1_p13_tibble <- 
+    bind_rows(age_median_sf1_p13_list)
+  
+  save(
+    age_median_sf1_p13_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "age_median_sf1_p13_list.rdata"
+      )
+    )
+  
+  save(
+    age_median_sf1_p13_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "age_median_sf1_p13_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    age_median_sf1_p13_list, 
+    age_median_sf1_p13_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r occupancy_sf1_h3 download}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "occupancy_sf1_h3_tibble.rdata"
+      )
+    )
+  ) {
+
+occupancy_sf1_h3_list <- 
+  list()
+
+  # pull the actual data
+  occupancy_sf1_h3_list[["AL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "AL", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["AK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "AK", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["AZ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "AZ", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["AR"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "AR", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["CA"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "CA", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["CO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "CO", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["CT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "CT", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["DE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "DE", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["FL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "FL", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["GA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "GA", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["HI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "HI", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["ID"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "ID", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["IL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "IL", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["IN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "IN", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["IA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "IA", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["KS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "KS", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["KY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "KY", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["LA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "LA", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["ME"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "ME", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["MD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "MD", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["MA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "MA", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["MI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "MI", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["MN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "MN", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["MS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "MS", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["MO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "MO", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["MT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "MT", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["NE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "NE", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["NV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "NV", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["NH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "NH", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["NJ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "NJ", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["NM"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "NM", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["NY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "NY", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["NC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "NC", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["ND"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "ND", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["OH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "OH", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["OK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "OK", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["OR"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "OR", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["PA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "PA", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["RI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "RI", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["SC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "SC", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["SD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "SD", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["TN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "TN", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["TX"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "TX", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["UT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "UT", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["VT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "VT", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["VA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "VA", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["WA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "WA", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["WV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "WV", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["WI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "WI", 
+      year = 2010)
+  
+  occupancy_sf1_h3_list[["WY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = occupancy_sf1_h3, 
+      state = "WY", 
+      year = 2010)
+  
+  occupancy_sf1_h3_tibble <- 
+    bind_rows(occupancy_sf1_h3_list)
+  
+  save(
+    occupancy_sf1_h3_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "occupancy_sf1_h3_list.rdata"
+      )
+    )
+  
+  save(
+    occupancy_sf1_h3_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "occupancy_sf1_h3_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    occupancy_sf1_h3_list, 
+    occupancy_sf1_h3_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r housing_tenure_sf1_h4 download}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "housing_tenure_sf1_h4_tibble.rdata"
+      )
+    )
+  ) {
+
+housing_tenure_sf1_h4_list <- 
+  list()
+
+  # pull the actual data
+  housing_tenure_sf1_h4_list[["AL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "AL", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["AK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "AK", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["AZ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "AZ", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["AR"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "AR", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["CA"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "CA", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["CO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "CO", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["CT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "CT", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["DE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "DE", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["FL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "FL", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["GA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "GA", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["HI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "HI", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["ID"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "ID", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["IL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "IL", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["IN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "IN", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["IA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "IA", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["KS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "KS", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["KY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "KY", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["LA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "LA", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["ME"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "ME", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["MD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "MD", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["MA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "MA", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["MI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "MI", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["MN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "MN", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["MS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "MS", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["MO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "MO", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["MT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "MT", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["NE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "NE", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["NV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "NV", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["NH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "NH", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["NJ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "NJ", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["NM"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "NM", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["NY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "NY", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["NC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "NC", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["ND"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "ND", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["OH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "OH", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["OK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "OK", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["OR"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "OR", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["PA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "PA", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["RI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "RI", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["SC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "SC", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["SD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "SD", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["TN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "TN", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["TX"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "TX", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["UT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "UT", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["VT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "VT", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["VA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "VA", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["WA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "WA", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["WV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "WV", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["WI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "WI", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_list[["WY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_sf1_h4, 
+      state = "WY", 
+      year = 2010)
+  
+  housing_tenure_sf1_h4_tibble <- 
+    bind_rows(housing_tenure_sf1_h4_list)
+  
+  save(
+    housing_tenure_sf1_h4_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "housing_tenure_sf1_h4_list.rdata"
+      )
+    )
+  
+  save(
+    housing_tenure_sf1_h4_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "housing_tenure_sf1_h4_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    housing_tenure_sf1_h4_list, 
+    housing_tenure_sf1_h4_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r housing_tenure_people_sf1_h11 download}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "housing_tenure_people_sf1_h11_tibble.rdata"
+      )
+    )
+  ) {
+
+housing_tenure_people_sf1_h11_list <- 
+  list()
+
+  # pull the actual data
+  housing_tenure_people_sf1_h11_list[["AL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "AL", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["AK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "AK", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["AZ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "AZ", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["AR"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "AR", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["CA"]] <- 
+      get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "CA", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["CO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "CO", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["CT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "CT", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["DE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "DE", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["FL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "FL", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["GA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "GA", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["HI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "HI", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["ID"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "ID", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["IL"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "IL", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["IN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "IN", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["IA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "IA", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["KS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "KS", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["KY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "KY", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["LA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "LA", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["ME"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "ME", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["MD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "MD", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["MA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "MA", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["MI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "MI", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["MN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "MN", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["MS"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "MS", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["MO"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "MO", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["MT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "MT", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["NE"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "NE", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["NV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "NV", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["NH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "NH", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["NJ"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "NJ", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["NM"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "NM", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["NY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "NY", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["NC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "NC", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["ND"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "ND", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["OH"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "OH", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["OK"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "OK", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["OR"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "OR", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["PA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "PA", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["RI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "RI", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["SC"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "SC", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["SD"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "SD", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["TN"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "TN", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["TX"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "TX", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["UT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "UT", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["VT"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "VT", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["VA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "VA", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["WA"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "WA", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["WV"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "WV", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["WI"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "WI", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_list[["WY"]] <- 
+    get_decennial(
+      geography = "tract", 
+      variables = housing_tenure_people_sf1_h11, 
+      state = "WY", 
+      year = 2010)
+  
+  housing_tenure_people_sf1_h11_tibble <- 
+    bind_rows(housing_tenure_people_sf1_h11_list)
+  
+  save(
+    housing_tenure_people_sf1_h11_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "housing_tenure_people_sf1_h11_list.rdata"
+      )
+    )
+  
+  save(
+    housing_tenure_people_sf1_h11_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "housing_tenure_people_sf1_h11_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    housing_tenure_people_sf1_h11_list, 
+    housing_tenure_people_sf1_h11_tibble
+    )
+  gc()
+}
+
+```
+
+### acs
+
+#### acs variable lists
+
 ```{r acs variable lists}
 
 # educational attainment for the population 25 years and over
 # universe: population 25 years and over
-education_cat_acs_b15003 <- 
+edu_cat_acs_b15003 <- 
   c("B15003_001",  # total
     "B15003_002",  # no schooling completed
     "B15003_003",  # nursery school
@@ -1511,7 +3895,7 @@ home_value_cat_b25075 <-
 
 # median value (dollars)
 # universe: owner-occupied housing units
-home_value_median <-
+home_value_median_b25077 <-
   c("B25077_001")  # median value (dollars)
 
 # types of health insurance coverage by age
@@ -1541,7 +3925,7 @@ health_insurance_cat_c27010 <-
 
 # household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
 # universe: households
-ling_iso <-
+ling_iso_b16002 <-
   c("B16002_001",  # total
     "B16002_002",    # English only
     "B16002_003",    # Spanish:
@@ -1559,6 +3943,7 @@ ling_iso <-
 
 ```
 
+#### acs variable pulls
 
 ```{r acs total pop b01003}
 
@@ -1940,6 +4325,4384 @@ ling_iso <-
 # }    
 
 ```
+
+
+```{r edu_cat_acs_b15003 download}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "edu_cat_acs_b15003_tibble.rdata"
+      )
+    )
+  ) {
+
+edu_cat_acs_b15003_list <- 
+  list()
+
+  # pull the actual data
+  edu_cat_acs_b15003_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "AL", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "AK", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "AZ", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "AR", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "CA", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "CO", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "CT", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "DE", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "FL", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "GA", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "HI", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "ID", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "IL", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "IN", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "IA", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "KS", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "KY", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "LA", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "ME", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "MD", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "MA", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "MI", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "MN", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "MS", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "MO", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "MT", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "NE", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "NV", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "NH", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "NJ", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "NM", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "NY", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "NC", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "ND", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "OH", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "OK", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "OR", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "PA", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "RI", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "SC", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "SD", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "TN", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "TX", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "UT", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "VT", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "VA", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "WA", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "WV", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "WI", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_acs_b15003, 
+      state = "WY", 
+      year = 2012)
+  
+  edu_cat_acs_b15003_tibble <- 
+    bind_rows(edu_cat_acs_b15003_list)
+  
+  save(
+    edu_cat_acs_b15003_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "edu_cat_acs_b15003_list.rdata"
+      )
+    )
+  
+  save(
+    edu_cat_acs_b15003_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "edu_cat_acs_b15003_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    edu_cat_acs_b15003_list, 
+    edu_cat_acs_b15003_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r poverty_ratio_cat_c17002 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "poverty_ratio_cat_c17002_tibble.rdata"
+      )
+    )
+  ) {
+
+poverty_ratio_cat_c17002_list <- 
+  list()
+
+  # pull the actual data
+  poverty_ratio_cat_c17002_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "AL", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "AK", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "AZ", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "AR", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "CA", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "CO", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "CT", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "DE", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "FL", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "GA", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "HI", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "ID", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "IL", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "IN", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "IA", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "KS", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "KY", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "LA", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "ME", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "MD", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "MA", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "MI", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "MN", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "MS", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "MO", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "MT", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "NE", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "NV", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "NH", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "NJ", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "NM", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "NY", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "NC", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "ND", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "OH", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "OK", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "OR", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "PA", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "RI", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "SC", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "SD", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "TN", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "TX", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "UT", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "VT", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "VA", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "WA", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "WV", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "WI", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "WY", 
+      year = 2012)
+  
+  poverty_ratio_cat_c17002_tibble <- 
+    bind_rows(poverty_ratio_cat_c17002_list)
+  
+  save(
+    poverty_ratio_cat_c17002_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "poverty_ratio_cat_c17002_list.rdata"
+      )
+    )
+  
+  save(
+    poverty_ratio_cat_c17002_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "poverty_ratio_cat_c17002_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    poverty_ratio_cat_c17002_list, 
+    poverty_ratio_cat_c17002_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r income_house_cat_b19001 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "income_house_cat_b19001_tibble.rdata"
+      )
+    )
+  ) {
+
+income_house_cat_b19001_list <- 
+  list()
+
+  # pull the actual data
+  income_house_cat_b19001_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "AL", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "AK", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "AZ", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "AR", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "CA", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "CO", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "CT", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "DE", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "FL", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "GA", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "HI", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "ID", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "IL", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "IN", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "IA", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "KS", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "KY", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "LA", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "ME", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "MD", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "MA", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "MI", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "MN", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "MS", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "MO", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "MT", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "NE", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "NV", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "NH", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "NJ", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "NM", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "NY", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "NC", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "ND", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "OH", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "OK", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "OR", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "PA", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "RI", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "SC", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "SD", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "TN", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "TX", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "UT", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "VT", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "VA", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "WA", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "WV", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "WI", 
+      year = 2012)
+  
+  income_house_cat_b19001_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "WY", 
+      year = 2012)
+  
+  income_house_cat_b19001_tibble <- 
+    bind_rows(income_house_cat_b19001_list)
+  
+  save(
+    income_house_cat_b19001_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "income_house_cat_b19001_list.rdata"
+      )
+    )
+  
+  save(
+    income_house_cat_b19001_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "income_house_cat_b19001_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    income_house_cat_b19001_list, 
+    income_house_cat_b19001_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r income_house_median_b19013 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "income_house_median_b19013_tibble.rdata"
+      )
+    )
+  ) {
+
+income_house_median_b19013_list <- 
+  list()
+
+  # pull the actual data
+  income_house_median_b19013_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "AL", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "AK", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "AZ", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "AR", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "CA", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "CO", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "CT", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "DE", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "FL", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "GA", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "HI", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "ID", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "IL", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "IN", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "IA", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "KS", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "KY", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "LA", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "ME", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "MD", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "MA", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "MI", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "MN", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "MS", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "MO", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "MT", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "NE", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "NV", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "NH", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "NJ", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "NM", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "NY", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "NC", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "ND", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "OH", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "OK", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "OR", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "PA", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "RI", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "SC", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "SD", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "TN", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "TX", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "UT", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "VT", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "VA", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "WA", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "WV", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "WI", 
+      year = 2012)
+  
+  income_house_median_b19013_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "WY", 
+      year = 2012)
+  
+  income_house_median_b19013_tibble <- 
+    bind_rows(income_house_median_b19013_list)
+  
+  save(
+    income_house_median_b19013_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "income_house_median_b19013_list.rdata"
+      )
+    )
+  
+  save(
+    income_house_median_b19013_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "income_house_median_b19013_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    income_house_median_b19013_list, 
+    income_house_median_b19013_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r earnings_sex_cat_b20001 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "earnings_sex_cat_b20001_tibble.rdata"
+      )
+    )
+  ) {
+
+earnings_sex_cat_b20001_list <- 
+  list()
+
+  # pull the actual data
+  earnings_sex_cat_b20001_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "AL", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "AK", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "AZ", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "AR", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "CA", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "CO", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "CT", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "DE", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "FL", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "GA", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "HI", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "ID", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "IL", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "IN", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "IA", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "KS", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "KY", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "LA", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "ME", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "MD", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "MA", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "MI", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "MN", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "MS", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "MO", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "MT", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "NE", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "NV", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "NH", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "NJ", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "NM", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "NY", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "NC", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "ND", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "OH", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "OK", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "OR", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "PA", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "RI", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "SC", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "SD", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "TN", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "TX", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "UT", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "VT", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "VA", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "WA", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "WV", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "WI", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "WY", 
+      year = 2012)
+  
+  earnings_sex_cat_b20001_tibble <- 
+    bind_rows(earnings_sex_cat_b20001_list)
+  
+  save(
+    earnings_sex_cat_b20001_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "earnings_sex_cat_b20001_list.rdata"
+      )
+    )
+  
+  save(
+    earnings_sex_cat_b20001_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "earnings_sex_cat_b20001_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    earnings_sex_cat_b20001_list, 
+    earnings_sex_cat_b20001_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r earnings_median_b20002 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "earnings_median_b20002_tibble.rdata"
+      )
+    )
+  ) {
+
+earnings_median_b20002_list <- 
+  list()
+
+  # pull the actual data
+  earnings_median_b20002_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "AL", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "AK", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "AZ", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "AR", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "CA", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "CO", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "CT", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "DE", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "FL", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "GA", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "HI", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "ID", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "IL", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "IN", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "IA", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "KS", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "KY", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "LA", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "ME", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "MD", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "MA", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "MI", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "MN", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "MS", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "MO", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "MT", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "NE", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "NV", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "NH", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "NJ", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "NM", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "NY", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "NC", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "ND", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "OH", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "OK", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "OR", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "PA", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "RI", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "SC", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "SD", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "TN", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "TX", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "UT", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "VT", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "VA", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "WA", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "WV", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "WI", 
+      year = 2012)
+  
+  earnings_median_b20002_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "WY", 
+      year = 2012)
+  
+  earnings_median_b20002_tibble <- 
+    bind_rows(earnings_median_b20002_list)
+  
+  save(
+    earnings_median_b20002_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "earnings_median_b20002_list.rdata"
+      )
+    )
+  
+  save(
+    earnings_median_b20002_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "earnings_median_b20002_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    earnings_median_b20002_list, 
+    earnings_median_b20002_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r employment_cat_b23025 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "employment_cat_b23025_tibble.rdata"
+      )
+    )
+  ) {
+
+employment_cat_b23025_list <- 
+  list()
+
+  # pull the actual data
+  employment_cat_b23025_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "AL", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "AK", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "AZ", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "AR", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "CA", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "CO", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "CT", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "DE", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "FL", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "GA", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "HI", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "ID", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "IL", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "IN", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "IA", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "KS", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "KY", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "LA", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "ME", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "MD", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "MA", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "MI", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "MN", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "MS", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "MO", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "MT", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "NE", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "NV", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "NH", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "NJ", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "NM", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "NY", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "NC", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "ND", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "OH", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "OK", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "OR", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "PA", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "RI", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "SC", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "SD", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "TN", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "TX", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "UT", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "VT", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "VA", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "WA", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "WV", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "WI", 
+      year = 2012)
+  
+  employment_cat_b23025_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "WY", 
+      year = 2012)
+  
+  employment_cat_b23025_tibble <- 
+    bind_rows(employment_cat_b23025_list)
+  
+  save(
+    employment_cat_b23025_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "employment_cat_b23025_list.rdata"
+      )
+    )
+  
+  save(
+    employment_cat_b23025_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "employment_cat_b23025_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    employment_cat_b23025_list, 
+    employment_cat_b23025_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r home_value_cat_b25075 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "home_value_cat_b25075_tibble.rdata"
+      )
+    )
+  ) {
+
+home_value_cat_b25075_list <- 
+  list()
+
+  # pull the actual data
+  home_value_cat_b25075_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "AL", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "AK", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "AZ", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "AR", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "CA", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "CO", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "CT", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "DE", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "FL", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "GA", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "HI", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "ID", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "IL", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "IN", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "IA", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "KS", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "KY", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "LA", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "ME", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "MD", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "MA", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "MI", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "MN", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "MS", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "MO", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "MT", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "NE", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "NV", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "NH", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "NJ", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "NM", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "NY", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "NC", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "ND", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "OH", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "OK", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "OR", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "PA", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "RI", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "SC", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "SD", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "TN", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "TX", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "UT", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "VT", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "VA", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "WA", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "WV", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "WI", 
+      year = 2012)
+  
+  home_value_cat_b25075_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "WY", 
+      year = 2012)
+  
+  home_value_cat_b25075_tibble <- 
+    bind_rows(home_value_cat_b25075_list)
+  
+  save(
+    home_value_cat_b25075_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "home_value_cat_b25075_list.rdata"
+      )
+    )
+  
+  save(
+    home_value_cat_b25075_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "home_value_cat_b25075_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    home_value_cat_b25075_list, 
+    home_value_cat_b25075_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r home_value_median_b25077 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "home_value_median_b25077_tibble.rdata"
+      )
+    )
+  ) {
+
+home_value_median_b25077_list <- 
+  list()
+
+  # pull the actual data
+  home_value_median_b25077_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "AL", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "AK", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "AZ", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "AR", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "CA", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "CO", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "CT", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "DE", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "FL", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "GA", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "HI", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "ID", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "IL", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "IN", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "IA", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "KS", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "KY", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "LA", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "ME", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "MD", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "MA", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "MI", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "MN", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "MS", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "MO", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "MT", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "NE", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "NV", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "NH", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "NJ", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "NM", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "NY", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "NC", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "ND", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "OH", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "OK", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "OR", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "PA", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "RI", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "SC", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "SD", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "TN", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "TX", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "UT", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "VT", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "VA", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "WA", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "WV", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "WI", 
+      year = 2012)
+  
+  home_value_median_b25077_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "WY", 
+      year = 2012)
+  
+  home_value_median_b25077_tibble <- 
+    bind_rows(home_value_median_b25077_list)
+  
+  save(
+    home_value_median_b25077_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "home_value_median_b25077_list.rdata"
+      )
+    )
+  
+  save(
+    home_value_median_b25077_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "home_value_median_b25077_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    home_value_median_b25077_list, 
+    home_value_median_b25077_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r health_insurance_cat_c27010 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "health_insurance_cat_c27010_tibble.rdata"
+      )
+    )
+  ) {
+
+health_insurance_cat_c27010_list <- 
+  list()
+
+  # pull the actual data
+  health_insurance_cat_c27010_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "AL", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "AK", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "AZ", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "AR", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "CA", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "CO", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "CT", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "DE", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "FL", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "GA", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "HI", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "ID", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "IL", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "IN", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "IA", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "KS", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "KY", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "LA", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "ME", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "MD", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "MA", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "MI", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "MN", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "MS", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "MO", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "MT", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "NE", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "NV", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "NH", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "NJ", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "NM", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "NY", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "NC", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "ND", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "OH", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "OK", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "OR", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "PA", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "RI", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "SC", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "SD", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "TN", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "TX", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "UT", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "VT", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "VA", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "WA", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "WV", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "WI", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "WY", 
+      year = 2012)
+  
+  health_insurance_cat_c27010_tibble <- 
+    bind_rows(health_insurance_cat_c27010_list)
+  
+  save(
+    health_insurance_cat_c27010_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "health_insurance_cat_c27010_list.rdata"
+      )
+    )
+  
+  save(
+    health_insurance_cat_c27010_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "health_insurance_cat_c27010_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    health_insurance_cat_c27010_list, 
+    health_insurance_cat_c27010_tibble
+    )
+  gc()
+}
+
+```
+
+
+```{r ling_iso_b16002 download}
+
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "ling_iso_b16002_tibble.rdata"
+      )
+    )
+  ) {
+
+ling_iso_b16002_list <- 
+  list()
+
+  # pull the actual data
+  ling_iso_b16002_list[["AL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "AL", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["AK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "AK", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["AZ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "AZ", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["AR"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "AR", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["CA"]] <- 
+      get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "CA", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["CO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "CO", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["CT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "CT", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["DE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "DE", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["FL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "FL", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["GA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "GA", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["HI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "HI", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["ID"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "ID", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["IL"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "IL", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["IN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "IN", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["IA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "IA", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["KS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "KS", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["KY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "KY", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["LA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "LA", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["ME"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "ME", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["MD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "MD", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["MA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "MA", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["MI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "MI", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["MN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "MN", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["MS"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "MS", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["MO"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "MO", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["MT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "MT", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["NE"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "NE", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["NV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "NV", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["NH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "NH", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["NJ"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "NJ", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["NM"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "NM", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["NY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "NY", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["NC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "NC", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["ND"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "ND", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["OH"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "OH", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["OK"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "OK", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["OR"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "OR", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["PA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "PA", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["RI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "RI", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["SC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "SC", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["SD"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "SD", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["TN"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "TN", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["TX"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "TX", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["UT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "UT", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["VT"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "VT", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["VA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "VA", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["WA"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "WA", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["WV"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "WV", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["WI"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "WI", 
+      year = 2012)
+  
+  ling_iso_b16002_list[["WY"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "WY", 
+      year = 2012)
+  
+  ling_iso_b16002_tibble <- 
+    bind_rows(ling_iso_b16002_list)
+  
+  save(
+    ling_iso_b16002_list, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "ling_iso_b16002_list.rdata"
+      )
+    )
+  
+  save(
+    ling_iso_b16002_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "ling_iso_b16002_tibble.rdata"
+      )
+    )
+  
+  # remove the generated files
+  rm(
+    ling_iso_b16002_list, 
+    ling_iso_b16002_tibble
+    )
+  gc()
+}
+
+```
+
 
 
 ## clean air pollution data
