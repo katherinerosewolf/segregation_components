@@ -88,7 +88,30 @@ file_downloader <-
                     mode = "wb")
   }
 
+# function to download generated data without asking
+download_generated_data_auto <- 
+  function() {
+    cat(paste("Downloading data generated from decennial census 2010."))
+    total_files <- 426
+    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
+    url <- "https://s3.amazonaws.com/gl-shared-data/generated_census_data_v060.zip"
+    download.file(url, paste0(path_to_census, "/tmp.zip"))
+    unzip(paste0(path_to_census, "/tmp.zip"), exdir = paste0(path_to_census, 
+        "/generated_data"))
+    file.remove(paste0(path_to_census, "/tmp.zip"))
+    n_files <- length(list.files(paste0(path_to_census, "/generated_data"), 
+        recursive = TRUE))
+    if (n_files == total_files) {
+        cat("Extraction is successful!\n\n")
+    }
+    else {
+        cat("Last downloading or extraction has a problem. Download and extract again.")
+        download_generated_data_auto()
+    }
+}
+
 ```
+
 
 # CREATE SUBDIRECTORIES
 
@@ -96,15 +119,25 @@ file_downloader <-
 if(!dir.exists("raw_data"))
   dir.create("raw_data")
 
+if(!dir.exists(file.path("raw_data", "totalcensus")))
+  dir.create(file.path("raw_data", "totalcensus"))
+
 if(!dir.exists("intermediate_data"))
   dir.create("intermediate_data")
 ```
 
+
 # LOAD NECESSARY FILES
 
-```{r census data, results = "hide"}
+## geography files
+
+### census shapefile with data
+
+```{r census shapefile with dp1 data, results = "hide"}
 
 # last updated by census bureau 	19-Jul-2012 07:01	391M
+# downloaded June 19, 2019 from 
+# http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip?#
 
 if(
   !file.exists(
@@ -122,7 +155,7 @@ if(
     folder_as_string = "raw_data"
     )
 
-# unzip it to the intermediate file directory
+  # unzip it to the intermediate file directory
   unzip(
     file.path(
       "raw_data", 
@@ -143,7 +176,8 @@ if(
     column_name_fixer(
       census_data_shapefile
     )
-
+  
+  # remove the data
 
   # save the shapefile
   save(
@@ -161,6 +195,58 @@ if(
 
 ```
 
+### census shapefile without data
+
+```{r census shapefile without data}
+
+if(
+  !file.exists(
+    "intermediate_data", 
+    "tigris_shapefiles_no_data.rdata"
+  )
+  ) {
+  
+  # make vector of state abbreviations
+  state_abbreviation_character_vector_no_pr <- 
+      c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
+  
+  # download the data
+  tigris_shapefiles_no_data <- 
+    rbind_tigris(
+    map(
+      state_abbreviation_character_vector_no_pr, 
+      function(x) {
+        tracts(
+          x, 
+          cb = FALSE, 
+          year = 2010, 
+          class = 'sf'
+          )
+        }
+      )
+  )
+  
+  # save the result to disk
+  save(
+    tigris_shapefiles_no_data, 
+    file = 
+      file.path(
+        "raw_data", 
+        "tigris_shapefiles_no_data.rdata"
+      )
+  )
+  
+  # remove the shapefile
+  rm(
+    tigris_shapefiles_no_data
+  )
+  gc()
+}
+
+```
+
+
+## ruca
 
 ```{r ruca data}
 
@@ -306,6 +392,7 @@ save(
 
 # remove created data from memory
 rm(
+  organic_carbon_rows,
   organic_carbon_codes, 
   speciation_parameter_codes,
   species_and_codes)
@@ -634,6 +721,9 @@ map(
   .f = speciator
 )
 
+rm(speciation_files)
+gc()
+
 ```
 
 
@@ -756,52 +846,52 @@ if(
 
 ```{r join pm25 total and speciation data}
 
-# if(
-#   !file.exists(  # checks if tibble already exists
-#     file.path(
-#       "intermediate_data",
-#       "big_air_tibble.rdata"
-#       )
-#     )
-#   ) {
-#   
-#   # load the total pm2.5 tibble
-#   load(
-#     file.path(
-#       "intermediate_data",
-#       "big_pm_25_frm_tibble.rdata"
-#     )
-#   )
-# 
-#   # load the pm2.5 speciation tibble
-#   load(
-#     file.path(
-#       "intermediate_data",
-#       "big_speciation_tibble.rdata"
-#     )
-#   )
-# 
-#   # and in the darkness bind them
-#   big_air_tibble <- 
-#     bind_rows(  
-#       big_pm_25_frm_tibble,
-#       big_speciation_tibble)
-#   
-#   # remove extraneous files
-#   rm(big_pm_25_frm_tibble, 
-#      big_speciation_tibble)
-#   gc()
-#   
-#   # save the big tibble
-#   save(
-#     big_air_tibble, 
-#     file = 
-#       file.path(
-#         "intermediate_data", 
-#         "big_air_tibble.rdata"
-#       ))
-#   
-# }
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "big_air_tibble.rdata"
+      )
+    )
+  ) {
+
+  # load the total pm2.5 tibble
+  load(
+    file.path(
+      "intermediate_data",
+      "big_pm_25_frm_tibble.rdata"
+    )
+  )
+
+  # load the pm2.5 speciation tibble
+  load(
+    file.path(
+      "intermediate_data",
+      "big_speciation_tibble.rdata"
+    )
+  )
+
+  # and in the darkness bind them
+  big_air_tibble <-
+    bind_rows(
+      big_pm_25_frm_tibble,
+      big_speciation_tibble)
+
+  # remove extraneous files
+  rm(big_pm_25_frm_tibble,
+     big_speciation_tibble)
+  gc()
+
+  # save the big tibble
+  save(
+    big_air_tibble,
+    file =
+      file.path(
+        "intermediate_data",
+        "big_air_tibble.rdata"
+      ))
+
+}
 
 ```
 
@@ -838,12 +928,12 @@ if(
 # total population (SF1 P1)
 # universe: total population
 total_pop_sf1_p1 <-
-  c("P001001")
+  c("P0010001")
 
 # hispanic or latino origin by race (SF1 P5)
 # universe: total population
 race_sf1_p5 <-
-  sprintf("P0050%0.2d", 1:17)
+  sprintf("P0050%0.3d", 1:17)
 
 # P0050001  Total population:
 # P0050002    Not Hispanic or Latino:
@@ -866,7 +956,7 @@ race_sf1_p5 <-
 # sex by age (SF1 P12)
 # universe: total population
 sex_by_age_sf1_p12 <- 
-  sprintf("P0120%0.2d", 1:49)
+  sprintf("P0120%0.3d", 1:49)
 # NOTE: P0120002 is all male and P0120026 is all female
 
 # P0120001  Total population:
@@ -922,33 +1012,180 @@ sex_by_age_sf1_p12 <-
 # median age (SF1 P13)
 # universe: total population
 age_median_sf1_p13 <- 
-  "P013001"
+  "P0130001"
 
 # occupancy status
 # universe: housing units
 # 1 total, 2 occupied, 3 vacant
 occupancy_sf1_h3 <-
-  sprintf("H00300%d", 1:3)
+  sprintf("H00300%0.2d", 1:3)
 
 # housing tenure (SF1 H4)
 # universe: occupied housing units
 # 1 total, 2 owned w/ a mortgage or loan, 3 owned free and clear, 4 renter-occupied
 housing_tenure_sf1_h4 <-  
-  sprintf("H00400%d", 1:4)
+  sprintf("H00400%0.2d", 1:4)
 
 # population in occupied housing units by tenure
 # universe: population in occupied housing units
 housing_tenure_people_sf1_h11 <- 
-  c("H011001",  # total population in occupied housing units
-    "H011002",  # owned with a mortgage or a loan 
-    "H011003",  # owned free and clear
-    "H011004")  # renter-occupied
+  c("H0110001",  # total population in occupied housing units
+    "H0110002",  # owned with a mortgage or a loan 
+    "H0110003",  # owned free and clear
+    "H0110004")  # renter-occupied
+
+# make list of needed variables
+sf1_totalcensus_var_list <- 
+  list(
+    total_pop_sf1_p1,
+    race_sf1_p5,
+    sex_by_age_sf1_p12,
+    age_median_sf1_p13,
+    occupancy_sf1_h3,
+    housing_tenure_sf1_h4,
+    housing_tenure_people_sf1_h11
+  )
+
+# make big master variable list
+sf1_totalcensus_var_vec <- 
+  sf1_totalcensus_var_list %>% 
+  reduce(c)
+
+# save the master variable list
+save(
+  sf1_totalcensus_var_vec, 
+  file = 
+    file.path("intermediate_data", 
+              "sf1_totalcensus_var_vec.rdata")
+)
+
+rm(
+  total_pop_sf1_p1,
+  race_sf1_p5,
+  sex_by_age_sf1_p12,
+  age_median_sf1_p13,
+  occupancy_sf1_h3,
+  housing_tenure_sf1_h4,
+  housing_tenure_people_sf1_h11, 
+  sf1_totalcensus_var_list, 
+  sf1_totalcensus_var_vec
+  )
+gc()
 
 ```
 
-#### census variable pulls
 
-```{r total_pop_sf1_p1 download}
+#### census totalcensus variable pulls
+
+```{r sf1 totalcensus data download}
+
+# header information from
+# file source: https://www2.census.gov/census_2010/04-Summary_File_1/Urban_Rural_Update/
+# individual state files from there
+# downloaded 2019 June 18
+# last updated per website 2012 September 27
+
+# check if the raw sf1 totalcensus tibble exists and if so, skip the whole chunk
+if(!
+   file.exists(
+     file.path(
+       "intermediate_data", 
+       "sf1_totalcensus_raw_tibble.rdata"
+     )
+   )
+   ) {
+  
+  # load census variable names
+  load(
+    file = 
+      file.path(
+        "intermediate_data", 
+        "sf1_totalcensus_var_vec.rdata")
+  )
+  
+  # set path to census data
+  Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
+  
+  # make vector of state abbreviations
+  state_abbreviation_character_vector <- 
+    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "PR")
+  
+  # remove puerto rico
+  state_abbreviation_character_vector_no_pr <- 
+    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
+  
+  # download the data necessary to use the census data if it isn't already there
+  if(
+    !dir.exists(
+      file.path(
+        "raw_data", 
+        "totalcensus", 
+        "generated_data"
+        )
+      )
+    ) 
+  download_generated_data_auto()
+  
+  # check if 2010 census data is there
+  if(
+    !dir.exists(
+      file.path(
+        "raw_data", 
+        "totalcensus", 
+        "census2010"
+        )
+      )
+    ) {
+    
+    # download the census data if it's not
+      download_census(
+        survey = "dec",
+        year = 2010, 
+        states = "OK"
+        )
+  }
+  
+  # create dataframe of needed variables
+  sf1_totalcensus_raw_dataframe <-
+    read_decennial(
+      year = 2010,
+      states = state_abbreviation_character_vector_no_pr,
+      table_contents =
+        sf1_totalcensus_var_vec,
+      summary_level = "tract"
+  )
+  
+  # make the dataframe into a tibble
+  sf1_totalcensus_raw_tibble <- 
+    as_tibble(sf1_totalcensus_raw_dataframe)
+  
+  # save the tibble to disk
+  save(
+    sf1_totalcensus_raw_tibble, 
+    file = 
+      file.path(
+        "intermediate_data",
+        "sf1_totalcensus_raw_tibble.rdata"
+        )
+    )
+  
+  # remove working files
+  rm(
+    sf1_totalcensus_var_vec,
+    state_abbreviation_character_vector, 
+    state_abbreviation_character_vector_no_pr,
+    sf1_totalcensus_raw_dataframe, 
+    sf1_totalcensus_raw_tibble
+    )
+  gc()
+}
+
+```
+
+
+#### census tidycensus variable pulls (DO NOT RUN)
+
+```{r total_pop_sf1_p1 download, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -1345,7 +1582,7 @@ total_pop_sf1_p1_list <-
 ```
 
 
-```{r race_sf1_p5 download}
+```{r race_sf1_p5 download, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -1742,7 +1979,7 @@ race_sf1_p5_list <-
 ```
 
 
-```{r sex_by_age_sf1_p12 download}
+```{r sex_by_age_sf1_p12 download, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -2139,7 +2376,7 @@ sex_by_age_sf1_p12_list <-
 ```
 
 
-```{r age_median_sf1_p13 download}
+```{r age_median_sf1_p13 download, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -2536,7 +2773,7 @@ age_median_sf1_p13_list <-
 ```
 
 
-```{r occupancy_sf1_h3 download}
+```{r occupancy_sf1_h3 download, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -2933,7 +3170,7 @@ occupancy_sf1_h3_list <-
 ```
 
 
-```{r housing_tenure_sf1_h4 download}
+```{r housing_tenure_sf1_h4 download, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -3330,7 +3567,7 @@ housing_tenure_sf1_h4_list <-
 ```
 
 
-```{r housing_tenure_people_sf1_h11 download}
+```{r housing_tenure_people_sf1_h11 download, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -3730,11 +3967,11 @@ housing_tenure_people_sf1_h11_list <-
 
 #### acs variable lists
 
-```{r acs variable lists}
+```{r acs totalcensus variable lists}
 
 # educational attainment for the population 25 years and over
 # universe: population 25 years and over
-edu_cat_acs_b15003 <- 
+edu_cat_b15003 <- 
   c("B15003_001",  # total
     "B15003_002",  # no schooling completed
     "B15003_003",  # nursery school
@@ -3941,11 +4178,162 @@ ling_iso_b16002 <-
     "B16002_013",      # No one 14 and over speaks English only or speaks English "very well"
     "B16002_014")     # At least one person 14 and over speaks English only or speaks English "very well"
 
+# make list of needed variables
+acs_totalcensus_var_list <- 
+  list(
+    edu_cat_b15003,
+    poverty_ratio_cat_c17002,
+    income_house_cat_b19001,
+    income_house_median_b19013,
+    earnings_sex_cat_b20001,
+    earnings_median_b20002,
+    employment_cat_b23025,
+    home_value_cat_b25075,
+    home_value_median_b25077,
+    health_insurance_cat_c27010,
+    ling_iso_b16002
+  )
+
+# make big master variable list
+acs_totalcensus_var_vec <-
+  acs_totalcensus_var_list %>% 
+  reduce(c)
+  
+  # save the master variable list
+save(
+  acs_totalcensus_var_vec, 
+  file = 
+    file.path("intermediate_data", 
+              "acs_totalcensus_var_vec.rdata")
+)
+
+rm(
+  edu_cat_b15003,
+  poverty_ratio_cat_c17002,
+  income_house_cat_b19001,
+  income_house_median_b19013,
+  earnings_sex_cat_b20001,
+  earnings_median_b20002,
+  employment_cat_b23025,
+  home_value_cat_b25075,
+  home_value_median_b25077,
+  health_insurance_cat_c27010,
+  ling_iso_b16002,
+  acs_totalcensus_var_list, 
+  acs_totalcensus_var_vec
+  )
+gc()
+
 ```
 
-#### acs variable pulls
+#### acs totalcensus pulls
 
-```{r acs total pop b01003}
+```{r acs totalcensus data download}
+
+# data downloaded from https://www2.census.gov/programs-surveys/acs/summary_file/2012/data/5_year_by_state/ (then individual state files)
+# downloaded 2019 June 18
+# last update per website 2015 Feburary 27
+
+# check if the acs totalcensus tibble exists and skip the whole chunk if not
+if(!
+   file.exists(
+     file.path(
+       "intermediate_data", 
+       "acs_totalcensus_raw_tibble.rdata"
+     )
+   )
+   ) {
+
+  # load variable names for reading
+  load(
+    file = 
+      file.path("intermediate_data", 
+                "acs_totalcensus_var_vec.rdata")
+  )
+  
+  # set path to census data
+  Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
+  
+  # make vector of state abbreviations
+  state_abbreviation_character_vector <- 
+    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "PR")
+  
+  # remove puerto rico
+  state_abbreviation_character_vector_no_pr <- 
+    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
+  
+  # download generated data that totalcensus requires if haven't already
+  if(
+    !dir.exists(
+      file.path(
+        "raw_data", 
+        "totalcensus", 
+        "generated_data"
+        )
+      )
+    )
+    download_generated_data_auto()
+  
+  # download actual acs data if haven't already
+  if(
+    !dir.exists(
+      file.path(
+        "raw_data", 
+        "totalcensus", 
+        "acs5year", 
+        "2012"
+        )
+      )
+    ) {
+    download_census(
+      survey = "acs5", 
+      year = 2012, 
+      states = "US"
+      )
+  }
+  
+  # this downloads the actual data!
+  acs_totalcensus_raw_dataframe <-
+    read_acs5year(
+      year = 2012,
+      states = state_abbreviation_character_vector_no_pr,
+      table_contents =
+        acs_totalcensus_var_vec,
+      summary_level = "tract",
+      with_margin = TRUE
+  )
+  
+  # make it into a tibble
+  acs_totalcensus_raw_tibble <- 
+    as_tibble(acs_totalcensus_raw_dataframe)
+  
+  # save raw tibble to disk
+  save(
+    acs_totalcensus_raw_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "acs_totalcensus_raw_tibble.rdata"
+      )
+  )
+  
+  # remove working files
+  rm(
+    acs_totalcensus_var_vec,
+    state_abbreviation_character_vector, 
+    state_abbreviation_character_vector_no_pr,
+    acs_totalcensus_raw_dataframe, 
+    acs_totalcensus_raw_tibble
+  )
+  gc()
+}
+
+```
+
+
+#### acs tidycensus variable pulls (DO NOT RUN)
+
+```{r total pop b01003 download, eval=FALSE, include=FALSE}
 
 # if(
 #   !file.exists(  # checks if tibble already exists
@@ -4327,404 +4715,412 @@ ling_iso_b16002 <-
 ```
 
 
-```{r edu_cat_acs_b15003 download}
+```{r edu_cat_b15003 download, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
     file.path(
       "intermediate_data",
-      "edu_cat_acs_b15003_tibble.rdata"
+      "edu_cat_b15003_tibble.rdata"
       )
     )
   ) {
 
-edu_cat_acs_b15003_list <- 
+edu_cat_b15003_list <- 
   list()
 
   # pull the actual data
-  edu_cat_acs_b15003_list[["AL"]] <- 
+  edu_cat_b15003_list[["AL"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "AL", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["AK"]] <- 
+  edu_cat_b15003_list[["AK"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "AK", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["AZ"]] <- 
+  edu_cat_b15003_list[["AZ"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "AZ", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["AR"]] <- 
+  edu_cat_b15003_list[["AR"]] <- 
       get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "AR", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["CA"]] <- 
+  edu_cat_b15003_list[["CA"]] <- 
       get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "CA", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["CO"]] <- 
+  edu_cat_b15003_list[["CO"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "CO", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["CT"]] <- 
+  edu_cat_b15003_list[["CT"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "CT", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["DE"]] <- 
+  edu_cat_b15003_list[["DE"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "DE", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["FL"]] <- 
+  edu_cat_b15003_list[["FL"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "FL", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["GA"]] <- 
+  edu_cat_b15003_list[["GA"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "GA", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["HI"]] <- 
+  edu_cat_b15003_list[["HI"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "HI", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["ID"]] <- 
+  edu_cat_b15003_list[["ID"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "ID", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["IL"]] <- 
+  edu_cat_b15003_list[["IL"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "IL", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["IN"]] <- 
+  edu_cat_b15003_list[["IN"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "IN", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["IA"]] <- 
+  edu_cat_b15003_list[["IA"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "IA", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["KS"]] <- 
+  edu_cat_b15003_list[["KS"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "KS", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["KY"]] <- 
+  edu_cat_b15003_list[["KY"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "KY", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["LA"]] <- 
+  edu_cat_b15003_list[["LA"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "LA", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["ME"]] <- 
+  edu_cat_b15003_list[["ME"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "ME", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["MD"]] <- 
+  edu_cat_b15003_list[["MD"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "MD", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["MA"]] <- 
+  edu_cat_b15003_list[["MA"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "MA", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["MI"]] <- 
+  edu_cat_b15003_list[["MI"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "MI", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["MN"]] <- 
+  edu_cat_b15003_list[["MN"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "MN", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["MS"]] <- 
+  edu_cat_b15003_list[["MS"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "MS", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["MO"]] <- 
+  edu_cat_b15003_list[["MO"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "MO", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["MT"]] <- 
+  edu_cat_b15003_list[["MT"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "MT", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["NE"]] <- 
+  edu_cat_b15003_list[["NE"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "NE", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["NV"]] <- 
+  edu_cat_b15003_list[["NV"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "NV", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["NH"]] <- 
+  edu_cat_b15003_list[["NH"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "NH", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["NJ"]] <- 
+  edu_cat_b15003_list[["NJ"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "NJ", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["NM"]] <- 
+  edu_cat_b15003_list[["NM"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "NM", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["NY"]] <- 
+  edu_cat_b15003_list[["NY"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "NY", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["NC"]] <- 
+  edu_cat_b15003_list[["NC"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "NC", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["ND"]] <- 
+  edu_cat_b15003_list[["ND"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "ND", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["OH"]] <- 
+  edu_cat_b15003_list[["OH"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "OH", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["OK"]] <- 
+  edu_cat_b15003_list[["OK"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "OK", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["OR"]] <- 
+  edu_cat_b15003_list[["OR"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "OR", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["PA"]] <- 
+  edu_cat_b15003_list[["PA"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "PA", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["RI"]] <- 
+  edu_cat_b15003_list[["RI"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "RI", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["SC"]] <- 
+  edu_cat_b15003_list[["SC"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "SC", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["SD"]] <- 
+  edu_cat_b15003_list[["SD"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "SD", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["TN"]] <- 
+  edu_cat_b15003_list[["TN"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "TN", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["TX"]] <- 
+  edu_cat_b15003_list[["TX"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "TX", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["UT"]] <- 
+  edu_cat_b15003_list[["UT"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "UT", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["VT"]] <- 
+  edu_cat_b15003_list[["VT"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "VT", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["VA"]] <- 
+  edu_cat_b15003_list[["VA"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "VA", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["WA"]] <- 
+  edu_cat_b15003_list[["WA"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "WA", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["WV"]] <- 
+  edu_cat_b15003_list[["WV"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "WV", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["WI"]] <- 
+  edu_cat_b15003_list[["WI"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "WI", 
       year = 2012)
   
-  edu_cat_acs_b15003_list[["WY"]] <- 
+  edu_cat_b15003_list[["WY"]] <- 
     get_acs(
       geography = "tract", 
-      variables = edu_cat_acs_b15003, 
+      variables = edu_cat_b15003, 
       state = "WY", 
       year = 2012)
   
-  edu_cat_acs_b15003_tibble <- 
-    bind_rows(edu_cat_acs_b15003_list)
+  edu_cat_b15003_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = edu_cat_b15003, 
+      state = "DC", 
+      year = 2012)
+  
+  edu_cat_b15003_tibble <- 
+    bind_rows(edu_cat_b15003_list)
   
   save(
-    edu_cat_acs_b15003_list, 
+    edu_cat_b15003_list, 
     file = 
       file.path(
         "intermediate_data", 
-        "edu_cat_acs_b15003_list.rdata"
+        "edu_cat_b15003_list.rdata"
       )
     )
   
   save(
-    edu_cat_acs_b15003_tibble, 
+    edu_cat_b15003_tibble, 
     file = 
       file.path(
         "intermediate_data", 
-        "edu_cat_acs_b15003_tibble.rdata"
+        "edu_cat_b15003_tibble.rdata"
       )
     )
   
   # remove the generated files
   rm(
-    edu_cat_acs_b15003_list, 
-    edu_cat_acs_b15003_tibble
+    edu_cat_b15003_list, 
+    edu_cat_b15003_tibble
     )
   gc()
+  
 }
 
 ```
 
 
-```{r poverty_ratio_cat_c17002 download}
+```{r poverty_ratio_cat_c17002 download, eval=FALSE, include=FALSE}
 
 
 if(
@@ -5090,6 +5486,13 @@ poverty_ratio_cat_c17002_list <-
       state = "WY", 
       year = 2012)
   
+    poverty_ratio_cat_c17002_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = poverty_ratio_cat_c17002, 
+      state = "DC", 
+      year = 2012)
+  
   poverty_ratio_cat_c17002_tibble <- 
     bind_rows(poverty_ratio_cat_c17002_list)
   
@@ -5122,20 +5525,20 @@ poverty_ratio_cat_c17002_list <-
 ```
 
 
-```{r income_house_cat_b19001 download}
+```{r income_house_cat_b19001 download, eval=FALSE, include=FALSE}
 
 
-if(
-  !file.exists(  # checks if tibble already exists
-    file.path(
-      "intermediate_data",
-      "income_house_cat_b19001_tibble.rdata"
-      )
-    )
-  ) {
-
-income_house_cat_b19001_list <- 
-  list()
+# if(
+#   !file.exists(  # checks if tibble already exists
+#     file.path(
+#       "intermediate_data",
+#       "income_house_cat_b19001_tibble.rdata"
+#       )
+#     )
+#   ) {
+# 
+# income_house_cat_b19001_list <- 
+#   list()
 
   # pull the actual data
   income_house_cat_b19001_list[["AL"]] <- 
@@ -5488,6 +5891,13 @@ income_house_cat_b19001_list <-
       state = "WY", 
       year = 2012)
   
+  income_house_cat_b19001_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_cat_b19001, 
+      state = "DC", 
+      year = 2012)
+  
   income_house_cat_b19001_tibble <- 
     bind_rows(income_house_cat_b19001_list)
   
@@ -5509,23 +5919,23 @@ income_house_cat_b19001_list <-
       )
     )
   
-  # remove the generated files
-  rm(
-    income_house_cat_b19001_list, 
-    income_house_cat_b19001_tibble
-    )
-  gc()
-}
+#   # remove the generated files
+#   rm(
+#     income_house_cat_b19001_list, 
+#     income_house_cat_b19001_tibble
+#     )
+#   gc()
+# }
 
 ```
 
 
-```{r income_house_median_b19013 download}
+```{r income_house_median_b19013 download, eval=FALSE, include=FALSE}
 
 
 if(
   !file.exists(  # checks if tibble already exists
-    file.path(
+    file.path( 
       "intermediate_data",
       "income_house_median_b19013_tibble.rdata"
       )
@@ -5886,6 +6296,13 @@ income_house_median_b19013_list <-
       state = "WY", 
       year = 2012)
   
+  income_house_median_b19013_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = income_house_median_b19013, 
+      state = "DC", 
+      year = 2012)
+  
   income_house_median_b19013_tibble <- 
     bind_rows(income_house_median_b19013_list)
   
@@ -5918,7 +6335,7 @@ income_house_median_b19013_list <-
 ```
 
 
-```{r earnings_sex_cat_b20001 download}
+```{r earnings_sex_cat_b20001 download, eval=FALSE, include=FALSE}
 
 
 if(
@@ -6284,6 +6701,13 @@ earnings_sex_cat_b20001_list <-
       state = "WY", 
       year = 2012)
   
+  earnings_sex_cat_b20001_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_sex_cat_b20001, 
+      state = "DC", 
+      year = 2012)
+  
   earnings_sex_cat_b20001_tibble <- 
     bind_rows(earnings_sex_cat_b20001_list)
   
@@ -6316,7 +6740,7 @@ earnings_sex_cat_b20001_list <-
 ```
 
 
-```{r earnings_median_b20002 download}
+```{r earnings_median_b20002 download, eval=FALSE, include=FALSE}
 
 
 if(
@@ -6682,6 +7106,13 @@ earnings_median_b20002_list <-
       state = "WY", 
       year = 2012)
   
+  earnings_median_b20002_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = earnings_median_b20002, 
+      state = "DC", 
+      year = 2012)
+  
   earnings_median_b20002_tibble <- 
     bind_rows(earnings_median_b20002_list)
   
@@ -6714,7 +7145,7 @@ earnings_median_b20002_list <-
 ```
 
 
-```{r employment_cat_b23025 download}
+```{r employment_cat_b23025 download, eval=FALSE, include=FALSE}
 
 
 if(
@@ -7080,6 +7511,13 @@ employment_cat_b23025_list <-
       state = "WY", 
       year = 2012)
   
+  employment_cat_b23025_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = employment_cat_b23025, 
+      state = "DC", 
+      year = 2012)
+  
   employment_cat_b23025_tibble <- 
     bind_rows(employment_cat_b23025_list)
   
@@ -7112,7 +7550,7 @@ employment_cat_b23025_list <-
 ```
 
 
-```{r home_value_cat_b25075 download}
+```{r home_value_cat_b25075 download, eval=FALSE, include=FALSE}
 
 
 if(
@@ -7478,6 +7916,13 @@ home_value_cat_b25075_list <-
       state = "WY", 
       year = 2012)
   
+  home_value_cat_b25075_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_cat_b25075, 
+      state = "DC", 
+      year = 2012)
+  
   home_value_cat_b25075_tibble <- 
     bind_rows(home_value_cat_b25075_list)
   
@@ -7510,7 +7955,7 @@ home_value_cat_b25075_list <-
 ```
 
 
-```{r home_value_median_b25077 download}
+```{r home_value_median_b25077 download, eval=FALSE, include=FALSE}
 
 
 if(
@@ -7876,6 +8321,13 @@ home_value_median_b25077_list <-
       state = "WY", 
       year = 2012)
   
+  home_value_median_b25077_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = home_value_median_b25077, 
+      state = "DC", 
+      year = 2012)
+  
   home_value_median_b25077_tibble <- 
     bind_rows(home_value_median_b25077_list)
   
@@ -7908,7 +8360,7 @@ home_value_median_b25077_list <-
 ```
 
 
-```{r health_insurance_cat_c27010 download}
+```{r health_insurance_cat_c27010 download, eval=FALSE, include=FALSE}
 
 
 if(
@@ -8274,6 +8726,13 @@ health_insurance_cat_c27010_list <-
       state = "WY", 
       year = 2012)
   
+  health_insurance_cat_c27010_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = health_insurance_cat_c27010, 
+      state = "DC", 
+      year = 2012)
+  
   health_insurance_cat_c27010_tibble <- 
     bind_rows(health_insurance_cat_c27010_list)
   
@@ -8306,7 +8765,7 @@ health_insurance_cat_c27010_list <-
 ```
 
 
-```{r ling_iso_b16002 download}
+```{r ling_iso_b16002 download, eval=FALSE, include=FALSE}
 
 
 if(
@@ -8672,6 +9131,13 @@ ling_iso_b16002_list <-
       state = "WY", 
       year = 2012)
   
+  ling_iso_b16002_list[["DC"]] <- 
+    get_acs(
+      geography = "tract", 
+      variables = ling_iso_b16002, 
+      state = "DC", 
+      year = 2012)
+  
   ling_iso_b16002_tibble <- 
     bind_rows(ling_iso_b16002_list)
   
@@ -8704,7 +9170,416 @@ ling_iso_b16002_list <-
 ```
 
 
+#### acs data from census geodatabase (SKIP!)
 
-## clean air pollution data
+```{r acs data from geodatabase download, eval=FALSE, include=FALSE}
 
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "acs_data_from_gdb.rdata"
+      )
+    )
+  ) {
+
+#   # make list of files to download
+#   acs_gdb_addresses <- 
+#     sprintf(
+#       "https://www2.census.gov/geo/tiger/TIGER_DP/2012ACS/ACS_2012_5YR_TRACT_%02d.gdb.zip", 
+#       setdiff(1:56, 
+#               c(3, 7, 14, 43, 52)  # these are not states
+#               )
+#       )
+#   
+#     # make a list of filenames for the downloaded data using the above filenames
+#   acs_gdb_filenames <-  # make list of what the filenames will be
+#     map_chr(acs_gdb_addresses,  # witness the `map` function
+#             str_extract, 
+#             "ACS_2012_5YR_TRACT_[0-9][0-9].gdb.zip")   # witness the regular expression!
+#   
+#   # download the files
+#   map2(acs_gdb_filenames, 
+#        acs_gdb_addresses, 
+#        file_downloader, 
+#        folder_as_string = "raw_data")
+# }
+
+file_downloader(
+  desired_filename_as_string = "acs_raw_gdb.zip", 
+  web_address_as_string = "https://www2.census.gov/geo/tiger/TIGER_DP/2012ACS/ACS_2012_5YR_TRACT_GIANTTABLE.gdb.zip", 
+  folder_as_string = "raw_data"
+)
+ 
+  # unzip it to the intermediate file directory
+  unzip(
+    file.path(
+      "raw_data", 
+      "acs_raw_gdb.zip"), 
+    exdir = "intermediate_data")
+
+  # read the shapefile
+  acs_data_from_gdb <- 
+    st_read(
+      file.path(
+        "intermediate_data", 
+        "ACS_2012_5YR_TRACT.gdb"
+        ), 
+      layer = "ACS_2012_5YR_TRACT"
+      )
+  
+  # fix column names
+  acs_data_from_gdb <-
+    column_name_fixer(
+      acs_data_from_gdb
+    )
+
+
+  # save the shapefile
+  save(
+    acs_data_from_gdb,
+    file = file.path(
+      "intermediate_data", 
+      "acs_data_from_gdb.rdata"
+    )
+  )
+
+  # remove the shapefile from memory
+  rm(acs_data_from_gdb)
+  gc()
+}
+   
+```
+
+
+#### select acs variables from shapefile-derived table (SKIP!)
+
+```{r acs gdb variable lists, eval=FALSE, include=FALSE}
+
+# educational attainment for the population 25 years and over
+# universe: population 25 years and over
+edu_cat_b15003_gdb_e <- 
+  c("B15003e1",  # total
+    "B15003e2",  # no schooling completed
+    "B15003e3",  # nursery school
+    "B15003e4",  # kindergarten
+    "B15003e5",  # 1st grade
+    "B15003e6",  # 2nd grade
+    "B15003e7",  # 3rd grade
+    "B15003e8",  # 4th grade
+    "B15003e9",  # 5th grade
+    "B15003e10",  # 6th grade
+    "B15003e11",  # 7th grade
+    "B15003e12",  # 8th grade
+    "B15003e13",  # 9th grade
+    "B15003e14",  # 10th grade
+    "B15003e15",  # 11th grade
+    "B15003e16",  # 12th grade
+    "B15003e17",  # regular high school diploma
+    "B15003e18",  # GED or alternative credential
+    "B15003e19",  # some college, less than 1 year
+    "B15003e20",  # some college, 1 or more years, no degree
+    "B15003e21",  # associate's degree
+    "B15003e22",  # bachelor's degree
+    "B15003e23",  # master's degree
+    "B15003e24",  # professional school degree
+    "B15003e25")  # doctorate degree
+
+edu_cat_b15003_gdb_m <- 
+  str_replace(
+    edu_cat_b15003_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# ratio of income to poverty level in the past 12 months
+# universe: population for whom poverty status is determined
+poverty_ratio_cat_c17002_gdb_e <-
+  c("C17002e1",  # total
+    "C17002e2",  # under .50
+    "C17002e3",  # .50 to .99
+    "C17002e4",  # 1.00 to 1.24
+    "C17002e5",  # 1.25 to 1.49
+    "C17002e6",  # 1.50 to 1.84
+    "C17002e7",  # 1.85 to 1.99
+    "C17002e8")  # 2.00 and over
+
+poverty_ratio_cat_c17002_gdb_m <- 
+  str_replace(
+    poverty_ratio_cat_c17002_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# household income in the past 12 months (in 2012 inflation-adjusted dollars)
+# universe: households
+income_house_cat_b19001_gdb_e <-
+  c("B19001e1",  # total
+    "B19001e2",  # less than $10,000
+    "B19001e3",  # $10,000 to $14,999
+    "B19001e4",  # $15,000 to $19,999
+    "B19001e5",  # $20,000 to $24,999
+    "B19001e6",  # $25,000 to $29,999
+    "B19001e7",  # $30,000 to $34,999
+    "B19001e8",  # $35,000 to $39,999
+    "B19001e9",  # $40,000 to $44,999
+    "B19001e10",  # $45,000 to $49,999
+    "B19001e11",  # $50,000 to $59,999
+    "B19001e12",  # $60,000 to $74,999
+    "B19001e13",  # $75,000 to $99,999
+    "B19001e14",  # $100,000 to $124,999
+    "B19001e15",  # $125,000 to $149,999
+    "B19001e16",  # $150,000 to $199,999
+    "B19001e17")  # $200,000 or more
+
+income_house_cat_b19001_gdb_m <- 
+  str_replace(
+    income_house_cat_b19001_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# median household income in the past 12 months (in 2012 inflation-adjusted dollars)
+# universe: households
+income_house_median_b19013_gdb_e <-
+  c("B19013e1")
+
+income_house_median_b19013_gdb_m <- 
+  str_replace(
+    income_house_median_b19013_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# sex by earnings in the past 12 months (in 2012 inflation-adjusted dollars) for the population 16 years and over with earnings in the past 12 months
+# universe: population 16 years and over with earnings
+earnings_sex_cat_b20001_gdb_e <-
+  c("B20001e1",  # total
+    "B20001e2",  # male
+    "B20001e3",  # $1 to $2,499 or loss
+    "B20001e4",  # $2,500 to $4,999
+    "B20001e5",  # $5,000 to $7,499
+    "B20001e6",  # $7,500 to $9,999
+    "B20001e7",  # $10,000 to $12,499
+    "B20001e8",  # $12,500 to $14,999
+    "B20001e9",  # $15,000 to $17,499
+    "B20001e10",  # $17,500 to $19,999
+    "B20001e11",  # $20,000 to $22,499
+    "B20001e12",  # $22,500 to $24,999
+    "B20001e13",  # $25,000 to $29,999
+    "B20001e14",  # $30,000 to $34,999
+    "B20001e15",  # $35,000 to $39,999
+    "B20001e16",  # $40,000 to $44,999
+    "B20001e17",  # $45,000 to $49,999
+    "B20001e18",  # $50,000 to $54,999
+    "B20001e19",  # $55,000 to $64,999
+    "B20001e20",  # $65,000 to $74,999
+    "B20001e21",  # $75,000 to $99,999
+    "B20001e22",  # $100,000 or more
+    "B20001e23",  # Female:
+    "B20001e24",  # $1 to $2,499 or loss
+    "B20001e25",  # $2,500 to $4,999
+    "B20001e26",  # $5,000 to $7,499
+    "B20001e27",  # $7,500 to $9,999
+    "B20001e28",  # $10,000 to $12,499
+    "B20001e29",  # $12,500 to $14,999
+    "B20001e30",  # $15,000 to $17,499
+    "B20001e31",  # $17,500 to $19,999
+    "B20001e32",  # $20,000 to $22,499
+    "B20001e33",  # $22,500 to $24,999
+    "B20001e34",  # $25,000 to $29,999
+    "B20001e35",  # $30,000 to $34,999
+    "B20001e36",  # $35,000 to $39,999
+    "B20001e37",  # $40,000 to $44,999
+    "B20001e38",  # $45,000 to $49,999
+    "B20001e39",  # $50,000 to $54,999
+    "B20001e40",  # $55,000 to $64,999
+    "B20001e41",  # $65,000 to $74,999
+    "B20001e42",  # $75,000 to $99,999
+    "B20001e43")  # $100,000 or more
+
+earnings_sex_cat_b20001_gdb_m <- 
+  str_replace(
+    earnings_sex_cat_b20001_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
+# universe: population 16 years and over with earnings
+earnings_median_b20002_gdb_e <-
+  c("B20002e1",  # total
+    "B20002e2",  # male
+    "B20002e3")  # female
+
+earnings_median_b20002_gdb_m <- 
+  str_replace(
+    earnings_median_b20002_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# employment status for the population 16 years and over
+# universe: population 16 years and over
+employment_cat_b23025_gdb_e <-  # divide 5 by 3
+  c("B23025e1",  # total
+    "B23025e2",    # in labor force
+    "B23025e3",      # civilian labor force
+    "B23025e4",        # employed
+    "B23025e5",        # unemployed
+    "B23025e6",      # armed forces
+    "B23025e7")    # not in labor force
+
+employment_cat_b23025_gdb_m <- 
+  str_replace(
+    employment_cat_b23025_gdb_e, 
+    "e", 
+    "m"
+  )
+  
+# value
+# universe: owner-occupied housing units
+home_value_cat_b25075_gdb_e <-
+  c("B25075e1",  # total
+    "B25075e2",  # less than $10,000
+    "B25075e3",  # $10,000 to $14,999
+    "B25075e4",  # $15,000 to $19,999
+    "B25075e5",  # $20,000 to $24,999
+    "B25075e6",  # $25,000 to $29,999
+    "B25075e7",  # $30,000 to $34,999
+    "B25075e8",  # $35,000 to $39,999
+    "B25075e9",  # $40,000 to $49,999
+    "B25075e10",  # $50,000 to $59,999
+    "B25075e11",  # $60,000 to $69,999
+    "B25075e12",  # $70,000 to $79,999
+    "B25075e13",  # $80,000 to $89,999
+    "B25075e14",  # $90,000 to $99,999
+    "B25075e15",  # $100,000 to $124,999
+    "B25075e16",  # $125,000 to $149,999
+    "B25075e17",  # $150,000 to $174,999
+    "B25075e18",  # $175,000 to $199,999
+    "B25075e19",  # $200,000 to $249,999
+    "B25075e20",  # $250,000 to $299,999
+    "B25075e21",  # $300,000 to $399,999
+    "B25075e22",  # $400,000 to $499,999
+    "B25075e23",  # $500,000 to $749,999
+    "B25075e24",  # $750,000 to $999,999
+    "B25075e25")  # $1,000,000 or more
+
+home_value_cat_b25075_gdb_m <- 
+  str_replace(
+    home_value_cat_b25075_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# median value (dollars)
+# universe: owner-occupied housing units
+home_value_median_b25077_gdb_e <-
+  c("B25077e1")  # median value (dollars)
+
+home_value_median_b25077_gdb_m <- 
+  str_replace(
+    home_value_median_b25077_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# types of health insurance coverage by age
+# universe: civilian noninstitutionalized population
+health_insurance_cat_c27010_gdb_e <-
+  c("C27010e1",  # total
+    "C27010e2",    # under 18 years
+    "C27010e3",      # with private health insurance only
+    "C27010e4",      # with public coverage only
+    "C27010e5",      # with both private and public coverage
+    "C27010e6",      # no health insurance coverage
+    "C27010e7",    # 18 to 34 years
+    "C27010e8",      # with private health insurance only
+    "C27010e9",      # with public coverage only
+    "C27010e10",      # with both private and public coverage
+    "C27010e11",      # no health insurance coverage
+    "C27010e12",    # 35 to 64 years
+    "C27010e13",      # with private health insurance only
+    "C27010e14",      # with public coverage only
+    "C27010e15",      # with both private and public coverage
+    "C27010e16",      # no health insurance coverage
+    "C27010e17",    # 65 years and over
+    "C27010e18",      # with private health insurance only
+    "C27010e19",      # with public coverage only
+    "C27010e20",      # with both private and public coverage
+    "C27010e21")      # no health insurance coverage
+
+health_insurance_cat_c27010_gdb_m <- 
+  str_replace(
+    health_insurance_cat_c27010_gdb_e, 
+    "e", 
+    "m"
+  )
+
+# household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
+# universe: households
+ling_iso_b16002_gdb_e <-
+  c("B16002e1",  # total
+    "B16002e2",    # English only
+    "B16002e3",    # Spanish:
+    "B16002e4",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002e5",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002e6",    # Other Indo-European languages:
+    "B16002e7",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002e8",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002e9",    # Asian and Pacific Island languages:
+    "B16002e10",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002e11",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002e12",    # Other languages: 
+    "B16002e13",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002e14")     # At least one person 14 and over speaks English only or speaks English "very well"
+
+ling_iso_b16002_gdb_m <- 
+  str_replace(
+    ling_iso_b16002_gdb_e, 
+    "e", 
+    "m"
+  )
+
+big_acs_gdb_var_list <- 
+  list(
+    edu_cat_b15003_gdb_e,
+    edu_cat_b15003_gdb_m,
+    poverty_ratio_cat_c17002_gdb_e,
+    poverty_ratio_cat_c17002_gdb_m,
+    income_house_cat_b19001_gdb_e,
+    income_house_cat_b19001_gdb_m,
+    income_house_median_b19013_gdb_e,
+    income_house_median_b19013_gdb_m,
+    earnings_sex_cat_b20001_gdb_e,
+    earnings_sex_cat_b20001_gdb_m,
+    earnings_median_b20002_gdb_e,
+    earnings_median_b20002_gdb_m,
+    employment_cat_b23025_gdb_e,
+    employment_cat_b23025_gdb_m,
+    home_value_cat_b25075_gdb_e,
+    home_value_cat_b25075_gdb_m,
+    home_value_median_b25077_gdb_e,
+    home_value_median_b25077_gdb_m,
+    health_insurance_cat_c27010_gdb_e,
+    health_insurance_cat_c27010_gdb_m,
+    ling_iso_b16002_gdb_e,
+    ling_iso_b16002_gdb_m
+  )
+
+all_acs_gdb_vars <- 
+  big_acs_gdb_var_list %>% 
+  reduce(c)
+
+```
+
+
+```{r acs gdb select variables, eval=FALSE, include=FALSE}
+
+select_acs_tibble <- 
+  acs_data_from_gdb %>% 
+  select(all_acs_gdb_vars)
+  
+```
 
