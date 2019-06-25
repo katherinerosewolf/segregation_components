@@ -134,70 +134,6 @@ if(!dir.exists("intermediate_data"))
 
 ## geography
 
-### census shapefile with data
-
-```{r census shapefile with dp1 data, results = "hide"}
-
-# source http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip?#
-# downloaded 19 June 2019
-# last updated by census bureau 19-Jul-2012 07:01	391M
-
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data", 
-      "census_data_shapefile.rdata"
-      )
-    )
-) {
-  # download zip file of census dp1 shapefiles
-  file_downloader(
-    desired_filename_as_string = "tract_2010_census_dp1.zip",
-    web_address_as_string = 
-      "http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip", 
-    folder_as_string = "raw_data"
-    )
-
-  # unzip it to the intermediate file directory
-  unzip(
-    file.path(
-      "raw_data", 
-      "tract_2010_census_dp1.zip"), 
-    exdir = "intermediate_data")
-
-  # read the shapefile
-  census_data_shapefile <- 
-    read_sf(
-      file.path(
-        "intermediate_data", 
-        "Tract_2010Census_DP1.shp"
-        )
-      )
-  
-  # fix column names
-  census_data_shapefile <-
-    column_name_fixer(
-      census_data_shapefile
-    )
-  
-  # remove the data
-
-  # save the shapefile
-  save(
-    census_data_shapefile,
-    file = file.path(
-      "intermediate_data", 
-      "census_data_shapefile.rdata"
-    )
-  )
-
-  # remove the shapefile from memory
-  rm(census_data_shapefile)
-  gc()
-}
-
-```
-
 ### census shapefile without data
 
 ```{r census detailed shapefile without data}
@@ -255,94 +191,152 @@ if(
 
 ```
 
-```{r census less detailed clipped cartographic boundary file}
 
-# source "https://www2.census.gov/geo/tiger/GENZ2010/gz_2010_%s_140_00_500k.zip"
-# where %s is the state FIPS code
-# downloaded 20 June 2019
-# last modified 1 March 2012 (all)
+```{r calculating adjacency purely in R}
 
 if(
   !file.exists(
     file.path(
-      "intermediate_data",
-      "tigris_cbf_no_data.rdata"
+      "intermediate_data", 
+      "neighbor_tibble_long.rdata"
+    )
+  )
+) {
+
+  # load the census tract shapefiles
+  load(
+    file =
+      file.path(
+        "raw_data",
+        "tigris_shapefiles_no_data.rdata"
       )
     )
-  ) {
   
-  # make vector of state abbreviations
-  state_abbreviation_character_vector_no_pr <- 
-      c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VI", "VT", "WA", "WI", "WV", "WY")
+  # get character vector for numbers from 1 to the number of tracts
+  tract_order_character <- 
+    as.character(1:nrow(tigris_shapefiles_no_data))
   
-  # download the data
-  tigris_cbf_no_data <- 
-    rbind_tigris(
-    map(
-      state_abbreviation_character_vector_no_pr, 
-      function(x) {
-        tracts(
-          x, 
-          cb = TRUE, 
-          year = 2010, 
-          class = 'sf'
-          )
-        }
+  # pull the geoids as a vector
+  tigris_geoid_character <- 
+    tigris_shapefiles_no_data %>% 
+    pull(GEOID10)
+  
+  # make tibble indexing tracts in order to match geoids with the spdep output
+  geoid_index_tibble <- 
+    tibble(index = tract_order_character, 
+           geoid = tigris_geoid_character)
+    
+  if(!file.exists(file.path("intermediate_data", "tract_neighbor_nb.rdata"))){
+    
+    # make a list of lists of neighbors to each tract (uses spdep package)
+    tract_neighbor_nb <-  
+      poly2nb(pl = tigris_shapefiles_no_data, 
+              queen = TRUE)
+  
+    # name the elements of the big list above with their tract indices
+    names(tract_neighbor_nb) <- tract_order_character
+  
+  } else {
+    
+    # load the file
+    load(
+      file.path(
+        "intermediate_data", 
+        "tract_neighbor_nb.rdata"
       )
-  )
+    )
+  }
   
-  # save the result to disk
+  # check if the neighbors-as-one-string tibble already exists
+  if(!file.exists(file.path("intermediate_data", 
+                            "neighbors_in_one_string_tibble.rdata"))){
+    
+  # if not, create it
+  neighbors_in_one_string_tibble <- 
+    map_df(  # makes a tibble from the output of poly2nb()
+      tract_neighbor_nb, 
+      paste,  # puts all the adjacent tracts into one string
+      collapse = ","  # separated by commas
+      ) %>%  # makes two columns from one row with column names
+    gather(key = "primary_tract",  
+           value = "adjacent_tracts") %>% 
+    mutate(  # adds column of the primary tract and its neighbors in one string
+      primary_and_adjacent_tracts = 
+        paste(primary_tract, 
+              adjacent_tracts, 
+              sep = ",")
+    )
+  
+    # save the result
+    save(neighbors_in_one_string_tibble,
+           file = file.path("intermediate_data", 
+                            "neighbors_in_one_string_tibble.rdata"))
+    
+  } else {  
+    
+    # otherwise load the relevant tibble
+    load(
+      file.path(
+        "intermediate_data", 
+        "neighbors_in_one_string_tibble.rdata"
+      )
+    )
+  }
+  
+  # make list of character vectors of neighbor tract indices
+  # ordered by primary tract index
+  split_tracts <- 
+    neighbors_in_one_string_tibble %>% 
+    pull(primary_and_adjacent_tracts) %>%  # pull the self and neighbor column
+    str_split(pattern = ",")  # split strings of neighbor indices
+  
+  # name each list element by its primary tract
+  names(split_tracts) <- 
+    neighbors_in_one_string_tibble$primary_tract
+  
+  # make long tibble repeating the primary tract for itself and every neighbor
+  neighbor_tibble_long <- 
+    as_tibble(  # makes it a tibble repeating the primary (index) for each neighbor
+      stack(split_tracts)[2:1]) %>%  # reorders them so that the primary tract comes first
+    rename(primary_tract = 1,  # renames the columns with meaningful names
+           neighbor_tract = 2) %>% 
+    mutate(  # coerce primary tract column (index) back to character
+      primary_tract = as.character(primary_tract)
+      ) %>% 
+    left_join(
+      geoid_index_tibble,  # join with the original geoids corresponding
+      by = c("primary_tract" = "index")  # to the primary tract
+      ) %>%  
+    rename(geoid_primary_tract = geoid) %>%  # rename geoid for primary tract
+    left_join(
+      geoid_index_tibble,  # join with the original geoids corresponding
+      by = c("neighbor_tract" = "index")  # to the neighbor tract
+      ) %>%  
+    rename(geoid_neighbor_tract = geoid) # rename geoid for neighbor tract
+  
   save(
-    tigris_cbf_no_data, 
+    neighbor_tibble_long, 
     file = 
       file.path(
-        "raw_data", 
-        "tigris_cbf_no_data.rdata"
+        "intermediate_data", 
+        "neighbor_tibble_long.rdata"
       )
-  )
+    )
   
-  # remove the files
+  # remove all the files
   rm(
-    tigris_cbf_no_data, 
-    state_abbreviation_character_vector_no_pr
+    tigris_shapefiles_no_data, 
+    tract_neighbor_nb,
+    tract_order_character, 
+    tigris_geoid_character,
+    geoid_index_tibble,
+    neighbors_in_one_string_tibble,
+    split_tracts,
+    neighbor_tibble_long
   )
   gc()
 }
 
-```
-
-
-```{r calculating adjacency purely in R}
-
-# load the census tract shapefiles
-load(
-  file =
-    file.path(
-      "raw_data",
-      "tigris_shapefiles_no_data.rdata"
-    )
-  )
-
-neighbors <- 
-  poly2nb(tigris_shapefiles_no_data, 
-          queen = TRUE, 
-          row.names = "GEOID10")
-
-save(
-  neighbors, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "neighbors.rdata"
-    )
-  )
-
-View(neighbors)
-
-card(neighbors)
-
-neighbor_list <- 
-  nb2listw(neighbors, zero.policy = TRUE)
 ```
 
 
@@ -419,7 +413,8 @@ censusadjacentyesnodes$nbr_GEOID10 <-
 
 # get adjacent blocks into single column as single character w/ commas
 require(data.table)
-cayncon <- setDT(censusadjacentyesnodes)[,.(nbr_GEOID10=paste(nbr_GEOID10, collapse = ",")), by=src_GEOID10]
+cayncon <- 
+  setDT(censusadjacentyesnodes)[,.(nbr_GEOID10=paste(nbr_GEOID10, collapse = ",")), by=src_GEOID10]
 cayncon$src_GEOID10 <- as.character(cayncon$src_GEOID10)
 
 # add own census tract to tracts
@@ -2680,6 +2675,128 @@ gc()
 
 
 # DISCARDED CODE TOO GOOD TO DELETE
+
+####census shapefile with data
+
+```{r census shapefile with dp1 data, results = "hide"}
+
+# source http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip?#
+# downloaded 19 June 2019
+# last updated by census bureau 19-Jul-2012 07:01	391M
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "census_data_shapefile.rdata"
+      )
+    )
+) {
+  # download zip file of census dp1 shapefiles
+  file_downloader(
+    desired_filename_as_string = "tract_2010_census_dp1.zip",
+    web_address_as_string = 
+      "http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip", 
+    folder_as_string = "raw_data"
+    )
+
+  # unzip it to the intermediate file directory
+  unzip(
+    file.path(
+      "raw_data", 
+      "tract_2010_census_dp1.zip"), 
+    exdir = "intermediate_data")
+
+  # read the shapefile
+  census_data_shapefile <- 
+    read_sf(
+      file.path(
+        "intermediate_data", 
+        "Tract_2010Census_DP1.shp"
+        )
+      )
+  
+  # fix column names
+  census_data_shapefile <-
+    column_name_fixer(
+      census_data_shapefile
+    )
+  
+  # remove the data
+
+  # save the shapefile
+  save(
+    census_data_shapefile,
+    file = file.path(
+      "intermediate_data", 
+      "census_data_shapefile.rdata"
+    )
+  )
+
+  # remove the shapefile from memory
+  rm(census_data_shapefile)
+  gc()
+}
+
+```
+
+
+```{r census less detailed clipped cartographic boundary file}
+
+# source "https://www2.census.gov/geo/tiger/GENZ2010/gz_2010_%s_140_00_500k.zip"
+# where %s is the state FIPS code
+# downloaded 20 June 2019
+# last modified 1 March 2012 (all)
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data",
+      "tigris_cbf_no_data.rdata"
+      )
+    )
+  ) {
+  
+  # make vector of state abbreviations
+  state_abbreviation_character_vector_no_pr <- 
+      c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VI", "VT", "WA", "WI", "WV", "WY")
+  
+  # download the data
+  tigris_cbf_no_data <- 
+    rbind_tigris(
+    map(
+      state_abbreviation_character_vector_no_pr, 
+      function(x) {
+        tracts(
+          x, 
+          cb = TRUE, 
+          year = 2010, 
+          class = 'sf'
+          )
+        }
+      )
+  )
+  
+  # save the result to disk
+  save(
+    tigris_cbf_no_data, 
+    file = 
+      file.path(
+        "raw_data", 
+        "tigris_cbf_no_data.rdata"
+      )
+  )
+  
+  # remove the files
+  rm(
+    tigris_cbf_no_data, 
+    state_abbreviation_character_vector_no_pr
+  )
+  gc()
+}
+
+```
+
 
 #### census tidycensus variable pulls (DO NOT RUN)
 
