@@ -5,6 +5,7 @@ date: "June 12, 2019"
 output: html_document
 ---
 
+
 # CODE SETUP
 
 ```{r load packages}
@@ -30,6 +31,7 @@ library(stargazer)
 library(readxl)
 library(tidyverse)
 library(totalcensus)
+library(spdep)
 
 ```
 
@@ -127,17 +129,18 @@ if(!dir.exists("intermediate_data"))
 ```
 
 
-# LOAD NECESSARY FILES
+# LOAD FILES TOO BIG FOR TRAVIS
 
-## geography files
+
+## geography
 
 ### census shapefile with data
 
 ```{r census shapefile with dp1 data, results = "hide"}
 
-# last updated by census bureau 	19-Jul-2012 07:01	391M
-# downloaded June 19, 2019 from 
-# http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip?#
+# source http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip?#
+# downloaded 19 June 2019
+# last updated by census bureau 19-Jul-2012 07:01	391M
 
 if(
   !file.exists(
@@ -197,18 +200,25 @@ if(
 
 ### census shapefile without data
 
-```{r census shapefile without data}
+```{r census detailed shapefile without data}
+
+# source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
+# where %s is the state FIPS code
+# downloaded 19 June 2019
+# last modified 23 June 2011 (state 60, others earlier)
 
 if(
   !file.exists(
-    "intermediate_data", 
-    "tigris_shapefiles_no_data.rdata"
-  )
+    file.path(
+      "intermediate_data", 
+      "tigris_shapefiles_no_data.rdata"
+    )
+    )
   ) {
   
   # make vector of state abbreviations
   state_abbreviation_character_vector_no_pr <- 
-      c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
+      c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VI", "VT", "WA", "WI", "WV", "WY")
   
   # download the data
   tigris_shapefiles_no_data <- 
@@ -245,655 +255,290 @@ if(
 
 ```
 
+```{r census less detailed clipped cartographic boundary file}
 
-## ruca
-
-```{r ruca data}
+# source "https://www2.census.gov/geo/tiger/GENZ2010/gz_2010_%s_140_00_500k.zip"
+# where %s is the state FIPS code
+# downloaded 20 June 2019
+# last modified 1 March 2012 (all)
 
 if(
   !file.exists(
     file.path(
-      "intermediate_data", 
-      "ruca_2010.rdata"
+      "intermediate_data",
+      "tigris_cbf_no_data.rdata"
       )
     )
   ) {
-  file_downloader(
-    desired_filename_as_string = "ruca_2010_raw.xlsx", 
-    web_address_as_string = 
-      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
-    folder_as_string = "raw_data"
-    )
-
-  ruca_2010_raw <- 
-    read_xlsx(
+  
+  # make vector of state abbreviations
+  state_abbreviation_character_vector_no_pr <- 
+      c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VI", "VT", "WA", "WI", "WV", "WY")
+  
+  # download the data
+  tigris_cbf_no_data <- 
+    rbind_tigris(
+    map(
+      state_abbreviation_character_vector_no_pr, 
+      function(x) {
+        tracts(
+          x, 
+          cb = TRUE, 
+          year = 2010, 
+          class = 'sf'
+          )
+        }
+      )
+  )
+  
+  # save the result to disk
+  save(
+    tigris_cbf_no_data, 
+    file = 
       file.path(
         "raw_data", 
-        "ruca_2010_raw.xlsx"
-        )
+        "tigris_cbf_no_data.rdata"
       )
-  
-  # fix column names
-  ruca_2010 <-
-    column_name_fixer(
-      ruca_2010_raw
-    )
-
-  # save the shapefile
-  save(
-    ruca_2010,
-    file = file.path(
-      "intermediate_data", 
-      "ruca_2010.rdata"
-    )
   )
-
-  # remove the shapefile from memory
-  rm(ruca_2010_raw, ruca_2010)
+  
+  # remove the files
+  rm(
+    tigris_cbf_no_data, 
+    state_abbreviation_character_vector_no_pr
+  )
   gc()
 }
 
 ```
 
 
-```{r speciation parameter codes, results = "hide"}
+```{r calculating adjacency purely in R}
 
-if(
-  !file.exists(
+# load the census tract shapefiles
+load(
+  file =
+    file.path(
+      "raw_data",
+      "tigris_shapefiles_no_data.rdata"
+    )
+  )
+
+neighbors <- 
+  poly2nb(tigris_shapefiles_no_data, 
+          queen = TRUE, 
+          row.names = "GEOID10")
+
+save(
+  neighbors, 
+  file = 
     file.path(
       "intermediate_data", 
-      "speciation_parameter_codes.rdata"
-      )
-    )
-  ) {
-  
-  # download the speciation paramter codes
-  file_downloader(
-    desired_filename_as_string = "speciation_parameter_codes.csv",
-    web_address_as_string = "https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv", 
-    folder_as_string = "raw_data"
-    )
-
-  # read the parameter codes into memory
-  speciation_parameter_codes <- 
-    read_csv(
-      file.path("raw_data", 
-                "speciation_parameter_codes.csv"
-                )
-    )
-  
-  # fix column names
-  speciation_parameter_codes <-
-    column_name_fixer(
-     speciation_parameter_codes
-    )
-
-  # save the rdata file
-  save(
-    speciation_parameter_codes,
-    file = file.path(
-      "intermediate_data", 
-      "speciation_parameter_codes.rdata"
+      "neighbors.rdata"
     )
   )
 
-  # remove the rdata from memory
-  rm(speciation_parameter_codes)
-  gc()
-}
+View(neighbors)
 
+card(neighbors)
+
+neighbor_list <- 
+  nb2listw(neighbors, zero.policy = TRUE)
 ```
 
 
-```{r make parameter and species lists}
+```{r calculating segregation NOTE: USES ARCGIS, FIX THIS}
+
+# load(
+#   file = 
+#     file.path(
+#       "raw_data", 
+#       "tigris_cbf_no_data.rdata"
+#     )
+#   )
+
+census_adjacent <- 
+  read.csv(
+    file = 
+      file.path(
+        "raw_data", 
+        "censusadjacent.csv"
+      )
+  )
 
 load(
   file = 
     file.path(
       "intermediate_data", 
-      "speciation_parameter_codes.rdata"
-      )
+      "ruca_urban_only.rdata"
+    )
 )
 
-# make a list of all the species and their codes
-species_and_codes <- 
-  speciation_parameter_codes %>% 
-  select(parameter, parameter_code) %>% 
-  distinct
-
-# make a list of the organic carbon species and codes
-organic_carbon_rows <- 
-  species_and_codes %>% 
-  filter(str_detect(parameter, "OC"))
-
-# make a numeric vector of the organic carbon species and codes
-organic_carbon_codes <-
-  organic_carbon_rows %>% 
-  select(parameter_code) %>% 
-  pull()
-
-save(
-  species_and_codes, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "species_and_codes.rdata"
-    )
-  )
-
-save(
-  organic_carbon_codes, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "organic_carbon_codes.rdata"
-    )
-  )
-
-# remove created data from memory
-rm(
-  organic_carbon_rows,
-  organic_carbon_codes, 
-  speciation_parameter_codes,
-  species_and_codes)
-gc()
-
-```
-
-
-## air pollution data files
-
-```{r pm2.5 total frm}
-
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data", 
-      "big_pm_25_frm_tibble.rdata"
-      )
-    )
-  ) {
-
-  # make list of files to download
-  pm_25_frm_files <- 
-    c("https://aqs.epa.gov/aqsweb/airdata/daily_88101_2005.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2006.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2007.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2008.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2009.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2010.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2011.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2012.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2013.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2014.zip",
-      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2015.zip")
-  
-  
-  # make a list of filenames for the downloaded data using the above filenames
-  list_of_pm_25_frm_zip_filenames <-  # make list of what the filenames will be
-    map_chr(pm_25_frm_files,  # witness the `map` function
-            str_extract, 
-            "daily_.+\\.zip")   # witness the regular expression!
-  
-  # download the files
-  map2(list_of_pm_25_frm_zip_filenames, 
-       pm_25_frm_files, 
-       file_downloader, 
-       folder_as_string = "raw_data")
-  
-  # unzip all the files and save them to disk
-  map(
-    file.path(
-      "raw_data",
-      list_of_pm_25_frm_zip_filenames
-      ),
-    unzip,
-    exdir = "intermediate_data"
-    )
-  
-  # replace ".zip" with ".csv" in list_of_pm_25_frm_zip_filenames
-  list_of_pm_25_frm_csv_filenames <-
-    map(list_of_pm_25_frm_zip_filenames,
-        str_replace,
-        "zip",
-        "csv")
-  
-  # make list of tibble names by removing the ".zip" extension
-  list_of_pm_25_frm_tibble_names <-
-    map(list_of_pm_25_frm_zip_filenames,
-        str_replace,
-        ".zip",
-        "")
-  
-  # read .csv files into tibbles!
-  if(
-    !file.exists(
+load(
+   file = 
       file.path(
         "intermediate_data",
-        "list_of_pm_25_frm_tibbles.rdata"
+        "sf1_totalcensus_raw_tibble.rdata"
         )
-      )
-    ) {  # checks if tibbles already exist
-    list_of_pm_25_frm_tibbles <-  # if not reads .csv files into tibbles
-      map(
-        file.path(
-          "intermediate_data",
-          list_of_pm_25_frm_csv_filenames),
-        read_csv
-        )
-    names(list_of_pm_25_frm_tibbles) <-  # names the tibbles
-      list_of_pm_25_frm_tibble_names
-    save(
-      list_of_pm_25_frm_tibbles,  # saves the tibbles to disk to avoid doing this again
-      file = file.path(
-        "intermediate_data",
-        "list_of_pm_25_frm_tibbles.rdata"
-        )
-      )
-    
-  } else {
-      load(
-        file = file.path(
-        "intermediate_data",
-        "list_of_pm_25_frm_tibbles.rdata"
-        )
-        )  # loads the tibbles if they don't already exist
-  }
-  
-  # fix column names
-  list_of_pm_25_frm_tibbles <-
-    map(list_of_pm_25_frm_tibbles,
-        column_name_fixer)
-  
-  # combine air data tibbles into one big tibble
-  big_pm_25_frm_tibble <-
-    bind_rows(list_of_pm_25_frm_tibbles)
-  
-  # remove non-needed columns
-  big_pm_25_frm_tibble <- 
-    big_pm_25_frm_tibble %>%
-    select(-c(
-      pollutant_standard, 
-      units_of_measure, 
-      aqi, 
-      method_name, 
-      local_site_name, 
-      address, 
-      county_name)
-      )
-  
-  # save all air data to disk
-  save(
-      big_pm_25_frm_tibble,  # saves the tibbles to disk to avoid doing this again
-      file = file.path(
-        "intermediate_data",
-        "big_pm_25_frm_tibble.rdata"
-        )
-      )
-  
-  # memory and disk clearance --------------------------------------------------
-  
-  # delete individual .csv files from disk
-  map(
-    file.path(
-      "intermediate_data",
-      list_of_pm_25_frm_csv_filenames
-      ),
-    file.remove
-    )
-  
-  # remove list of tibbles from memory
-  rm(list_of_pm_25_frm_tibbles)
-  
-  # remove big tibble from memory
-  rm(big_pm_25_frm_tibble)
-  
-  # clear memory
-  gc()
+   )
 
+# fix column names 
+sf1_totalcensus_seg_tibble <- 
+  column_name_fixer(
+    sf1_totalcensus_raw_tibble
+)
+
+# import census data (Black, Black/other, total)
+seg_vars <- 
+  sf1_totalcensus_seg_tibble %>% 
+  select(
+    geoid, 
+    p0050001, 
+    p0050004
+  )
+
+seg_vars <- 
+  seg_vars %>% 
+  mutate(
+    tot_pop_no_black = p0050001 - p0050004
+  )
+
+colnames(seg_vars)[1] <- 
+  "selfneighbor"
+
+
+# segregation index with nodes
+
+# keep nodes
+censusadjacentyesnodes <- census_adjacent
+censusadjacentyesnodes <- censusadjacentyesnodes[c(-5)]
+censusadjacentyesnodes <- as.data.frame(censusadjacentyesnodes[c(-4)])
+censusadjacentyesnodes$src_GEOID10 <- 
+  as.factor(censusadjacentyesnodes$src_GEOID10)
+censusadjacentyesnodes$nbr_GEOID10 <- 
+  as.factor(censusadjacentyesnodes$nbr_GEOID10)
+
+# get adjacent blocks into single column as single character w/ commas
+require(data.table)
+cayncon <- setDT(censusadjacentyesnodes)[,.(nbr_GEOID10=paste(nbr_GEOID10, collapse = ",")), by=src_GEOID10]
+cayncon$src_GEOID10 <- as.character(cayncon$src_GEOID10)
+
+# add own census tract to tracts
+cayncon$selfandfriends <- paste(cayncon$src_GEOID10, cayncon$nbr_GEOID10, sep=",")
+str(cayncon)
+
+# save file to disk
+save(cayncon,
+     file="cayncon.rdata")
+# load(file="cayncon.rdata")
+
+
+#### racial isolation index with nodes urban tracts ####
+
+monitorct <- 
+  cayncon
+
+# neighbors for each census tract plus itself
+temp <- strsplit(monitorct$selfandfriends, split=",")
+ltemp <- sapply(temp, length)
+ct.nb <- data.frame(censustract = rep(NA, sum(ltemp)), selfneighbor = NA)
+ct.nb[1:ltemp[1], "censustract"] <- monitorct[1, "src_GEOID10"]
+ct.nb[1:ltemp[1], "selfneighbor"] <- temp[[1]]
+for (i in 2:length(temp)) {
+  st <- sum(ltemp[1:i-1])
+  ct.nb[(st+1):(st+ltemp[i]), "censustract"] <- monitorct[i, "src_GEOID10"]
+  ct.nb[(st+1):(st+ltemp[i]), "selfneighbor"] <- temp[[i]]
 }
 
-```
-
-
-```{r functionalize the speciation}
-
-speciator <- 
-  function(speciation_file_link) {
-    
-    # extract the file name from the link
-    speciation_zip_file_name <-
-      str_extract(
-        speciation_file_link,
-        "daily_.+\\.zip"
-        )
-    
-    # create rdata file name
-    speciation_rdata_file_name <- 
+# fix geoid for seg_vars 
+seg_vars <- 
+  seg_vars %>% 
+  mutate(
+    selfneighbortest = 
       str_replace(
-        speciation_zip_file_name,
-        "zip",
-        "rdata"
-        )
-    
-     if(
-      !file.exists(  # checks if tibble already exists
-        file.path(
-          "intermediate_data",
-          speciation_rdata_file_name
-          )
-        )
-      ) {
-       
-       # download the file
-       file_downloader(
-         desired_filename_as_string = speciation_zip_file_name,
-         web_address_as_string = speciation_file_link,
-         folder_as_string = "raw_data"
-       )
-    
-       # unzip the file
-       unzip(
-         file.path(
-           "raw_data",
-           speciation_zip_file_name
-           ), 
-         exdir = "intermediate_data"
-         )
-      
-       # replace ".zip" with ".csv" in list_of_speciation_zip_filenames
-       speciation_csv_file_name <- 
-         str_replace(
-           speciation_zip_file_name, 
-           "zip", 
-           "csv")
-      
-       speciation_tibble_name <- 
-         str_replace(
-           speciation_zip_file_name, 
-           ".zip",
-           ""
-         )
-      
-       # read .csv file into a tibble
-         speciation_tibble <- 
-           read_csv(
-             file.path(
-               "intermediate_data",
-               speciation_csv_file_name
-               )
-             )
-         
-       # fix column names
-       speciation_tibble <-
-         column_name_fixer(
-           speciation_tibble
-         )
-       
-       # load organic carbon codes
-       if (!exists("organic_carbon_codes")) {
-       load(
-         file = 
-           file.path(
-             "intermediate_data", 
-             "organic_carbon_codes.rdata"
-             )
-         )
-       }
-        
-       # keep only actual component measurements and necessary columns
-       speciation_tibble_shrunk <- 
-         speciation_tibble %>% 
-         filter(parameter_code > 88100) %>% 
-         filter(!(parameter_code %in% organic_carbon_codes)) %>% 
-         select(
-           -c(
-             pollutant_standard, 
-             units_of_measure, 
-             aqi, 
-             method_name, 
-             local_site_name, 
-             address, 
-             county_name)
-         )
-       
-       # rename it to its filename
-       assign(
-         speciation_tibble_name, 
-         speciation_tibble_shrunk
-       )
-        
-       # save the result to disk
-       save(
-         list = speciation_tibble_name,
-         file = 
-           file.path(
-             "intermediate_data",
-             speciation_rdata_file_name
-             )
-       )
-       
-       # delete .csv file from disk
-       map(
-         file.path(
-           "intermediate_data",
-           speciation_csv_file_name
-           ),
-         file.remove
-         )
-      
-       # remove files
-       rm(
-         speciation_tibble, 
-         speciation_tibble_shrunk)
-       gc()
-     }
-    
-    # remove files
-    rm(
-      speciation_zip_file_name, 
-      speciation_rdata_file_name
+        selfneighbor, 
+        "14000US",
+        ""
+      )
+  )
+
+# fix geoid for ct.nb 
+ct.nb <- 
+  ct.nb %>% 
+  mutate(
+    selfneighbortest = 
+      str_pad(
+        string = selfneighbor, 
+        width = 11, 
+        side = "left", 
+        pad = "0")
+  )
+  
+# merge the popoulation info
+segindcalcbasis <- 
+  merge(seg_vars, 
+        ct.nb, 
+        by="selfneighbortest")
+
+# aggregate by census tract
+aggregatevars <- 
+  segindcalcbasis %>% 
+  select(
+    censustract,
+    p0050001, 
+    p0050004, 
+    tot_pop_no_black
+  )
+
+aggregatedcensus <- 
+  aggregate(. ~ censustract, 
+            data = aggregatevars, sum)
+
+aggregatedcensus$finalsegregationindex <- 
+  aggregatedcensus$p0050004/aggregatedcensus$p0050001
+
+range(aggregatedcensus$finalsegregationindex)
+
+aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
+
+ri_yes_nodes_urban_tracts <- 
+  aggregatedcensus[c("GEOID10",
+                     "finalsegregationindex")]
+
+ri_yes_nodes_urban_tracts$GEOID10 <- as.factor(ri_yes_nodes_urban_tracts$GEOID10)
+
+colnames(ri_yes_nodes_urban_tracts) <- c("tract_id","ri_nodes_urban")
+
+ri_final <- 
+  ri_yes_nodes_urban_tracts %>% 
+  mutate(
+    geoid = 
+        str_pad(
+        string = tract_id, 
+        width = 11, 
+        side = "left", 
+        pad = "0")
+  ) %>% 
+  arrange(geoid)
+
+save(
+  ri_final, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "ri_final"
     )
-    gc()
-  }
-
-```
-
-
-```{r implement speciator en masse}
-
-# make list of speciation web addresses
-speciation_files <-
-  c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2006.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2007.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2008.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2009.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2010.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2011.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2012.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2013.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2014.zip",
-    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2015.zip")
-
-map(
-  .x = speciation_files, 
-  .f = speciator
 )
 
-rm(speciation_files)
-gc()
+
+# library(spdep)
+# test <- 
+#   poly2nb(
+#   tigris_cbf_no_data
+# )
 
 ```
 
 
-```{r combine the air pollution data files}
-
-if(
-  !file.exists(  # checks if tibble already exists
-    file.path(
-      "intermediate_data",
-      "big_speciation_tibble.rdata"
-      )
-    )
-  ) {
-  # make list of speciation file names except the file names of the first two
-  speciation_file_names_except_2005_2006 <- 
-    sprintf("daily_SPEC_%d.rdata", 
-            seq(2007, 2015, 1))
-
-  # load 2005 speciation file
-  load(
-    file.path(
-      "intermediate_data", 
-      "daily_SPEC_2005.rdata"
-      )
-    )
-  
-  # load 2006 speciation file
-  load(
-    file.path(
-      "intermediate_data", 
-      "daily_SPEC_2006.rdata"
-      )
-    )
-  
-  # create the first edition of the big speciation tibble by a row bind
-  big_speciation_tibble <- 
-    bind_rows(
-      daily_SPEC_2005, 
-      daily_SPEC_2006
-    )
-  
-  # remove the 2005 and 2006 tibbles from memory
-  rm(
-    daily_SPEC_2005, 
-    daily_SPEC_2006)
-  gc()
-  
-  # make a function to bind the rest of the speciation tibbles
-  speciebinder <- 
-    function(speciation_file_name) {
-      
-      # make variable of tibble name
-      speciation_tibble_name <- 
-        str_replace(
-          speciation_file_name, 
-          ".rdata",
-          ""
-          )
-      
-      # load next speciation file
-      load(
-        file.path(
-          "intermediate_data", 
-          speciation_file_name
-        )
-      )
-      
-      # bind the speciation file to the big tibble
-      big_speciation_tibble <<- 
-        bind_rows(  
-          big_speciation_tibble, 
-          eval(as.symbol(speciation_tibble_name)))
-      
-      # remove the speciation file and clear the memory
-      rm(speciation_file_name, 
-         list = speciation_tibble_name)
-      gc()
-      
-    }
-  
-  # make the big speciation dataset
-  speciebinder("daily_SPEC_2007.rdata")
-  gc()
-  speciebinder("daily_SPEC_2008.rdata")
-  gc()
-  speciebinder("daily_SPEC_2009.rdata")
-  gc()
-  speciebinder("daily_SPEC_2010.rdata")
-  gc()
-  speciebinder("daily_SPEC_2011.rdata")
-  gc()
-  speciebinder("daily_SPEC_2012.rdata")
-  gc()
-  speciebinder("daily_SPEC_2013.rdata")
-  gc()
-  speciebinder("daily_SPEC_2014.rdata")
-  gc()
-  speciebinder("daily_SPEC_2015.rdata")
-  gc()
-  
-  # save the big speciation dataset
-  save(
-    big_speciation_tibble, 
-    file = 
-      file.path(
-        "intermediate_data", 
-        "big_speciation_tibble.rdata"
-        )
-  )
-  
-  # remove non-needed files from memory
-  rm(speciation_files, 
-     speciation_file_names_except_2005_2006,
-     big_speciation_tibble)
-  gc()
-  }
-
-```
-
-
-```{r join pm25 total and speciation data}
-
-if(
-  !file.exists(  # checks if tibble already exists
-    file.path(
-      "intermediate_data",
-      "big_air_tibble.rdata"
-      )
-    )
-  ) {
-
-  # load the total pm2.5 tibble
-  load(
-    file.path(
-      "intermediate_data",
-      "big_pm_25_frm_tibble.rdata"
-    )
-  )
-
-  # load the pm2.5 speciation tibble
-  load(
-    file.path(
-      "intermediate_data",
-      "big_speciation_tibble.rdata"
-    )
-  )
-
-  # and in the darkness bind them
-  big_air_tibble <-
-    bind_rows(
-      big_pm_25_frm_tibble,
-      big_speciation_tibble)
-
-  # remove extraneous files
-  rm(big_pm_25_frm_tibble,
-     big_speciation_tibble)
-  gc()
-
-  # save the big tibble
-  save(
-    big_air_tibble,
-    file =
-      file.path(
-        "intermediate_data",
-        "big_air_tibble.rdata"
-      ))
-
-}
-
-```
 
 ## demographic and ses data
 
@@ -1182,6 +827,1859 @@ if(!
 
 ```
 
+
+### acs
+
+#### acs variable lists
+
+```{r acs totalcensus variable lists}
+
+# educational attainment for the population 25 years and over
+# universe: population 25 years and over
+edu_cat_b15003 <- 
+  c("B15003_001",  # total
+    "B15003_002",  # no schooling completed
+    "B15003_003",  # nursery school
+    "B15003_004",  # kindergarten
+    "B15003_005",  # 1st grade
+    "B15003_006",  # 2nd grade
+    "B15003_007",  # 3rd grade
+    "B15003_008",  # 4th grade
+    "B15003_009",  # 5th grade
+    "B15003_010",  # 6th grade
+    "B15003_011",  # 7th grade
+    "B15003_012",  # 8th grade
+    "B15003_013",  # 9th grade
+    "B15003_014",  # 10th grade
+    "B15003_015",  # 11th grade
+    "B15003_016",  # 12th grade
+    "B15003_017",  # regular high school diploma
+    "B15003_018",  # GED or alternative credential
+    "B15003_019",  # some college, less than 1 year
+    "B15003_020",  # some college, 1 or more years, no degree
+    "B15003_021",  # associate's degree
+    "B15003_022",  # bachelor's degree
+    "B15003_023",  # master's degree
+    "B15003_024",  # professional school degree
+    "B15003_025")  # doctorate degree
+
+# ratio of income to poverty level in the past 12 months
+# universe: population for whom poverty status is determined
+poverty_ratio_cat_c17002 <-
+  c("C17002_001",  # total
+    "C17002_002",  # under .50
+    "C17002_003",  # .50 to .99
+    "C17002_004",  # 1.00 to 1.24
+    "C17002_005",  # 1.25 to 1.49
+    "C17002_006",  # 1.50 to 1.84
+    "C17002_007",  # 1.85 to 1.99
+    "C17002_008")  # 2.00 and over
+
+# household income in the past 12 months (in 2012 inflation-adjusted dollars)
+# universe: households
+income_house_cat_b19001 <-
+  c("B19001_001",  # total
+    "B19001_002",  # less than $10,000
+    "B19001_003",  # $10,000 to $14,999
+    "B19001_004",  # $15,000 to $19,999
+    "B19001_005",  # $20,000 to $24,999
+    "B19001_006",  # $25,000 to $29,999
+    "B19001_007",  # $30,000 to $34,999
+    "B19001_008",  # $35,000 to $39,999
+    "B19001_009",  # $40,000 to $44,999
+    "B19001_010",  # $45,000 to $49,999
+    "B19001_011",  # $50,000 to $59,999
+    "B19001_012",  # $60,000 to $74,999
+    "B19001_013",  # $75,000 to $99,999
+    "B19001_014",  # $100,000 to $124,999
+    "B19001_015",  # $125,000 to $149,999
+    "B19001_016",  # $150,000 to $199,999
+    "B19001_017")  # $200,000 or more
+
+# median household income in the past 12 months (in 2012 inflation-adjusted dollars)
+# universe: households
+income_house_median_b19013 <-
+  c("B19013_001")
+
+# sex by earnings in the past 12 months (in 2012 inflation-adjusted dollars) for the population 16 years and over with earnings in the past 12 months
+# universe: population 16 years and over with earnings
+earnings_sex_cat_b20001 <-
+  c("B20001_001",  # total
+    "B20001_002",  # male
+    "B20001_003",  # $1 to $2,499 or loss
+    "B20001_004",  # $2,500 to $4,999
+    "B20001_005",  # $5,000 to $7,499
+    "B20001_006",  # $7,500 to $9,999
+    "B20001_007",  # $10,000 to $12,499
+    "B20001_008",  # $12,500 to $14,999
+    "B20001_009",  # $15,000 to $17,499
+    "B20001_010",  # $17,500 to $19,999
+    "B20001_011",  # $20,000 to $22,499
+    "B20001_012",  # $22,500 to $24,999
+    "B20001_013",  # $25,000 to $29,999
+    "B20001_014",  # $30,000 to $34,999
+    "B20001_015",  # $35,000 to $39,999
+    "B20001_016",  # $40,000 to $44,999
+    "B20001_017",  # $45,000 to $49,999
+    "B20001_018",  # $50,000 to $54,999
+    "B20001_019",  # $55,000 to $64,999
+    "B20001_020",  # $65,000 to $74,999
+    "B20001_021",  # $75,000 to $99,999
+    "B20001_022",  # $100,000 or more
+    "B20001_023",  # Female:
+    "B20001_024",  # $1 to $2,499 or loss
+    "B20001_025",  # $2,500 to $4,999
+    "B20001_026",  # $5,000 to $7,499
+    "B20001_027",  # $7,500 to $9,999
+    "B20001_028",  # $10,000 to $12,499
+    "B20001_029",  # $12,500 to $14,999
+    "B20001_030",  # $15,000 to $17,499
+    "B20001_031",  # $17,500 to $19,999
+    "B20001_032",  # $20,000 to $22,499
+    "B20001_033",  # $22,500 to $24,999
+    "B20001_034",  # $25,000 to $29,999
+    "B20001_035",  # $30,000 to $34,999
+    "B20001_036",  # $35,000 to $39,999
+    "B20001_037",  # $40,000 to $44,999
+    "B20001_038",  # $45,000 to $49,999
+    "B20001_039",  # $50,000 to $54,999
+    "B20001_040",  # $55,000 to $64,999
+    "B20001_041",  # $65,000 to $74,999
+    "B20001_042",  # $75,000 to $99,999
+    "B20001_043")  # $100,000 or more
+
+# median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
+# universe: population 16 years and over with earnings
+earnings_median_b20002 <-
+  c("B20002_001",  # total
+    "B20002_002",  # male
+    "B20002_003")  # female
+
+# employment status for the population 16 years and over
+# universe: population 16 years and over
+employment_cat_b23025 <-  # divide 5 by 3
+  c("B23025_001",  # total
+    "B23025_002",    # in labor force
+    "B23025_003",      # civilian labor force
+    "B23025_004",        # employed
+    "B23025_005",        # unemployed
+    "B23025_006",      # armed forces
+    "B23025_007")    # not in labor force
+  
+# value
+# universe: owner-occupied housing units
+home_value_cat_b25075 <-
+  c("B25075_001",  # total
+    "B25075_002",  # less than $10,000
+    "B25075_003",  # $10,000 to $14,999
+    "B25075_004",  # $15,000 to $19,999
+    "B25075_005",  # $20,000 to $24,999
+    "B25075_006",  # $25,000 to $29,999
+    "B25075_007",  # $30,000 to $34,999
+    "B25075_008",  # $35,000 to $39,999
+    "B25075_009",  # $40,000 to $49,999
+    "B25075_010",  # $50,000 to $59,999
+    "B25075_011",  # $60,000 to $69,999
+    "B25075_012",  # $70,000 to $79,999
+    "B25075_013",  # $80,000 to $89,999
+    "B25075_014",  # $90,000 to $99,999
+    "B25075_015",  # $100,000 to $124,999
+    "B25075_016",  # $125,000 to $149,999
+    "B25075_017",  # $150,000 to $174,999
+    "B25075_018",  # $175,000 to $199,999
+    "B25075_019",  # $200,000 to $249,999
+    "B25075_020",  # $250,000 to $299,999
+    "B25075_021",  # $300,000 to $399,999
+    "B25075_022",  # $400,000 to $499,999
+    "B25075_023",  # $500,000 to $749,999
+    "B25075_024",  # $750,000 to $999,999
+    "B25075_025")  # $1,000,000 or more
+
+# median value (dollars)
+# universe: owner-occupied housing units
+home_value_median_b25077 <-
+  c("B25077_001")  # median value (dollars)
+
+# types of health insurance coverage by age
+# universe: civilian noninstitutionalized population
+health_insurance_cat_c27010 <-
+  c("C27010_001",  # total
+    "C27010_002",    # under 18 years
+    "C27010_003",      # with private health insurance only
+    "C27010_004",      # with public coverage only
+    "C27010_005",      # with both private and public coverage
+    "C27010_006",      # no health insurance coverage
+    "C27010_007",    # 18 to 34 years
+    "C27010_008",      # with private health insurance only
+    "C27010_009",      # with public coverage only
+    "C27010_010",      # with both private and public coverage
+    "C27010_011",      # no health insurance coverage
+    "C27010_012",    # 35 to 64 years
+    "C27010_013",      # with private health insurance only
+    "C27010_014",      # with public coverage only
+    "C27010_015",      # with both private and public coverage
+    "C27010_016",      # no health insurance coverage
+    "C27010_017",    # 65 years and over
+    "C27010_018",      # with private health insurance only
+    "C27010_019",      # with public coverage only
+    "C27010_020",      # with both private and public coverage
+    "C27010_021")      # no health insurance coverage
+
+# household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
+# universe: households
+ling_iso_b16002 <-
+  c("B16002_001",  # total
+    "B16002_002",    # English only
+    "B16002_003",    # Spanish:
+    "B16002_004",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002_005",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002_006",    # Other Indo-European languages:
+    "B16002_007",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002_008",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002_009",    # Asian and Pacific Island languages:
+    "B16002_010",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002_011",      # At least one person 14 and over speaks English only or speaks English "very well"
+    "B16002_012",    # Other languages: 
+    "B16002_013",      # No one 14 and over speaks English only or speaks English "very well"
+    "B16002_014")     # At least one person 14 and over speaks English only or speaks English "very well"
+
+# make list of needed variables
+acs_totalcensus_var_list <- 
+  list(
+    edu_cat_b15003,
+    poverty_ratio_cat_c17002,
+    income_house_cat_b19001,
+    income_house_median_b19013,
+    earnings_sex_cat_b20001,
+    earnings_median_b20002,
+    employment_cat_b23025,
+    home_value_cat_b25075,
+    home_value_median_b25077,
+    health_insurance_cat_c27010,
+    ling_iso_b16002
+  )
+
+# make big master variable list
+acs_totalcensus_var_vec <-
+  acs_totalcensus_var_list %>% 
+  reduce(c)
+  
+  # save the master variable list
+save(
+  acs_totalcensus_var_vec, 
+  file = 
+    file.path("intermediate_data", 
+              "acs_totalcensus_var_vec.rdata")
+)
+
+rm(
+  edu_cat_b15003,
+  poverty_ratio_cat_c17002,
+  income_house_cat_b19001,
+  income_house_median_b19013,
+  earnings_sex_cat_b20001,
+  earnings_median_b20002,
+  employment_cat_b23025,
+  home_value_cat_b25075,
+  home_value_median_b25077,
+  health_insurance_cat_c27010,
+  ling_iso_b16002,
+  acs_totalcensus_var_list, 
+  acs_totalcensus_var_vec
+  )
+gc()
+
+```
+
+#### acs totalcensus pulls
+
+```{r acs totalcensus data download}
+
+# data downloaded from https://www2.census.gov/programs-surveys/acs/summary_file/2012/data/5_year_by_state/ (then individual state files)
+# downloaded 2019 June 18
+# last update per website 2015 Feburary 27
+
+# check if the acs totalcensus tibble exists and skip the whole chunk if not
+if(!
+   file.exists(
+     file.path(
+       "intermediate_data", 
+       "acs_totalcensus_raw_tibble.rdata"
+     )
+   )
+   ) {
+
+  # load variable names for reading
+  load(
+    file = 
+      file.path("intermediate_data", 
+                "acs_totalcensus_var_vec.rdata")
+  )
+  
+  # set path to census data
+  Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
+  
+  # make vector of state abbreviations
+  state_abbreviation_character_vector <- 
+    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "PR")
+  
+  # remove puerto rico
+  state_abbreviation_character_vector_no_pr <- 
+    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
+  
+  # download generated data that totalcensus requires if haven't already
+  if(
+    !dir.exists(
+      file.path(
+        "raw_data", 
+        "totalcensus", 
+        "generated_data"
+        )
+      )
+    )
+    download_generated_data_auto()
+  
+  # download actual acs data if haven't already
+  if(
+    !dir.exists(
+      file.path(
+        "raw_data", 
+        "totalcensus", 
+        "acs5year", 
+        "2012"
+        )
+      )
+    ) {
+    download_census(
+      survey = "acs5", 
+      year = 2012, 
+      states = "US"
+      )
+  }
+  
+  # this downloads the actual data!
+  acs_totalcensus_raw_dataframe <-
+    read_acs5year(
+      year = 2012,
+      states = state_abbreviation_character_vector_no_pr,
+      table_contents =
+        acs_totalcensus_var_vec,
+      summary_level = "tract",
+      with_margin = TRUE
+  )
+  
+  # make it into a tibble
+  acs_totalcensus_raw_tibble <- 
+    as_tibble(acs_totalcensus_raw_dataframe)
+  
+  # save raw tibble to disk
+  save(
+    acs_totalcensus_raw_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "acs_totalcensus_raw_tibble.rdata"
+      )
+  )
+  
+  # remove working files
+  rm(
+    acs_totalcensus_var_vec,
+    state_abbreviation_character_vector, 
+    state_abbreviation_character_vector_no_pr,
+    acs_totalcensus_raw_dataframe, 
+    acs_totalcensus_raw_tibble
+  )
+  gc()
+}
+
+```
+
+
+## air pollution
+
+### pm2.5
+
+```{r pm2.5 total frm}
+
+# source https://aqs.epa.gov/aqsweb/airdata/ (see vector below for exact)
+# downloaded 2019 June 19
+# last updated 2019 May 28 (all files)
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "raw_pm_25_frm_tibble.rdata"
+      )
+    )
+  ) {
+
+  # make list of files to download
+  pm_25_frm_files <- 
+    c("https://aqs.epa.gov/aqsweb/airdata/daily_88101_2005.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2006.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2007.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2008.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2009.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2010.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2011.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2012.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2013.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2014.zip",
+      "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2015.zip")
+  
+  
+  # make a list of filenames for the downloaded data using the above filenames
+  pm_25_frm_zip_filename_list <-  # make list of what the filenames will be
+    map_chr(pm_25_frm_files,  # witness the `map` function
+            str_extract, 
+            "daily_.+\\.zip")   # witness the regular expression!
+  
+  # download the files
+  map2(pm_25_frm_zip_filename_list, 
+       pm_25_frm_files, 
+       file_downloader, 
+       folder_as_string = "raw_data")
+  
+  # unzip all the files and save them to disk
+  map(
+    file.path(
+      "raw_data",
+      pm_25_frm_zip_filename_list
+      ),
+    unzip,
+    exdir = "intermediate_data"
+    )
+  
+  # replace ".zip" with ".csv" in pm_25_frm_zip_filename_list
+  pm_25_frm_csv_filename_list <-
+    map(pm_25_frm_zip_filename_list,
+        str_replace,
+        "zip",
+        "csv")
+  
+  # make list of tibble names by removing the ".zip" extension
+  pm_25_frm_tibble_name_list <-
+    map(pm_25_frm_zip_filename_list,
+        str_replace,
+        ".zip",
+        "")
+  
+  # read .csv files into tibbles!
+  if(
+    !file.exists(
+      file.path(
+        "intermediate_data",
+        "pm_25_frm_tibble_list.rdata"
+        )
+      )
+    ) {  # checks if tibbles already exist
+    pm_25_frm_tibble_list <-  # if not reads .csv files into tibbles
+      map(
+        file.path(
+          "intermediate_data",
+          pm_25_frm_csv_filename_list),
+        read_csv
+        )
+    names(pm_25_frm_tibble_list) <-  # names the tibbles
+      pm_25_frm_tibble_name_list
+    save(
+      pm_25_frm_tibble_list,  # saves the tibbles to disk to avoid doing this again
+      file = file.path(
+        "intermediate_data",
+        "pm_25_frm_tibble_list.rdata"
+        )
+      )
+    
+  } else {
+      load(
+        file = file.path(
+        "intermediate_data",
+        "pm_25_frm_tibble_list.rdata"
+        )
+        )  # loads the tibbles if they don't already exist
+  }
+  
+  # fix column names
+  pm_25_frm_tibble_list <-
+    map(pm_25_frm_tibble_list,
+        column_name_fixer)
+  
+  # combine air data tibbles into one big tibble
+  raw_pm_25_frm_tibble <-
+    bind_rows(pm_25_frm_tibble_list)
+  
+  # save all pm2.5 total data to disk
+  save(
+      raw_pm_25_frm_tibble,  # saves the tibbles to disk to avoid doing this again
+      file = file.path(
+        "intermediate_data",
+        "raw_pm_25_frm_tibble.rdata"
+        )
+      )
+  
+  # memory and disk clearance
+  
+  # delete individual .csv files from disk
+  map(
+    file.path(
+      "intermediate_data",
+      pm_25_frm_csv_filename_list
+      ),
+    file.remove
+    )
+  
+  # remove list of tibbles from memory
+  rm(pm_25_frm_tibble_list)
+  
+  # remove big tibble from memory
+  rm(raw_pm_25_frm_tibble)
+  
+  # clear memory
+  gc()
+
+}
+
+```
+
+
+### species
+
+```{r functionalize speciation}
+
+speciator <- 
+  function(speciation_file_link) {
+    
+    # extract the file name from the link
+    speciation_zip_filename <-
+      str_extract(
+        speciation_file_link,
+        "daily_.+\\.zip"
+        )
+    
+    # create rdata file name
+    speciation_rdata_filename <- 
+      str_replace(
+        speciation_zip_filename,
+        "zip",
+        "rdata"
+        )
+    
+     if(
+      !file.exists(  # checks if tibble already exists
+        file.path(
+          "intermediate_data",
+          speciation_rdata_filename
+          )
+        )
+      ) {
+       
+       # download the file
+       file_downloader(
+         desired_filename_as_string = speciation_zip_filename,
+         web_address_as_string = speciation_file_link,
+         folder_as_string = "raw_data"
+       )
+    
+       # unzip the file
+       unzip(
+         file.path(
+           "raw_data",
+           speciation_zip_filename
+           ), 
+         exdir = "intermediate_data"
+         )
+      
+       # replace ".zip" with ".csv" in speciation_zip_filename
+       speciation_csv_filename <- 
+         str_replace(
+           speciation_zip_filename, 
+           "zip", 
+           "csv")
+      
+       speciation_tibble_name <- 
+         str_replace(
+           speciation_zip_filename, 
+           ".zip",
+           ""
+         )
+      
+       # read .csv file into a tibble
+         speciation_tibble <- 
+           read_csv(
+             file.path(
+               "intermediate_data",
+               speciation_csv_filename
+               )
+             )
+         
+       # fix column names
+       speciation_tibble <-
+         column_name_fixer(
+           speciation_tibble
+         )
+       
+       # rename it to its filename
+       assign(
+         speciation_tibble_name, 
+         speciation_tibble
+       )
+        
+       # save the result to disk
+       save(
+         list = speciation_tibble_name,
+         file = 
+           file.path(
+             "intermediate_data",
+             speciation_rdata_filename
+             )
+       )
+       
+       # delete .csv file from disk
+       map(
+         file.path(
+           "intermediate_data",
+           speciation_csv_filename
+           ),
+         file.remove
+         )
+      
+       # remove files
+       rm(
+         speciation_tibble
+         )
+       gc()
+     }
+    
+    # remove files
+    rm(
+      speciation_zip_filename, 
+      speciation_rdata_filename
+    )
+    gc()
+  }
+
+```
+
+
+```{r speciation download by implementing speciator function en masse}
+
+# source https://aqs.epa.gov/aqsweb/airdata/ (see vector below for exact)
+# downloaded 2019 June 19
+# last updated 2019 May 28 (all files)
+
+# make list of speciation web addresses
+speciation_files <-
+  c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2006.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2007.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2008.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2009.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2010.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2011.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2012.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2013.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2014.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2015.zip")
+
+map(
+  .x = speciation_files, 
+  .f = speciator
+)
+
+rm(speciation_files)
+gc()
+
+```
+
+
+```{r species big tibble}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "raw_speciation_tibble.rdata"
+      )
+    )
+  ) {
+  # make list of speciation file names except the file names of the first two
+  speciation_filenames_except_2005_2006 <- 
+    sprintf("daily_SPEC_%d.rdata", 
+            seq(2007, 2015, 1))
+
+  # load 2005 speciation file
+  load(
+    file.path(
+      "intermediate_data", 
+      "daily_SPEC_2005.rdata"
+      )
+    )
+  
+  # load 2006 speciation file
+  load(
+    file.path(
+      "intermediate_data", 
+      "daily_SPEC_2006.rdata"
+      )
+    )
+  
+  # create the first edition of the big speciation tibble by a row bind
+  raw_speciation_tibble <- 
+    bind_rows(
+      daily_SPEC_2005, 
+      daily_SPEC_2006
+    )
+  
+  # remove the 2005 and 2006 tibbles from memory
+  rm(
+    daily_SPEC_2005, 
+    daily_SPEC_2006)
+  gc()
+  
+  # make a function to bind the rest of the speciation tibbles
+  speciebinder <- 
+    function(speciation_filename) {
+      
+      # make variable of tibble name
+      speciation_tibble_name <- 
+        str_replace(
+          speciation_filename, 
+          ".rdata",
+          ""
+          )
+      
+      # load next speciation file
+      load(
+        file.path(
+          "intermediate_data", 
+          speciation_filename
+        )
+      )
+      
+      # bind the speciation file to the big tibble
+      raw_speciation_tibble <<- 
+        bind_rows(  
+          raw_speciation_tibble, 
+          eval(as.symbol(speciation_tibble_name)))
+      
+      # remove the speciation file and clear the memory
+      rm(speciation_filename, 
+         list = speciation_tibble_name)
+      gc()
+      
+    }
+  
+  # make the big speciation dataset
+  speciebinder("daily_SPEC_2007.rdata")
+  gc()
+  speciebinder("daily_SPEC_2008.rdata")
+  gc()
+  speciebinder("daily_SPEC_2009.rdata")
+  gc()
+  speciebinder("daily_SPEC_2010.rdata")
+  gc()
+  speciebinder("daily_SPEC_2011.rdata")
+  gc()
+  speciebinder("daily_SPEC_2012.rdata")
+  gc()
+  speciebinder("daily_SPEC_2013.rdata")
+  gc()
+  speciebinder("daily_SPEC_2014.rdata")
+  gc()
+  speciebinder("daily_SPEC_2015.rdata")
+  gc()
+  
+  # save the big speciation dataset
+  save(
+    raw_speciation_tibble, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "raw_speciation_tibble.rdata"
+        )
+  )
+  
+  # remove non-needed files from memory
+  rm(speciation_files, 
+     speciation_filenames_except_2005_2006,
+     raw_speciation_tibble)
+  gc()
+  }
+
+```
+
+
+### air pollution in one big tibble
+
+```{r join pm25 total and speciation data}
+
+if(
+  !file.exists(  # checks if tibble already exists
+    file.path(
+      "intermediate_data",
+      "raw_air_tibble.rdata"
+      )
+    )
+  ) {
+
+  # load the total pm2.5 tibble
+  load(
+    file.path(
+      "intermediate_data",
+      "raw_pm_25_frm_tibble.rdata"
+    )
+  )
+
+  # load the pm2.5 speciation tibble
+  load(
+    file.path(
+      "intermediate_data",
+      "raw_speciation_tibble.rdata"
+    )
+  )
+
+  # and in the darkness bind them
+  raw_air_tibble <-
+    bind_rows(
+      raw_pm_25_frm_tibble,
+      raw_speciation_tibble)
+
+  # remove extraneous files
+  rm(raw_pm_25_frm_tibble,
+     raw_speciation_tibble)
+  gc()
+
+  # save the big tibble
+  save(
+    raw_air_tibble,
+    file =
+      file.path(
+        "intermediate_data",
+        "raw_air_tibble.rdata"
+      ))
+  
+  # remove it from memory
+  rm(raw_air_tibble)
+  gc()
+
+}
+
+```
+
+
+### clean and shrink the air pollution data
+
+```{r clean big air pollution tibble}
+
+# LOOK AT ORGANIC AND ELEMENTAL CARBON AGAIN
+
+# load the big air tibble into memory
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "raw_air_tibble.rdata"
+    )
+)
+
+# make a dataset for cleaning
+working_air_tibble <- 
+  raw_air_tibble
+
+# # remove the raw air tibble from memory
+# rm(raw_air_tibble)
+# gc()
+
+# # get variable names
+# names(working_air_tibble)
+
+# # get rows with unique state codes
+# states_and_codes <- 
+#   working_air_tibble %>% 
+#   select(state_name, state_code) %>% 
+#   unique()
+
+# list of non_us codes
+non_us_state_codes <- 
+  c(
+    # "72",  # PR (now including)
+    # "78",  # Virgin Islands (now including)
+    "CC",  # Canada
+    "80"   # Mexico
+    )
+
+# list of parameter names and codes
+species_and_codes_from_data <- 
+  working_air_tibble %>% 
+  select(parameter_name, parameter_code) %>% 
+  unique() %>% 
+  arrange(parameter_code)
+
+# get observation counts
+observations_counts_by_code <- 
+  working_air_tibble %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  tally() %>% 
+  arrange(parameter_code)
+
+# # get organic carbon codes
+# organic_carbon_codes <- 
+#   species_and_codes_from_data %>% 
+#   filter(str_detect(parameter_name, "OC")) %>% 
+#   pull(parameter_code)
+
+# get OC/EC fraction codes
+fraction_codes <- 
+  species_and_codes_from_data %>% 
+  filter(str_detect(parameter_name, "EC[0-9]") | 
+           str_detect(parameter_name, "OC[0-9]")) %>% 
+  pull(parameter_code)
+
+# get unadjusted codes
+unadjusted_codes <- 
+  species_and_codes_from_data %>% 
+  filter(str_detect(parameter_name, "nadjusted")) %>% 
+  pull(parameter_code)
+  
+# get OP carbon codes
+op_codes <- 
+  species_and_codes_from_data %>% 
+  filter(str_detect(parameter_name, "OP")) %>% 
+  pull(parameter_code)
+
+# get codes for volatile/non-volatile nitrate
+volatile_codes <- 
+  species_and_codes_from_data %>% 
+  filter(str_detect(parameter_name, "olatile")) %>% 
+  pull(parameter_code)
+
+# other codes to drop
+remaining_drop_codes <- 
+  c(
+    88308,  # carbonate carbon
+    88312,  # total carbon (Total Carbon PM2.5 LC TOT)
+    88313,  # black carbon (Black Carbon PM2.5 at 880 nm)
+    88314,   # UV carbon (UV Carbon PM2.5 at 370 nm)
+    88316  # optical EC (Optical EC PM2.5 LC TOT)
+  )
+
+# remove non_states to make tibble of all monitors with any data in US
+us_raw_air_tibble <- 
+  working_air_tibble %>% 
+  filter(!(state_code %in% non_us_state_codes))  # removes non-US sites
+
+# make monitor id
+us_raw_air_tibble <- 
+  us_raw_air_tibble %>% 
+  mutate(
+    monitor_id = 
+      paste(
+        state_code, 
+        county_code, 
+        site_num, 
+        sep="-")
+  )
+
+# save the plain us tibble
+save(
+  us_raw_air_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "us_raw_air_tibble.rdata"
+  )
+)
+
+# remove the working air tibble
+rm(working_air_tibble)
+gc()
+
+# drop observations not of interest
+us_filtered_air_tibble <- 
+  us_raw_air_tibble %>%  
+  filter(parameter_code > 88100) %>%   # removes non-parameter variables
+  filter(!(parameter_code %in% fraction_codes)) %>%  # remove fractions
+  filter(!(parameter_code %in% op_codes)) %>%  # remove pyrolized carbon
+  filter(!(parameter_code %in% volatile_codes)) %>%  # remove weird nitrate
+  filter(!(parameter_code %in% unadjusted_codes)) %>%  # remove unadjusteds
+  filter(!(parameter_code %in% remaining_drop_codes))  # remove remaining drops
+
+# remove the us raw tibble
+rm(us_raw_air_tibble)
+gc()
+  
+# stuff from data two
+species_and_codes_from_data_two <- 
+  us_filtered_air_tibble %>% 
+  select(parameter_name, parameter_code) %>% 
+  unique() %>% 
+  arrange(parameter_code)
+
+# count observations by code
+observations_counts_by_code <- 
+  us_filtered_air_tibble %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  tally() %>% 
+  arrange(parameter_code)
+
+# save the us filtered air tibble
+save(
+  us_filtered_air_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "us_filtered_air_tibble.rdata"
+    )
+  )
+
+# remove the filtered air tibble
+rm(us_filtered_air_tibble)
+gc()
+
+```
+
+
+```{r count and type monitor locations}
+
+# load tibble for monitor counts
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "us_filtered_air_tibble.rdata"
+      )
+  )
+
+# isolate columns needed for monitor counting
+monitor_location_data <- 
+  us_filtered_air_tibble %>% 
+  dplyr::select(monitor_id, 
+                latitude, 
+                longitude, 
+                datum, 
+                parameter_code)
+
+# save the above
+save(
+  monitor_location_data, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "monitor_location_data.rdata"
+      )
+  )
+
+# vector for datums
+datum_order <- 
+  tibble(
+    datum = 
+      c(
+        "NAD83", 
+        "WGS84"
+        )
+    )
+
+# order the monitor locations in order to convert the fewest possible
+monitor_location_data_ordered <- 
+  full_join(
+    datum_order, 
+    monitor_location_data, 
+    by = "datum"
+    )
+
+# isolate unique monitor-parameter combinations
+monitor_location_data_marked <-
+  monitor_location_data_ordered %>% 
+   distinct(
+     monitor_id,
+     parameter_code, 
+     .keep_all = TRUE
+     )
+
+# classify monitors as for total pm25, species, or both
+monitor_location_data_marked <- 
+  monitor_location_data_marked %>%
+  mutate(
+    monitor_pm25 = 
+      ifelse(
+        (parameter_code == "88101"),
+        "yes",
+        "no"
+        )
+    ) %>% 
+  mutate(
+    monitor_species = 
+      ifelse(
+        (parameter_code != "88101"),
+        "yes",
+        "no"
+        )
+    ) %>%
+  distinct(
+    monitor_id,
+    monitor_pm25,
+    monitor_species, 
+    .keep_all = TRUE
+    )
+
+# save the above
+save(
+  monitor_location_data_marked, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "monitor_location_data_marked.rdata"
+      )
+  )
+
+# classify monitors as total pm2.5, species, or both
+monitor_location_data_counts <- 
+  monitor_location_data_marked %>% 
+  add_count(monitor_id) %>% 
+  mutate(monitor_type = 
+           ifelse(
+             n == 2, 
+             "both", 
+             ifelse(
+               monitor_species == "yes",
+               "species",
+               ifelse(
+                 monitor_pm25 == "yes", 
+                 "pm25",
+                 "what"
+               )
+             )
+           )
+         )
+
+# only keep the two columns for monitor classification
+sparse_monitors <- 
+  monitor_location_data_counts %>% 
+  distinct(monitor_id, 
+           monitor_type,
+           .keep_all = TRUE)
+
+# save the monitor types and locations
+save(
+  sparse_monitors,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sparse_monitors.rdata"
+      )
+  )
+
+# make a table of monitor types
+table(sparse_monitors$monitor_type)
+
+# isolate NAD83 monitors
+sparse_monitors_nad83 <- 
+  sparse_monitors %>% 
+  filter(datum == "NAD83")
+
+# save NAD83 monitors
+save(
+  sparse_monitors_nad83,
+  file = 
+    file.path(
+      "intermediate_data",
+      "sparse_monitors_nad83.rdata"
+      )
+  )
+  
+# isolate WGS84 monitors
+sparse_monitors_wgs84 <- 
+  sparse_monitors %>% 
+  filter(datum == "WGS84")
+
+# save WGS84 monitors
+save(
+  sparse_monitors_wgs84,
+  file = 
+    file.path(
+      "intermediate_data",
+      "sparse_monitors_wgs84.rdata"
+      )
+  )
+
+# remove the created files
+rm(
+  us_filtered_air_tibble,
+  monitor_location_data, 
+  datum_order,
+  monitor_location_data_ordered, 
+  monitor_location_data_marked, 
+  monitor_location_data_counts,
+  sparse_monitors,
+  sparse_monitors_nad83, 
+  sparse_monitors_wgs84
+)
+
+```
+
+```{r count monitors by state}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sparse_monitors.rdata"
+      )
+  )
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "us_filtered_air_tibble.rdata"
+      )
+  )
+
+monitor_and_state <- 
+  us_filtered_air_tibble %>% 
+  select(
+    monitor_id, 
+    state_name, 
+    state_code
+  ) %>% 
+  distinct()
+
+state_monitor_counts <- 
+  left_join(
+    sparse_monitors,
+    monitor_and_state, 
+    by = "monitor_id"
+  ) %>% 
+  group_by(
+    state_name, 
+    monitor_type
+  ) %>% 
+  tally()
+
+save(
+  state_monitor_counts, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "state_monitor_counts.rdata"
+      )
+)
+
+virgin_data <- 
+  us_filtered_air_tibble %>% 
+  filter(state_name == "Virgin Islands")
+
+
+
+View(virgin_data)
+
+rm(
+  monitor_and_state, 
+  state_monitor_counts
+)
+gc()
+```
+
+
+
+```{r make spatial files from monitor locations}
+
+# load needed files
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "sparse_monitors_nad83.rdata"
+    )
+  )
+
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "sparse_monitors_wgs84.rdata"
+    )
+  )
+
+load(
+  file = 
+    file.path(
+      "raw_data", 
+      "tigris_cbf_no_data.rdata"
+    )
+)
+
+# make monitor locations into spatial point files
+sparse_monitors_nad83_sf <- 
+  st_as_sf(
+    sparse_monitors_nad83, 
+    coords = 
+      c("longitude",
+        "latitude"),
+    crs = st_crs(tigris_cbf_no_data) 
+  ) 
+
+sparse_monitors_wgs84_sf <- 
+  st_as_sf(
+    sparse_monitors_wgs84, 
+    coords = 
+      c("longitude",
+        "latitude"),
+    crs = 4326
+  )
+
+# transformations to match census data
+sparse_monitors_wgs84_to_nad_83_sf <- 
+  st_transform(
+    sparse_monitors_wgs84_sf, 
+    crs = st_crs(tigris_cbf_no_data))
+
+monitors_sf <- 
+  rbind(
+    sparse_monitors_nad83_sf, 
+    sparse_monitors_wgs84_to_nad_83_sf
+  )
+
+save(
+  monitors_sf, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "monitors_sf.rdata"
+      )
+  )
+
+rm(
+  sparse_monitors_nad83,
+  sparse_monitors_wgs84,
+  sparse_monitors_wgs84_to_nad_83_sf,
+  sparse_monitors_nad83_sf,
+  sparse_monitors_wgs84_sf,
+  monitors_sf,
+  tigris_cbf_no_data
+  )
+gc()
+```
+
+
+```{r assign tracts to monitors}
+
+# load needed files
+load(
+  file = 
+    file.path(
+      "raw_data", 
+      "tigris_cbf_no_data.rdata"
+    )
+  )
+
+# load monitor file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "monitors_sf.rdata"
+    )
+  )
+
+projected_tracts <- 
+  tigris_cbf_no_data %>% 
+  st_transform(crs = 5070)
+
+projected_monitors <-
+  monitors_sf %>% 
+  st_transform(crs = 5070)
+
+# join tracts to monitors (CHECK AGAINST ARCGIS)
+monitors_to_tracts <- 
+  st_join(
+    projected_monitors, 
+    projected_tracts
+  )
+
+# save files
+save(
+  monitors_to_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "monitors_to_tracts.rdata"
+    )
+)
+
+# monitor buffer!
+buffer_monitors_one_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 1000)
+
+# join buffers to tracts
+buffers_one_km_to_tracts <- 
+  st_join(
+    buffer_monitors_one_km, 
+    projected_tracts, 
+    left = TRUE
+  )
+
+# save buffers joined to tracts
+save(
+  buffers_one_km_to_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers_one_km_to_tracts,rdata"
+    )
+)
+
+
+# remove unneeded files
+rm(
+  monitors_sf, 
+  tigris_cbf_no_data, 
+  monitors_to_tracts, 
+  projected_monitors,
+  projected_tracts,
+  buffer_monitors_one_km, 
+  buffers_one_km_to_tracts
+)
+
+```
+
+
+### joining the above back to census data
+
+```{r join tracts to census data}
+
+# load necessary files
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "monitors_to_tracts.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers_one_km_to_tracts,rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "us_filtered_air_tibble.rdata"
+      )
+  )
+
+little_monitors_to_tracts <- 
+  monitors_to_tracts %>% 
+  st_drop_geometry() %>% 
+  select(monitor_id, 
+         GEO_ID) %>% 
+  mutate(geoid_containing_tract = 
+           str_replace(GEO_ID, 
+                       "1400000US", 
+                       "")) %>% 
+  select(monitor_id, 
+         geoid_containing_tract)
+
+simple_buffer <- 
+  buffers_one_km_to_tracts %>% 
+  st_drop_geometry() %>% 
+  select(
+    monitor_id, 
+    GEO_ID
+    ) %>%
+  mutate(
+    geoid = 
+      str_replace(
+        GEO_ID,
+        "1400000US", 
+        ""
+        )
+    ) %>% 
+  select(
+    monitor_id, 
+    geoid
+    )
+
+air_with_containing_tracts <- 
+  left_join(
+    us_filtered_air_tibble, 
+    little_monitors_to_tracts, 
+    by = "monitor_id"
+  )
+
+save(
+  air_with_containing_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_with_containing_tracts.rdata"
+      )
+  )
+
+save(
+  simple_buffer, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "simple_buffer.rdata"
+      )
+  )
+
+```
+
+
+```{r process ruca data}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "ruca_2010.rdata"
+    )
+)
+
+ruca_simple <- 
+  ruca_2010[,c(4,5,6)]
+
+names(ruca_simple) <- 
+  c("tract_id",
+    "ruca_prime",
+    "ruca_second")
+
+# set to urban or not urban based on RUCA codes
+ruca_simple$urban <- 'noturban'
+ruca_simple <- 
+  within(ruca_simple, 
+         urban[ruca_second == 1.0 | 
+                 ruca_second == 1.1 | 
+                 ruca_second == 2.0 | 
+                 ruca_second == 2.1 | 
+                 ruca_second == 3.0 | 
+                 ruca_second == 3.1 | 
+                 ruca_second == 4.1 | 
+                 ruca_second == 5.1 | 
+                 ruca_second == 6.1 | 
+                 ruca_second == 7.1 | 
+                 ruca_second == 8.1 | 
+                 ruca_second == 9.1 | 
+                 ruca_second == 10.1] <- 
+           'urban')
+
+ruca_urban_only <- 
+  ruca_simple %>% 
+  filter(
+    urban == 'urban'
+    )
+
+save(
+  ruca_simple, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "ruca_simple.rdata"
+    )
+)
+
+save(
+  ruca_urban_only, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "ruca_urban_only.rdata"
+    )
+)
+
+
+```
+
+
+```{r monitor subset for date}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_with_containing_tracts.rdata"
+      )
+  )
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sparse_monitors.rdata"
+      )
+  )
+
+extra_sparse_monitors <- 
+  sparse_monitors %>% 
+  select(monitor_id, 
+         monitor_type)
+
+air_tracts_types <- 
+  left_join(
+    air_with_containing_tracts, 
+    extra_sparse_monitors, 
+    by = "monitor_id"
+  )
+
+data_for_monitor_operations <- 
+  air_tracts_types %>% 
+  select(
+    monitor_id, 
+    monitor_type,
+    parameter_code, 
+    date_local)
+
+dates_by_monitor <- 
+  data_for_monitor_operations %>% 
+  group_by(monitor_id, monitor_type) %>% 
+  summarize(
+    first_date = min(date_local), 
+    last_date = max(date_local)
+  ) %>% 
+  ungroup() %>% 
+  distinct(monitor_id, .keep_all = TRUE)
+
+dates_by_monitor_pm_only <- 
+  dates_by_monitor %>% 
+  filter(
+    monitor_type == "pm25" | monitor_type == "both"
+  ) %>% 
+  arrange(first_date, last_date) %>% 
+  mutate(monitor_id = factor(monitor_id, unique(monitor_id)))
+
+dates_by_monitor_species_only <- 
+  dates_by_monitor %>% 
+  filter(
+    monitor_type == "species" | monitor_type == "both"
+  ) %>% 
+  arrange(first_date, last_date) %>% 
+  mutate(monitor_id = factor(monitor_id, unique(monitor_id)))
+
+nrow(dates_by_monitor_species_only)
+table(dates_by_monitor_pm_only$monitor_type)
+table(dates_by_monitor_species_only$monitor_type)
+
+# 1,715 monitors
+date_range_plot_pm <- 
+  ggplot(dates_by_monitor_pm_only, 
+         y = monitor_id) +
+  geom_segment(
+    aes(x = first_date, 
+        xend = last_date, 
+        y = monitor_id, 
+        yend = monitor_id)
+  ) +
+  theme(axis.title.x = element_text("monitor"), 
+        axis.title.y = element_text("date"), 
+        axis.text.y = element_blank())
+  
+date_range_plot_species <- 
+  ggplot(dates_by_monitor_species_only, 
+         y = monitor_id) +
+  geom_segment(
+    aes(x = first_date, 
+        xend = last_date, 
+        y = monitor_id, 
+        yend = monitor_id)
+  ) +
+  theme(axis.title.x = element_text("monitor"), 
+        axis.title.y = element_text("date"), 
+        axis.text.y = element_blank())
+
+ggsave("date_range_plot_pm.png",plot=date_range_plot,width=20,height=60,units="cm")
+ggsave("date_range_plot_species.png",plot=date_range_plot_species,width=20,height=60,units="cm")
+
+
+
+
+
+```
+
+
+
+
+# BEGIN TRAVIS-FRIENDLY CODE
+
+## ruca
+
+```{r ruca data}
+
+# source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
+# downloaded 2019 June 11
+# last updated 12/31/2013 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
+
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "ruca_2010.rdata"
+      )
+    )
+  ) {
+  file_downloader(
+    desired_filename_as_string = "ruca_2010_raw.xlsx", 
+    web_address_as_string = 
+      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
+    folder_as_string = "raw_data"
+    )
+
+  # read the data from the excel file
+  ruca_2010_raw <- 
+    read_xlsx(
+      file.path(
+        "raw_data", 
+        "ruca_2010_raw.xlsx"
+        )
+      )
+  
+  # fix column names
+  ruca_2010 <-
+    column_name_fixer(
+      ruca_2010_raw
+    )
+
+  # save the shapefile
+  save(
+    ruca_2010,
+    file = file.path(
+      "intermediate_data", 
+      "ruca_2010.rdata"
+    )
+  )
+
+  # remove the shapefile from memory
+  rm(ruca_2010_raw, ruca_2010)
+  gc()
+}
+
+```
+
+
+## parameter and species codes
+
+```{r speciation parameter codes, results = "hide"}
+
+# source https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv
+# downloaded 2019 June 11
+# last updated 
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+      )
+    )
+  ) {
+  
+  # download the speciation paramter codes
+  file_downloader(
+    desired_filename_as_string = "speciation_parameter_codes.csv",
+    web_address_as_string = "https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv", 
+    folder_as_string = "raw_data"
+    )
+
+  # read the parameter codes into memory
+  speciation_parameter_codes <- 
+    read_csv(
+      file.path("raw_data", 
+                "speciation_parameter_codes.csv"
+                )
+    )
+  
+  # fix column names
+  speciation_parameter_codes <-
+    column_name_fixer(
+     speciation_parameter_codes
+    )
+
+  # save the rdata file
+  save(
+    speciation_parameter_codes,
+    file = file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+    )
+  )
+
+  # remove the rdata from memory
+  rm(speciation_parameter_codes)
+  gc()
+}
+
+```
+
+
+```{r make parameter and species lists}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+      )
+)
+
+# make a list of all the species and their codes
+species_and_codes <- 
+  speciation_parameter_codes %>% 
+  select(parameter, parameter_code) %>% 
+  distinct
+
+# make a list of the organic carbon species and codes
+organic_carbon_rows <- 
+  species_and_codes %>% 
+  filter(str_detect(parameter, "OC"))
+
+# make a numeric vector of the organic carbon species and codes
+organic_carbon_codes <-
+  organic_carbon_rows %>% 
+  select(parameter_code) %>% 
+  pull()
+
+save(
+  species_and_codes, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "species_and_codes.rdata"
+    )
+  )
+
+save(
+  organic_carbon_codes, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "organic_carbon_codes.rdata"
+    )
+  )
+
+# remove created data from memory
+rm(
+  organic_carbon_rows,
+  organic_carbon_codes, 
+  speciation_parameter_codes,
+  species_and_codes)
+gc()
+
+```
+
+
+
+
+# DISCARDED CODE TOO GOOD TO DELETE
 
 #### census tidycensus variable pulls (DO NOT RUN)
 
@@ -3958,373 +5456,6 @@ housing_tenure_people_sf1_h11_list <-
     housing_tenure_people_sf1_h11_list, 
     housing_tenure_people_sf1_h11_tibble
     )
-  gc()
-}
-
-```
-
-### acs
-
-#### acs variable lists
-
-```{r acs totalcensus variable lists}
-
-# educational attainment for the population 25 years and over
-# universe: population 25 years and over
-edu_cat_b15003 <- 
-  c("B15003_001",  # total
-    "B15003_002",  # no schooling completed
-    "B15003_003",  # nursery school
-    "B15003_004",  # kindergarten
-    "B15003_005",  # 1st grade
-    "B15003_006",  # 2nd grade
-    "B15003_007",  # 3rd grade
-    "B15003_008",  # 4th grade
-    "B15003_009",  # 5th grade
-    "B15003_010",  # 6th grade
-    "B15003_011",  # 7th grade
-    "B15003_012",  # 8th grade
-    "B15003_013",  # 9th grade
-    "B15003_014",  # 10th grade
-    "B15003_015",  # 11th grade
-    "B15003_016",  # 12th grade
-    "B15003_017",  # regular high school diploma
-    "B15003_018",  # GED or alternative credential
-    "B15003_019",  # some college, less than 1 year
-    "B15003_020",  # some college, 1 or more years, no degree
-    "B15003_021",  # associate's degree
-    "B15003_022",  # bachelor's degree
-    "B15003_023",  # master's degree
-    "B15003_024",  # professional school degree
-    "B15003_025")  # doctorate degree
-
-# ratio of income to poverty level in the past 12 months
-# universe: population for whom poverty status is determined
-poverty_ratio_cat_c17002 <-
-  c("C17002_001",  # total
-    "C17002_002",  # under .50
-    "C17002_003",  # .50 to .99
-    "C17002_004",  # 1.00 to 1.24
-    "C17002_005",  # 1.25 to 1.49
-    "C17002_006",  # 1.50 to 1.84
-    "C17002_007",  # 1.85 to 1.99
-    "C17002_008")  # 2.00 and over
-
-# household income in the past 12 months (in 2012 inflation-adjusted dollars)
-# universe: households
-income_house_cat_b19001 <-
-  c("B19001_001",  # total
-    "B19001_002",  # less than $10,000
-    "B19001_003",  # $10,000 to $14,999
-    "B19001_004",  # $15,000 to $19,999
-    "B19001_005",  # $20,000 to $24,999
-    "B19001_006",  # $25,000 to $29,999
-    "B19001_007",  # $30,000 to $34,999
-    "B19001_008",  # $35,000 to $39,999
-    "B19001_009",  # $40,000 to $44,999
-    "B19001_010",  # $45,000 to $49,999
-    "B19001_011",  # $50,000 to $59,999
-    "B19001_012",  # $60,000 to $74,999
-    "B19001_013",  # $75,000 to $99,999
-    "B19001_014",  # $100,000 to $124,999
-    "B19001_015",  # $125,000 to $149,999
-    "B19001_016",  # $150,000 to $199,999
-    "B19001_017")  # $200,000 or more
-
-# median household income in the past 12 months (in 2012 inflation-adjusted dollars)
-# universe: households
-income_house_median_b19013 <-
-  c("B19013_001")
-
-# sex by earnings in the past 12 months (in 2012 inflation-adjusted dollars) for the population 16 years and over with earnings in the past 12 months
-# universe: population 16 years and over with earnings
-earnings_sex_cat_b20001 <-
-  c("B20001_001",  # total
-    "B20001_002",  # male
-    "B20001_003",  # $1 to $2,499 or loss
-    "B20001_004",  # $2,500 to $4,999
-    "B20001_005",  # $5,000 to $7,499
-    "B20001_006",  # $7,500 to $9,999
-    "B20001_007",  # $10,000 to $12,499
-    "B20001_008",  # $12,500 to $14,999
-    "B20001_009",  # $15,000 to $17,499
-    "B20001_010",  # $17,500 to $19,999
-    "B20001_011",  # $20,000 to $22,499
-    "B20001_012",  # $22,500 to $24,999
-    "B20001_013",  # $25,000 to $29,999
-    "B20001_014",  # $30,000 to $34,999
-    "B20001_015",  # $35,000 to $39,999
-    "B20001_016",  # $40,000 to $44,999
-    "B20001_017",  # $45,000 to $49,999
-    "B20001_018",  # $50,000 to $54,999
-    "B20001_019",  # $55,000 to $64,999
-    "B20001_020",  # $65,000 to $74,999
-    "B20001_021",  # $75,000 to $99,999
-    "B20001_022",  # $100,000 or more
-    "B20001_023",  # Female:
-    "B20001_024",  # $1 to $2,499 or loss
-    "B20001_025",  # $2,500 to $4,999
-    "B20001_026",  # $5,000 to $7,499
-    "B20001_027",  # $7,500 to $9,999
-    "B20001_028",  # $10,000 to $12,499
-    "B20001_029",  # $12,500 to $14,999
-    "B20001_030",  # $15,000 to $17,499
-    "B20001_031",  # $17,500 to $19,999
-    "B20001_032",  # $20,000 to $22,499
-    "B20001_033",  # $22,500 to $24,999
-    "B20001_034",  # $25,000 to $29,999
-    "B20001_035",  # $30,000 to $34,999
-    "B20001_036",  # $35,000 to $39,999
-    "B20001_037",  # $40,000 to $44,999
-    "B20001_038",  # $45,000 to $49,999
-    "B20001_039",  # $50,000 to $54,999
-    "B20001_040",  # $55,000 to $64,999
-    "B20001_041",  # $65,000 to $74,999
-    "B20001_042",  # $75,000 to $99,999
-    "B20001_043")  # $100,000 or more
-
-# median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
-# universe: population 16 years and over with earnings
-earnings_median_b20002 <-
-  c("B20002_001",  # total
-    "B20002_002",  # male
-    "B20002_003")  # female
-
-# employment status for the population 16 years and over
-# universe: population 16 years and over
-employment_cat_b23025 <-  # divide 5 by 3
-  c("B23025_001",  # total
-    "B23025_002",    # in labor force
-    "B23025_003",      # civilian labor force
-    "B23025_004",        # employed
-    "B23025_005",        # unemployed
-    "B23025_006",      # armed forces
-    "B23025_007")    # not in labor force
-  
-# value
-# universe: owner-occupied housing units
-home_value_cat_b25075 <-
-  c("B25075_001",  # total
-    "B25075_002",  # less than $10,000
-    "B25075_003",  # $10,000 to $14,999
-    "B25075_004",  # $15,000 to $19,999
-    "B25075_005",  # $20,000 to $24,999
-    "B25075_006",  # $25,000 to $29,999
-    "B25075_007",  # $30,000 to $34,999
-    "B25075_008",  # $35,000 to $39,999
-    "B25075_009",  # $40,000 to $49,999
-    "B25075_010",  # $50,000 to $59,999
-    "B25075_011",  # $60,000 to $69,999
-    "B25075_012",  # $70,000 to $79,999
-    "B25075_013",  # $80,000 to $89,999
-    "B25075_014",  # $90,000 to $99,999
-    "B25075_015",  # $100,000 to $124,999
-    "B25075_016",  # $125,000 to $149,999
-    "B25075_017",  # $150,000 to $174,999
-    "B25075_018",  # $175,000 to $199,999
-    "B25075_019",  # $200,000 to $249,999
-    "B25075_020",  # $250,000 to $299,999
-    "B25075_021",  # $300,000 to $399,999
-    "B25075_022",  # $400,000 to $499,999
-    "B25075_023",  # $500,000 to $749,999
-    "B25075_024",  # $750,000 to $999,999
-    "B25075_025")  # $1,000,000 or more
-
-# median value (dollars)
-# universe: owner-occupied housing units
-home_value_median_b25077 <-
-  c("B25077_001")  # median value (dollars)
-
-# types of health insurance coverage by age
-# universe: civilian noninstitutionalized population
-health_insurance_cat_c27010 <-
-  c("C27010_001",  # total
-    "C27010_002",    # under 18 years
-    "C27010_003",      # with private health insurance only
-    "C27010_004",      # with public coverage only
-    "C27010_005",      # with both private and public coverage
-    "C27010_006",      # no health insurance coverage
-    "C27010_007",    # 18 to 34 years
-    "C27010_008",      # with private health insurance only
-    "C27010_009",      # with public coverage only
-    "C27010_010",      # with both private and public coverage
-    "C27010_011",      # no health insurance coverage
-    "C27010_012",    # 35 to 64 years
-    "C27010_013",      # with private health insurance only
-    "C27010_014",      # with public coverage only
-    "C27010_015",      # with both private and public coverage
-    "C27010_016",      # no health insurance coverage
-    "C27010_017",    # 65 years and over
-    "C27010_018",      # with private health insurance only
-    "C27010_019",      # with public coverage only
-    "C27010_020",      # with both private and public coverage
-    "C27010_021")      # no health insurance coverage
-
-# household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
-# universe: households
-ling_iso_b16002 <-
-  c("B16002_001",  # total
-    "B16002_002",    # English only
-    "B16002_003",    # Spanish:
-    "B16002_004",      # No one 14 and over speaks English only or speaks English "very well"
-    "B16002_005",      # At least one person 14 and over speaks English only or speaks English "very well"
-    "B16002_006",    # Other Indo-European languages:
-    "B16002_007",      # No one 14 and over speaks English only or speaks English "very well"
-    "B16002_008",      # At least one person 14 and over speaks English only or speaks English "very well"
-    "B16002_009",    # Asian and Pacific Island languages:
-    "B16002_010",      # No one 14 and over speaks English only or speaks English "very well"
-    "B16002_011",      # At least one person 14 and over speaks English only or speaks English "very well"
-    "B16002_012",    # Other languages: 
-    "B16002_013",      # No one 14 and over speaks English only or speaks English "very well"
-    "B16002_014")     # At least one person 14 and over speaks English only or speaks English "very well"
-
-# make list of needed variables
-acs_totalcensus_var_list <- 
-  list(
-    edu_cat_b15003,
-    poverty_ratio_cat_c17002,
-    income_house_cat_b19001,
-    income_house_median_b19013,
-    earnings_sex_cat_b20001,
-    earnings_median_b20002,
-    employment_cat_b23025,
-    home_value_cat_b25075,
-    home_value_median_b25077,
-    health_insurance_cat_c27010,
-    ling_iso_b16002
-  )
-
-# make big master variable list
-acs_totalcensus_var_vec <-
-  acs_totalcensus_var_list %>% 
-  reduce(c)
-  
-  # save the master variable list
-save(
-  acs_totalcensus_var_vec, 
-  file = 
-    file.path("intermediate_data", 
-              "acs_totalcensus_var_vec.rdata")
-)
-
-rm(
-  edu_cat_b15003,
-  poverty_ratio_cat_c17002,
-  income_house_cat_b19001,
-  income_house_median_b19013,
-  earnings_sex_cat_b20001,
-  earnings_median_b20002,
-  employment_cat_b23025,
-  home_value_cat_b25075,
-  home_value_median_b25077,
-  health_insurance_cat_c27010,
-  ling_iso_b16002,
-  acs_totalcensus_var_list, 
-  acs_totalcensus_var_vec
-  )
-gc()
-
-```
-
-#### acs totalcensus pulls
-
-```{r acs totalcensus data download}
-
-# data downloaded from https://www2.census.gov/programs-surveys/acs/summary_file/2012/data/5_year_by_state/ (then individual state files)
-# downloaded 2019 June 18
-# last update per website 2015 Feburary 27
-
-# check if the acs totalcensus tibble exists and skip the whole chunk if not
-if(!
-   file.exists(
-     file.path(
-       "intermediate_data", 
-       "acs_totalcensus_raw_tibble.rdata"
-     )
-   )
-   ) {
-
-  # load variable names for reading
-  load(
-    file = 
-      file.path("intermediate_data", 
-                "acs_totalcensus_var_vec.rdata")
-  )
-  
-  # set path to census data
-  Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
-  
-  # make vector of state abbreviations
-  state_abbreviation_character_vector <- 
-    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "PR")
-  
-  # remove puerto rico
-  state_abbreviation_character_vector_no_pr <- 
-    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
-  
-  # download generated data that totalcensus requires if haven't already
-  if(
-    !dir.exists(
-      file.path(
-        "raw_data", 
-        "totalcensus", 
-        "generated_data"
-        )
-      )
-    )
-    download_generated_data_auto()
-  
-  # download actual acs data if haven't already
-  if(
-    !dir.exists(
-      file.path(
-        "raw_data", 
-        "totalcensus", 
-        "acs5year", 
-        "2012"
-        )
-      )
-    ) {
-    download_census(
-      survey = "acs5", 
-      year = 2012, 
-      states = "US"
-      )
-  }
-  
-  # this downloads the actual data!
-  acs_totalcensus_raw_dataframe <-
-    read_acs5year(
-      year = 2012,
-      states = state_abbreviation_character_vector_no_pr,
-      table_contents =
-        acs_totalcensus_var_vec,
-      summary_level = "tract",
-      with_margin = TRUE
-  )
-  
-  # make it into a tibble
-  acs_totalcensus_raw_tibble <- 
-    as_tibble(acs_totalcensus_raw_dataframe)
-  
-  # save raw tibble to disk
-  save(
-    acs_totalcensus_raw_tibble, 
-    file = 
-      file.path(
-        "intermediate_data", 
-        "acs_totalcensus_raw_tibble.rdata"
-      )
-  )
-  
-  # remove working files
-  rm(
-    acs_totalcensus_var_vec,
-    state_abbreviation_character_vector, 
-    state_abbreviation_character_vector_no_pr,
-    acs_totalcensus_raw_dataframe, 
-    acs_totalcensus_raw_tibble
-  )
   gc()
 }
 
@@ -9581,5 +10712,153 @@ select_acs_tibble <-
   acs_data_from_gdb %>% 
   select(all_acs_gdb_vars)
   
+```
+
+
+
+#### old code versions
+
+```{r old speciator function, eval=FALSE, include=FALSE}
+
+speciator <- 
+  function(speciation_file_link) {
+    
+    # extract the file name from the link
+    speciation_zip_filename <-
+      str_extract(
+        speciation_file_link,
+        "daily_.+\\.zip"
+        )
+    
+    # create rdata file name
+    speciation_rdata_filename <- 
+      str_replace(
+        speciation_zip_filename,
+        "zip",
+        "rdata"
+        )
+    
+     if(
+      !file.exists(  # checks if tibble already exists
+        file.path(
+          "intermediate_data",
+          speciation_rdata_filename
+          )
+        )
+      ) {
+       
+       # download the file
+       file_downloader(
+         desired_filename_as_string = speciation_zip_filename,
+         web_address_as_string = speciation_file_link,
+         folder_as_string = "raw_data"
+       )
+    
+       # unzip the file
+       unzip(
+         file.path(
+           "raw_data",
+           speciation_zip_filename
+           ), 
+         exdir = "intermediate_data"
+         )
+      
+       # replace ".zip" with ".csv" in speciation_zip_filename
+       speciation_csv_filename <- 
+         str_replace(
+           speciation_zip_filename, 
+           "zip", 
+           "csv")
+      
+       speciation_tibble_name <- 
+         str_replace(
+           speciation_zip_filename, 
+           ".zip",
+           ""
+         )
+      
+       # read .csv file into a tibble
+         speciation_tibble <- 
+           read_csv(
+             file.path(
+               "intermediate_data",
+               speciation_csv_filename
+               )
+             )
+         
+       # fix column names
+       speciation_tibble <-
+         column_name_fixer(
+           speciation_tibble
+         )
+       
+       # # load organic carbon codes
+       # if (!exists("organic_carbon_codes")) {
+       # load(
+       #   file = 
+       #     file.path(
+       #       "intermediate_data", 
+       #       "organic_carbon_codes.rdata"
+       #       )
+       #   )
+       # }
+       #  
+       # # keep only actual component measurements and necessary columns
+       # # NOTE: NO LONGER DOING THIS
+       # speciation_tibble_shrunk <- 
+       #   speciation_tibble %>% 
+       #   filter(parameter_code > 88100) %>% 
+       #   filter(!(parameter_code %in% organic_carbon_codes)) %>% 
+       #   select(
+       #     -c(
+       #       pollutant_standard, 
+       #       units_of_measure, 
+       #       aqi, 
+       #       method_name, 
+       #       local_site_name, 
+       #       address, 
+       #       county_name)
+       #   )
+       
+       # rename it to its filename
+       assign(
+         speciation_tibble_name, 
+         speciation_tibble
+       )
+        
+       # save the result to disk
+       save(
+         list = speciation_tibble_name,
+         file = 
+           file.path(
+             "intermediate_data",
+             speciation_rdata_filename
+             )
+       )
+       
+       # delete .csv file from disk
+       map(
+         file.path(
+           "intermediate_data",
+           speciation_csv_filename
+           ),
+         file.remove
+         )
+      
+       # remove files
+       rm(
+         speciation_tibble
+         )
+       gc()
+     }
+    
+    # remove files
+    rm(
+      speciation_zip_filename, 
+      speciation_rdata_filename
+    )
+    gc()
+  }
+
 ```
 
