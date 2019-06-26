@@ -6,7 +6,7 @@ output: html_document
 ---
 
 
-# CODE SETUP
+# CODE SETUP (run every time)
 
 ```{r load packages}
 
@@ -110,29 +110,215 @@ download_generated_data_auto <-
         cat("Last downloading or extraction has a problem. Download and extract again.")
         download_generated_data_auto()
     }
+  }
+
+# function to read decennial data without asking about downloads
+read_decennial_auto <- 
+  function (year, states, table_contents = NULL, areas = NULL, 
+    geo_headers = NULL, summary_level = NULL, geo_comp = "total", 
+    show_progress = TRUE) 
+{
+    if (Sys.getenv("PATH_TO_CENSUS") == "") {
+        message(paste("Please set up the path to downloaded census data, following the instruction at", 
+            "https://github.com/GL-Li/totalcensus."))
+        return(NULL)
+    }
+    if (is.null(summary_level)) 
+        summary_level <- "*"
+    states <- toupper(states)
+    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
+    generated_data <- paste0(path_to_census, "/generated_data")
+    if (!file.exists(generated_data)) {
+        download_generated_data_auto()
+    }
+    else {
+        version_file <- paste0(generated_data, "/version.txt")
+        if (!file.exists(version_file)) {
+            download_generated_data_auto()
+        }
+        else {
+            version = readChar(version_file, 5)
+            if (version != "0.6.0") {
+                download_generated_data_auto()
+            }
+        }
+    }
+    if (year == 2010) {
+        ext <- ".ur1"
+    }
+    else if (year == 2000) {
+        ext <- ".uf1"
+    }
+    not_downloaded <- c()
+    for (st in states) {
+        geo_file <- paste0(path_to_census, "/census", year, "/", 
+            st, "/", tolower(st), "geo", year, ext)
+        if (!file.exists(geo_file)) {
+            not_downloaded <- c(not_downloaded, st)
+        }
+    }
+    if (length(not_downloaded) > 0) {
+            download_census("decennial", year, not_downloaded)
+    }
+    options(warn = -1)
+    if (is.null(areas) + is.null(geo_headers) == 0) {
+        stop("Must keep at least one of arguments areas and geo_headers NULL")
+    }
+    if (any(grepl("P0010001", table_contents))) {
+        message("P0010001 is the population column.")
+    }
+    table_contents <- table_contents[!grepl("P0010001", table_contents)]
+    table_contents <- c("population = P0010001", table_contents) %>% 
+        unique()
+    content_names <- organize_tablecontents(table_contents) %>% 
+        .[, name]
+    table_contents <- organize_tablecontents(table_contents) %>% 
+        .[, reference]
+    if (!is.null(areas)) {
+        dt <- read_decennial_areas_(year, states, table_contents, 
+            areas, summary_level, geo_comp, show_progress)
+    }
+    else {
+        dt <- read_decennial_geoheaders_(year, states, table_contents, 
+            geo_headers, summary_level, geo_comp, show_progress)
+    }
+    setnames(dt, table_contents, content_names)
+    options(warn = 0)
+    return(dt)
+  }
+
+# function to download acs data without asking
+read_acs5year_auto <- 
+  function (year, states, table_contents = NULL, areas = NULL, 
+    geo_headers = NULL, summary_level = NULL, geo_comp = "total", 
+    with_margin = FALSE, dec_fill = NULL, show_progress = TRUE) 
+{
+    if (Sys.getenv("PATH_TO_CENSUS") == "") {
+        message(paste("Please set up the path to downloaded census data", 
+            "following the instruction at", "https://github.com/GL-Li/totalcensus."))
+        return(NULL)
+    }
+    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
+    generated_data <- paste0(path_to_census, "/generated_data")
+    if (!file.exists(generated_data)) {
+        download_generated_data_auto()
+    }
+    else {
+        version_file <- paste0(generated_data, "/version.txt")
+        if (!file.exists(version_file)) {
+            download_generated_data_auto()
+        }
+        else {
+            version = readChar(version_file, 5)
+            if (version != "0.6.0") {
+                download_generated_data_auto()
+            }
+        }
+    }
+    not_downloaded <- c()
+    for (st in states) {
+        if (!file.exists(paste0(path_to_census, "/acs5year/", 
+            year, "/g", year, "5", tolower(st), ".csv"))) {
+            not_downloaded <- c(not_downloaded, st)
+        }
+    }
+    if (length(not_downloaded) > 0) {
+            download_census("acs5", year, not_downloaded)
+    }
+    if (is.null(summary_level)) 
+        summary_level <- "*"
+    states <- toupper(states)
+    if (is.null(areas) + is.null(geo_headers) == 0) {
+        stop("Must keep at least one of arguments areas and geo_headers NULL")
+    }
+    if (any(grepl("B01003_001", table_contents))) {
+        message("B01003_001 is the population column.")
+    }
+    table_contents <- table_contents[!grepl("B01003_001", table_contents)]
+    table_contents <- c("population = B01003_001", table_contents) %>% 
+        unique()
+    content_names <- organize_tablecontents(table_contents) %>% 
+        .[, name]
+    table_contents <- organize_tablecontents(table_contents) %>% 
+        .[, reference] %>% toupper()
+    options(warn = -1)
+    if (!is.null(areas)) {
+        dt <- read_acs5year_areas_(year, states, table_contents, 
+            areas, summary_level, geo_comp, with_margin, dec_fill, 
+            show_progress)
+    }
+    else {
+        geo_headers <- unique(geo_headers)
+        dt <- read_acs5year_geoheaders_(year, states, table_contents, 
+            geo_headers, summary_level, geo_comp, with_margin, 
+            dec_fill, show_progress)
+    }
+    setnames(dt, table_contents, content_names)
+    if (with_margin) {
+        setnames(dt, paste0(table_contents, "_m"), paste0(content_names, 
+            "_margin"))
+    }
+    options(warn = 0)
+    return(dt)
+  }
+
+
+```
+
+
+```{r establish directory structure}
+
+if(!dir.exists("raw_data")) {
+  dir.create("raw_data")
+}
+
+if(!dir.exists(file.path("raw_data", "totalcensus"))) {
+  dir.create(file.path("raw_data", "totalcensus"))
+}
+
+if(!dir.exists("intermediate_data")) {
+  dir.create("intermediate_data")
+}
+
+# set path to census data
+Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
+
+```
+
+
+# TOO BIG FOR TRAVIS
+
+## geography
+
+### states for analyses
+
+```{r make state abbreviation character vector}
+
+# check if file already exists
+if(!file.exists(file.path("intermediate_data", 
+                          "state_abbreviation_character_vector.rdata"))) {
+  
+# make vector of state abbreviations (includes PR, no VI)
+state_abbreviation_character_vector <- 
+  c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
+
+# save to disk
+save(
+  state_abbreviation_character_vector, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "state_abbreviation_character_vector.rdata"
+    )
+)
+
+# remove it
+rm(state_abbreviation_character_vector)
+gc()
 }
 
 ```
 
-
-# CREATE SUBDIRECTORIES
-
-```{r create subdirectories}
-if(!dir.exists("raw_data"))
-  dir.create("raw_data")
-
-if(!dir.exists(file.path("raw_data", "totalcensus")))
-  dir.create(file.path("raw_data", "totalcensus"))
-
-if(!dir.exists("intermediate_data"))
-  dir.create("intermediate_data")
-```
-
-
-# LOAD FILES TOO BIG FOR TRAVIS
-
-
-## geography
 
 ### census shapefile without data
 
@@ -152,15 +338,20 @@ if(
     )
   ) {
   
-  # make vector of state abbreviations
-  state_abbreviation_character_vector_no_pr <- 
-      c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VI", "VT", "WA", "WI", "WV", "WY")
+  # load vector of state abbreviations
+  load(
+    file = 
+      file.path(
+        "intermediate_data", 
+        "state_abbreviation_character_vector.rdata"
+      )
+  )
   
   # download the data
   tigris_shapefiles_no_data <- 
     rbind_tigris(
     map(
-      state_abbreviation_character_vector_no_pr, 
+      state_abbreviation_character_vector, 
       function(x) {
         tracts(
           x, 
@@ -171,6 +362,11 @@ if(
         }
       )
   )
+  
+  # fix column names
+  tigris_shapefiles_no_data <- 
+    tigris_shapefiles_no_data %>% 
+    column_name_fixer()
   
   # save the result to disk
   save(
@@ -184,7 +380,8 @@ if(
   
   # remove the shapefile
   rm(
-    tigris_shapefiles_no_data
+    tigris_shapefiles_no_data, 
+    state_abbreviation_character_vector
   )
   gc()
 }
@@ -192,7 +389,7 @@ if(
 ```
 
 
-```{r calculating adjacency purely in R}
+```{r make list of neighbors}
 
 if(
   !file.exists(
@@ -219,7 +416,7 @@ if(
   # pull the geoids as a vector
   tigris_geoid_character <- 
     tigris_shapefiles_no_data %>% 
-    pull(GEOID10)
+    pull(geoid10)
   
   # make tibble indexing tracts in order to match geoids with the spdep output
   geoid_index_tibble <- 
@@ -340,201 +537,6 @@ if(
 ```
 
 
-```{r calculating segregation NOTE: USES ARCGIS, FIX THIS}
-
-# load(
-#   file = 
-#     file.path(
-#       "raw_data", 
-#       "tigris_cbf_no_data.rdata"
-#     )
-#   )
-
-census_adjacent <- 
-  read.csv(
-    file = 
-      file.path(
-        "raw_data", 
-        "censusadjacent.csv"
-      )
-  )
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "ruca_urban_only.rdata"
-    )
-)
-
-load(
-   file = 
-      file.path(
-        "intermediate_data",
-        "sf1_totalcensus_raw_tibble.rdata"
-        )
-   )
-
-# fix column names 
-sf1_totalcensus_seg_tibble <- 
-  column_name_fixer(
-    sf1_totalcensus_raw_tibble
-)
-
-# import census data (Black, Black/other, total)
-seg_vars <- 
-  sf1_totalcensus_seg_tibble %>% 
-  select(
-    geoid, 
-    p0050001, 
-    p0050004
-  )
-
-seg_vars <- 
-  seg_vars %>% 
-  mutate(
-    tot_pop_no_black = p0050001 - p0050004
-  )
-
-colnames(seg_vars)[1] <- 
-  "selfneighbor"
-
-
-# segregation index with nodes
-
-# keep nodes
-censusadjacentyesnodes <- census_adjacent
-censusadjacentyesnodes <- censusadjacentyesnodes[c(-5)]
-censusadjacentyesnodes <- as.data.frame(censusadjacentyesnodes[c(-4)])
-censusadjacentyesnodes$src_GEOID10 <- 
-  as.factor(censusadjacentyesnodes$src_GEOID10)
-censusadjacentyesnodes$nbr_GEOID10 <- 
-  as.factor(censusadjacentyesnodes$nbr_GEOID10)
-
-# get adjacent blocks into single column as single character w/ commas
-require(data.table)
-cayncon <- 
-  setDT(censusadjacentyesnodes)[,.(nbr_GEOID10=paste(nbr_GEOID10, collapse = ",")), by=src_GEOID10]
-cayncon$src_GEOID10 <- as.character(cayncon$src_GEOID10)
-
-# add own census tract to tracts
-cayncon$selfandfriends <- paste(cayncon$src_GEOID10, cayncon$nbr_GEOID10, sep=",")
-str(cayncon)
-
-# save file to disk
-save(cayncon,
-     file="cayncon.rdata")
-# load(file="cayncon.rdata")
-
-
-#### racial isolation index with nodes urban tracts ####
-
-monitorct <- 
-  cayncon
-
-# neighbors for each census tract plus itself
-temp <- strsplit(monitorct$selfandfriends, split=",")
-ltemp <- sapply(temp, length)
-ct.nb <- data.frame(censustract = rep(NA, sum(ltemp)), selfneighbor = NA)
-ct.nb[1:ltemp[1], "censustract"] <- monitorct[1, "src_GEOID10"]
-ct.nb[1:ltemp[1], "selfneighbor"] <- temp[[1]]
-for (i in 2:length(temp)) {
-  st <- sum(ltemp[1:i-1])
-  ct.nb[(st+1):(st+ltemp[i]), "censustract"] <- monitorct[i, "src_GEOID10"]
-  ct.nb[(st+1):(st+ltemp[i]), "selfneighbor"] <- temp[[i]]
-}
-
-# fix geoid for seg_vars 
-seg_vars <- 
-  seg_vars %>% 
-  mutate(
-    selfneighbortest = 
-      str_replace(
-        selfneighbor, 
-        "14000US",
-        ""
-      )
-  )
-
-# fix geoid for ct.nb 
-ct.nb <- 
-  ct.nb %>% 
-  mutate(
-    selfneighbortest = 
-      str_pad(
-        string = selfneighbor, 
-        width = 11, 
-        side = "left", 
-        pad = "0")
-  )
-  
-# merge the popoulation info
-segindcalcbasis <- 
-  merge(seg_vars, 
-        ct.nb, 
-        by="selfneighbortest")
-
-# aggregate by census tract
-aggregatevars <- 
-  segindcalcbasis %>% 
-  select(
-    censustract,
-    p0050001, 
-    p0050004, 
-    tot_pop_no_black
-  )
-
-aggregatedcensus <- 
-  aggregate(. ~ censustract, 
-            data = aggregatevars, sum)
-
-aggregatedcensus$finalsegregationindex <- 
-  aggregatedcensus$p0050004/aggregatedcensus$p0050001
-
-range(aggregatedcensus$finalsegregationindex)
-
-aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
-
-ri_yes_nodes_urban_tracts <- 
-  aggregatedcensus[c("GEOID10",
-                     "finalsegregationindex")]
-
-ri_yes_nodes_urban_tracts$GEOID10 <- as.factor(ri_yes_nodes_urban_tracts$GEOID10)
-
-colnames(ri_yes_nodes_urban_tracts) <- c("tract_id","ri_nodes_urban")
-
-ri_final <- 
-  ri_yes_nodes_urban_tracts %>% 
-  mutate(
-    geoid = 
-        str_pad(
-        string = tract_id, 
-        width = 11, 
-        side = "left", 
-        pad = "0")
-  ) %>% 
-  arrange(geoid)
-
-save(
-  ri_final, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "ri_final"
-    )
-)
-
-
-# library(spdep)
-# test <- 
-#   poly2nb(
-#   tigris_cbf_no_data
-# )
-
-```
-
-
-
 ## demographic and ses data
 
 ### census
@@ -543,174 +545,179 @@ save(
 
 ```{r census variable lists}
 
-# # view census variables
-# census_variables_sf1 <- 
-#   load_variables(
-#     2010, 
-#     "sf1", 
-#     cache = TRUE
-#     )
-# census_variables_sf3 <- 
-#   load_variables(
-#     2000, 
-#     "sf3", 
-#     cache = TRUE
-#     )
-# acs_variables <- 
-#   load_variables(
-#     2012, 
-#     "acs", 
-#     cache = TRUE
-#   )
+# check if variable list already exists
+if(!file.exists(file.path("intermediate_data", 
+                          "sf1_totalcensus_var_vec.rdata"))) {
 
-# define categories for variables
-
-# total population (SF1 P1)
-# universe: total population
-total_pop_sf1_p1 <-
-  c("P0010001")
-
-# hispanic or latino origin by race (SF1 P5)
-# universe: total population
-race_sf1_p5 <-
-  sprintf("P0050%0.3d", 1:17)
-
-# P0050001  Total population:
-# P0050002    Not Hispanic or Latino:
-# P0050003      White alone
-# P0050004      Black or African American alone
-# P0050005      American Indian and Alaska Native alone
-# P0050006      Asian alone
-# P0050007      Native Hawaiian and Other Pacific Islander alone
-# P0050008      Some Other Race alone
-# P0050009      Two or More Races
-# P0050010    Hispanic or Latino:
-# P0050011      White alone
-# P0050012      Black or African American alone
-# P0050013      American Indian and Alaska Native alone
-# P0050014      Asian alone
-# P0050015      Native Hawaiian and Other Pacific Islander alone
-# P0050016      Some Other Race alone
-# P0050017      Two or More Races
-
-# sex by age (SF1 P12)
-# universe: total population
-sex_by_age_sf1_p12 <- 
-  sprintf("P0120%0.3d", 1:49)
-# NOTE: P0120002 is all male and P0120026 is all female
-
-# P0120001  Total population:
-# P0120002    Male:
-# P0120003      Under 5 years
-# P0120004      5 to 9 years
-# P0120005      10 to 14 years
-# P0120006      15 to 17 years
-# P0120007      18 and 19 years
-# P0120008      20 years
-# P0120009      21 years
-# P0120010      22 to 24 years
-# P0120011      25 to 29 years
-# P0120012      30 to 34 years
-# P0120013      35 to 39 years
-# P0120014      40 to 44 years
-# P0120015      45 to 49 years
-# P0120016      50 to 54 years
-# P0120017      55 to 59 years
-# P0120018      60 and 61 years
-# P0120019      62 to 64 years
-# P0120020      65 and 66 years
-# P0120021      67 to 69 years
-# P0120022      70 to 74 years
-# P0120023      75 to 79 years
-# P0120024      80 to 84 years
-# P0120025      85 years and over
-# P0120026    Female:
-# P0120027      Under 5 years
-# P0120028      5 to 9 years
-# P0120029      10 to 14 years
-# P0120030      15 to 17 years
-# P0120031      18 and 19 years
-# P0120032      20 years
-# P0120033      21 years
-# P0120034      22 to 24 years
-# P0120035      25 to 29 years
-# P0120036      30 to 34 years
-# P0120037      35 to 39 years
-# P0120038      40 to 44 years
-# P0120039      45 to 49 years
-# P0120040      50 to 54 years
-# P0120041      55 to 59 years
-# P0120042      60 and 61 years
-# P0120043      62 to 64 years
-# P0120044      65 and 66 years
-# P0120045      67 to 69 years
-# P0120046      70 to 74 years
-# P0120047      75 to 79 years
-# P0120048      80 to 84 years
-# P0120049      85 years and over
-
-# median age (SF1 P13)
-# universe: total population
-age_median_sf1_p13 <- 
-  "P0130001"
-
-# occupancy status
-# universe: housing units
-# 1 total, 2 occupied, 3 vacant
-occupancy_sf1_h3 <-
-  sprintf("H00300%0.2d", 1:3)
-
-# housing tenure (SF1 H4)
-# universe: occupied housing units
-# 1 total, 2 owned w/ a mortgage or loan, 3 owned free and clear, 4 renter-occupied
-housing_tenure_sf1_h4 <-  
-  sprintf("H00400%0.2d", 1:4)
-
-# population in occupied housing units by tenure
-# universe: population in occupied housing units
-housing_tenure_people_sf1_h11 <- 
-  c("H0110001",  # total population in occupied housing units
-    "H0110002",  # owned with a mortgage or a loan 
-    "H0110003",  # owned free and clear
-    "H0110004")  # renter-occupied
-
-# make list of needed variables
-sf1_totalcensus_var_list <- 
-  list(
+  # # view census variables
+  # census_variables_sf1 <- 
+  #   load_variables(
+  #     2010, 
+  #     "sf1", 
+  #     cache = TRUE
+  #     )
+  # census_variables_sf3 <- 
+  #   load_variables(
+  #     2000, 
+  #     "sf3", 
+  #     cache = TRUE
+  #     )
+  # acs_variables <- 
+  #   load_variables(
+  #     2012, 
+  #     "acs", 
+  #     cache = TRUE
+  #   )
+  
+  # define categories for variables
+  
+  # total population (SF1 P1)
+  # universe: total population
+  total_pop_sf1_p1 <-
+    c("P0010001")
+  
+  # hispanic or latino origin by race (SF1 P5)
+  # universe: total population
+  race_sf1_p5 <-
+    sprintf("P0050%0.3d", 1:17)
+  
+  # P0050001  Total population:
+  # P0050002    Not Hispanic or Latino:
+  # P0050003      White alone
+  # P0050004      Black or African American alone
+  # P0050005      American Indian and Alaska Native alone
+  # P0050006      Asian alone
+  # P0050007      Native Hawaiian and Other Pacific Islander alone
+  # P0050008      Some Other Race alone
+  # P0050009      Two or More Races
+  # P0050010    Hispanic or Latino:
+  # P0050011      White alone
+  # P0050012      Black or African American alone
+  # P0050013      American Indian and Alaska Native alone
+  # P0050014      Asian alone
+  # P0050015      Native Hawaiian and Other Pacific Islander alone
+  # P0050016      Some Other Race alone
+  # P0050017      Two or More Races
+  
+  # sex by age (SF1 P12)
+  # universe: total population
+  sex_by_age_sf1_p12 <- 
+    sprintf("P0120%0.3d", 1:49)
+  # NOTE: P0120002 is all male and P0120026 is all female
+  
+  # P0120001  Total population:
+  # P0120002    Male:
+  # P0120003      Under 5 years
+  # P0120004      5 to 9 years
+  # P0120005      10 to 14 years
+  # P0120006      15 to 17 years
+  # P0120007      18 and 19 years
+  # P0120008      20 years
+  # P0120009      21 years
+  # P0120010      22 to 24 years
+  # P0120011      25 to 29 years
+  # P0120012      30 to 34 years
+  # P0120013      35 to 39 years
+  # P0120014      40 to 44 years
+  # P0120015      45 to 49 years
+  # P0120016      50 to 54 years
+  # P0120017      55 to 59 years
+  # P0120018      60 and 61 years
+  # P0120019      62 to 64 years
+  # P0120020      65 and 66 years
+  # P0120021      67 to 69 years
+  # P0120022      70 to 74 years
+  # P0120023      75 to 79 years
+  # P0120024      80 to 84 years
+  # P0120025      85 years and over
+  # P0120026    Female:
+  # P0120027      Under 5 years
+  # P0120028      5 to 9 years
+  # P0120029      10 to 14 years
+  # P0120030      15 to 17 years
+  # P0120031      18 and 19 years
+  # P0120032      20 years
+  # P0120033      21 years
+  # P0120034      22 to 24 years
+  # P0120035      25 to 29 years
+  # P0120036      30 to 34 years
+  # P0120037      35 to 39 years
+  # P0120038      40 to 44 years
+  # P0120039      45 to 49 years
+  # P0120040      50 to 54 years
+  # P0120041      55 to 59 years
+  # P0120042      60 and 61 years
+  # P0120043      62 to 64 years
+  # P0120044      65 and 66 years
+  # P0120045      67 to 69 years
+  # P0120046      70 to 74 years
+  # P0120047      75 to 79 years
+  # P0120048      80 to 84 years
+  # P0120049      85 years and over
+  
+  # median age (SF1 P13)
+  # universe: total population
+  age_median_sf1_p13 <- 
+    "P0130001"
+  
+  # occupancy status
+  # universe: housing units
+  # 1 total, 2 occupied, 3 vacant
+  occupancy_sf1_h3 <-
+    sprintf("H00300%0.2d", 1:3)
+  
+  # housing tenure (SF1 H4)
+  # universe: occupied housing units
+  # 1 total, 2 owned w/ a mortgage or loan, 3 owned free and clear, 4 renter-occupied
+  housing_tenure_sf1_h4 <-  
+    sprintf("H00400%0.2d", 1:4)
+  
+  # population in occupied housing units by tenure
+  # universe: population in occupied housing units
+  housing_tenure_people_sf1_h11 <- 
+    c("H0110001",  # total population in occupied housing units
+      "H0110002",  # owned with a mortgage or a loan 
+      "H0110003",  # owned free and clear
+      "H0110004")  # renter-occupied
+  
+  # make list of needed variables
+  sf1_totalcensus_var_list <- 
+    list(
+      total_pop_sf1_p1,
+      race_sf1_p5,
+      sex_by_age_sf1_p12,
+      age_median_sf1_p13,
+      occupancy_sf1_h3,
+      housing_tenure_sf1_h4,
+      housing_tenure_people_sf1_h11
+    )
+  
+  # make big master variable list
+  sf1_totalcensus_var_vec <- 
+    sf1_totalcensus_var_list %>% 
+    reduce(c)
+  
+  # save the master variable list
+  save(
+    sf1_totalcensus_var_vec, 
+    file = 
+      file.path("intermediate_data", 
+                "sf1_totalcensus_var_vec.rdata")
+  )
+  
+  rm(
     total_pop_sf1_p1,
     race_sf1_p5,
     sex_by_age_sf1_p12,
     age_median_sf1_p13,
     occupancy_sf1_h3,
     housing_tenure_sf1_h4,
-    housing_tenure_people_sf1_h11
-  )
-
-# make big master variable list
-sf1_totalcensus_var_vec <- 
-  sf1_totalcensus_var_list %>% 
-  reduce(c)
-
-# save the master variable list
-save(
-  sf1_totalcensus_var_vec, 
-  file = 
-    file.path("intermediate_data", 
-              "sf1_totalcensus_var_vec.rdata")
-)
-
-rm(
-  total_pop_sf1_p1,
-  race_sf1_p5,
-  sex_by_age_sf1_p12,
-  age_median_sf1_p13,
-  occupancy_sf1_h3,
-  housing_tenure_sf1_h4,
-  housing_tenure_people_sf1_h11, 
-  sf1_totalcensus_var_list, 
-  sf1_totalcensus_var_vec
-  )
-gc()
+    housing_tenure_people_sf1_h11, 
+    sf1_totalcensus_var_list, 
+    sf1_totalcensus_var_vec
+    )
+  gc()
+}
 
 ```
 
@@ -735,6 +742,15 @@ if(!
    )
    ) {
   
+  # load state abbreviation character vector
+  load(
+    file = 
+      file.path(
+        "intermediate_data", 
+        "state_abbreviation_character_vector.rdata"
+      )
+  )
+  
   # load census variable names
   load(
     file = 
@@ -742,17 +758,6 @@ if(!
         "intermediate_data", 
         "sf1_totalcensus_var_vec.rdata")
   )
-  
-  # set path to census data
-  Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
-  
-  # make vector of state abbreviations
-  state_abbreviation_character_vector <- 
-    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "PR")
-  
-  # remove puerto rico
-  state_abbreviation_character_vector_no_pr <- 
-    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
   
   # download the data necessary to use the census data if it isn't already there
   if(
@@ -781,7 +786,7 @@ if(!
       download_census(
         survey = "dec",
         year = 2010, 
-        states = "OK"
+        states = state_abbreviation_character_vector
         )
   }
   
@@ -789,7 +794,7 @@ if(!
   sf1_totalcensus_raw_dataframe <-
     read_decennial(
       year = 2010,
-      states = state_abbreviation_character_vector_no_pr,
+      states = state_abbreviation_character_vector,
       table_contents =
         sf1_totalcensus_var_vec,
       summary_level = "tract"
@@ -798,6 +803,24 @@ if(!
   # make the dataframe into a tibble
   sf1_totalcensus_raw_tibble <- 
     as_tibble(sf1_totalcensus_raw_dataframe)
+
+  # fix column names 
+  sf1_totalcensus_raw_tibble <- 
+    column_name_fixer(
+      sf1_totalcensus_raw_tibble
+  )
+  
+  # fix geoids
+  sf1_totalcensus_raw_tibble <- 
+    sf1_totalcensus_raw_tibble %>% 
+    mutate(
+      geoid = 
+        str_replace(
+          geoid,
+          "14000US", 
+          ""
+        )
+    )
   
   # save the tibble to disk
   save(
@@ -813,7 +836,6 @@ if(!
   rm(
     sf1_totalcensus_var_vec,
     state_abbreviation_character_vector, 
-    state_abbreviation_character_vector_no_pr,
     sf1_totalcensus_raw_dataframe, 
     sf1_totalcensus_raw_tibble
     )
@@ -829,218 +851,248 @@ if(!
 
 ```{r acs totalcensus variable lists}
 
-# educational attainment for the population 25 years and over
-# universe: population 25 years and over
-edu_cat_b15003 <- 
-  c("B15003_001",  # total
-    "B15003_002",  # no schooling completed
-    "B15003_003",  # nursery school
-    "B15003_004",  # kindergarten
-    "B15003_005",  # 1st grade
-    "B15003_006",  # 2nd grade
-    "B15003_007",  # 3rd grade
-    "B15003_008",  # 4th grade
-    "B15003_009",  # 5th grade
-    "B15003_010",  # 6th grade
-    "B15003_011",  # 7th grade
-    "B15003_012",  # 8th grade
-    "B15003_013",  # 9th grade
-    "B15003_014",  # 10th grade
-    "B15003_015",  # 11th grade
-    "B15003_016",  # 12th grade
-    "B15003_017",  # regular high school diploma
-    "B15003_018",  # GED or alternative credential
-    "B15003_019",  # some college, less than 1 year
-    "B15003_020",  # some college, 1 or more years, no degree
-    "B15003_021",  # associate's degree
-    "B15003_022",  # bachelor's degree
-    "B15003_023",  # master's degree
-    "B15003_024",  # professional school degree
-    "B15003_025")  # doctorate degree
+if(!file.exists(file.path("intermediate_data", 
+                          "acs_totalcensus_var_vec.rdata"))) {
 
-# ratio of income to poverty level in the past 12 months
-# universe: population for whom poverty status is determined
-poverty_ratio_cat_c17002 <-
-  c("C17002_001",  # total
-    "C17002_002",  # under .50
-    "C17002_003",  # .50 to .99
-    "C17002_004",  # 1.00 to 1.24
-    "C17002_005",  # 1.25 to 1.49
-    "C17002_006",  # 1.50 to 1.84
-    "C17002_007",  # 1.85 to 1.99
-    "C17002_008")  # 2.00 and over
-
-# household income in the past 12 months (in 2012 inflation-adjusted dollars)
-# universe: households
-income_house_cat_b19001 <-
-  c("B19001_001",  # total
-    "B19001_002",  # less than $10,000
-    "B19001_003",  # $10,000 to $14,999
-    "B19001_004",  # $15,000 to $19,999
-    "B19001_005",  # $20,000 to $24,999
-    "B19001_006",  # $25,000 to $29,999
-    "B19001_007",  # $30,000 to $34,999
-    "B19001_008",  # $35,000 to $39,999
-    "B19001_009",  # $40,000 to $44,999
-    "B19001_010",  # $45,000 to $49,999
-    "B19001_011",  # $50,000 to $59,999
-    "B19001_012",  # $60,000 to $74,999
-    "B19001_013",  # $75,000 to $99,999
-    "B19001_014",  # $100,000 to $124,999
-    "B19001_015",  # $125,000 to $149,999
-    "B19001_016",  # $150,000 to $199,999
-    "B19001_017")  # $200,000 or more
-
-# median household income in the past 12 months (in 2012 inflation-adjusted dollars)
-# universe: households
-income_house_median_b19013 <-
-  c("B19013_001")
-
-# sex by earnings in the past 12 months (in 2012 inflation-adjusted dollars) for the population 16 years and over with earnings in the past 12 months
-# universe: population 16 years and over with earnings
-earnings_sex_cat_b20001 <-
-  c("B20001_001",  # total
-    "B20001_002",  # male
-    "B20001_003",  # $1 to $2,499 or loss
-    "B20001_004",  # $2,500 to $4,999
-    "B20001_005",  # $5,000 to $7,499
-    "B20001_006",  # $7,500 to $9,999
-    "B20001_007",  # $10,000 to $12,499
-    "B20001_008",  # $12,500 to $14,999
-    "B20001_009",  # $15,000 to $17,499
-    "B20001_010",  # $17,500 to $19,999
-    "B20001_011",  # $20,000 to $22,499
-    "B20001_012",  # $22,500 to $24,999
-    "B20001_013",  # $25,000 to $29,999
-    "B20001_014",  # $30,000 to $34,999
-    "B20001_015",  # $35,000 to $39,999
-    "B20001_016",  # $40,000 to $44,999
-    "B20001_017",  # $45,000 to $49,999
-    "B20001_018",  # $50,000 to $54,999
-    "B20001_019",  # $55,000 to $64,999
-    "B20001_020",  # $65,000 to $74,999
-    "B20001_021",  # $75,000 to $99,999
-    "B20001_022",  # $100,000 or more
-    "B20001_023",  # Female:
-    "B20001_024",  # $1 to $2,499 or loss
-    "B20001_025",  # $2,500 to $4,999
-    "B20001_026",  # $5,000 to $7,499
-    "B20001_027",  # $7,500 to $9,999
-    "B20001_028",  # $10,000 to $12,499
-    "B20001_029",  # $12,500 to $14,999
-    "B20001_030",  # $15,000 to $17,499
-    "B20001_031",  # $17,500 to $19,999
-    "B20001_032",  # $20,000 to $22,499
-    "B20001_033",  # $22,500 to $24,999
-    "B20001_034",  # $25,000 to $29,999
-    "B20001_035",  # $30,000 to $34,999
-    "B20001_036",  # $35,000 to $39,999
-    "B20001_037",  # $40,000 to $44,999
-    "B20001_038",  # $45,000 to $49,999
-    "B20001_039",  # $50,000 to $54,999
-    "B20001_040",  # $55,000 to $64,999
-    "B20001_041",  # $65,000 to $74,999
-    "B20001_042",  # $75,000 to $99,999
-    "B20001_043")  # $100,000 or more
-
-# median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
-# universe: population 16 years and over with earnings
-earnings_median_b20002 <-
-  c("B20002_001",  # total
-    "B20002_002",  # male
-    "B20002_003")  # female
-
-# employment status for the population 16 years and over
-# universe: population 16 years and over
-employment_cat_b23025 <-  # divide 5 by 3
-  c("B23025_001",  # total
-    "B23025_002",    # in labor force
-    "B23025_003",      # civilian labor force
-    "B23025_004",        # employed
-    "B23025_005",        # unemployed
-    "B23025_006",      # armed forces
-    "B23025_007")    # not in labor force
+  # educational attainment for the population 25 years and over
+  # universe: population 25 years and over
+  edu_cat_b15003 <- 
+    c("B15003_001",  # total
+      "B15003_002",  # no schooling completed
+      "B15003_003",  # nursery school
+      "B15003_004",  # kindergarten
+      "B15003_005",  # 1st grade
+      "B15003_006",  # 2nd grade
+      "B15003_007",  # 3rd grade
+      "B15003_008",  # 4th grade
+      "B15003_009",  # 5th grade
+      "B15003_010",  # 6th grade
+      "B15003_011",  # 7th grade
+      "B15003_012",  # 8th grade
+      "B15003_013",  # 9th grade
+      "B15003_014",  # 10th grade
+      "B15003_015",  # 11th grade
+      "B15003_016",  # 12th grade
+      "B15003_017",  # regular high school diploma
+      "B15003_018",  # GED or alternative credential
+      "B15003_019",  # some college, less than 1 year
+      "B15003_020",  # some college, 1 or more years, no degree
+      "B15003_021",  # associate's degree
+      "B15003_022",  # bachelor's degree
+      "B15003_023",  # master's degree
+      "B15003_024",  # professional school degree
+      "B15003_025")  # doctorate degree
   
-# value
-# universe: owner-occupied housing units
-home_value_cat_b25075 <-
-  c("B25075_001",  # total
-    "B25075_002",  # less than $10,000
-    "B25075_003",  # $10,000 to $14,999
-    "B25075_004",  # $15,000 to $19,999
-    "B25075_005",  # $20,000 to $24,999
-    "B25075_006",  # $25,000 to $29,999
-    "B25075_007",  # $30,000 to $34,999
-    "B25075_008",  # $35,000 to $39,999
-    "B25075_009",  # $40,000 to $49,999
-    "B25075_010",  # $50,000 to $59,999
-    "B25075_011",  # $60,000 to $69,999
-    "B25075_012",  # $70,000 to $79,999
-    "B25075_013",  # $80,000 to $89,999
-    "B25075_014",  # $90,000 to $99,999
-    "B25075_015",  # $100,000 to $124,999
-    "B25075_016",  # $125,000 to $149,999
-    "B25075_017",  # $150,000 to $174,999
-    "B25075_018",  # $175,000 to $199,999
-    "B25075_019",  # $200,000 to $249,999
-    "B25075_020",  # $250,000 to $299,999
-    "B25075_021",  # $300,000 to $399,999
-    "B25075_022",  # $400,000 to $499,999
-    "B25075_023",  # $500,000 to $749,999
-    "B25075_024",  # $750,000 to $999,999
-    "B25075_025")  # $1,000,000 or more
-
-# median value (dollars)
-# universe: owner-occupied housing units
-home_value_median_b25077 <-
-  c("B25077_001")  # median value (dollars)
-
-# types of health insurance coverage by age
-# universe: civilian noninstitutionalized population
-health_insurance_cat_c27010 <-
-  c("C27010_001",  # total
-    "C27010_002",    # under 18 years
-    "C27010_003",      # with private health insurance only
-    "C27010_004",      # with public coverage only
-    "C27010_005",      # with both private and public coverage
-    "C27010_006",      # no health insurance coverage
-    "C27010_007",    # 18 to 34 years
-    "C27010_008",      # with private health insurance only
-    "C27010_009",      # with public coverage only
-    "C27010_010",      # with both private and public coverage
-    "C27010_011",      # no health insurance coverage
-    "C27010_012",    # 35 to 64 years
-    "C27010_013",      # with private health insurance only
-    "C27010_014",      # with public coverage only
-    "C27010_015",      # with both private and public coverage
-    "C27010_016",      # no health insurance coverage
-    "C27010_017",    # 65 years and over
-    "C27010_018",      # with private health insurance only
-    "C27010_019",      # with public coverage only
-    "C27010_020",      # with both private and public coverage
-    "C27010_021")      # no health insurance coverage
-
-# household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
-# universe: households
-ling_iso_b16002 <-
-  c("B16002_001",  # total
-    "B16002_002",    # English only
-    "B16002_003",    # Spanish:
-    "B16002_004",      # No one 14 and over speaks English only or speaks English "very well"
-    "B16002_005",      # At least one person 14 and over speaks English only or speaks English "very well"
-    "B16002_006",    # Other Indo-European languages:
-    "B16002_007",      # No one 14 and over speaks English only or speaks English "very well"
-    "B16002_008",      # At least one person 14 and over speaks English only or speaks English "very well"
-    "B16002_009",    # Asian and Pacific Island languages:
-    "B16002_010",      # No one 14 and over speaks English only or speaks English "very well"
-    "B16002_011",      # At least one person 14 and over speaks English only or speaks English "very well"
-    "B16002_012",    # Other languages: 
-    "B16002_013",      # No one 14 and over speaks English only or speaks English "very well"
-    "B16002_014")     # At least one person 14 and over speaks English only or speaks English "very well"
-
-# make list of needed variables
-acs_totalcensus_var_list <- 
-  list(
+  # ratio of income to poverty level in the past 12 months
+  # universe: population for whom poverty status is determined
+  poverty_ratio_cat_c17002 <-
+    c("C17002_001",  # total
+      "C17002_002",  # under .50
+      "C17002_003",  # .50 to .99
+      "C17002_004",  # 1.00 to 1.24
+      "C17002_005",  # 1.25 to 1.49
+      "C17002_006",  # 1.50 to 1.84
+      "C17002_007",  # 1.85 to 1.99
+      "C17002_008")  # 2.00 and over
+  
+  # household income in the past 12 months (in 2012 inflation-adjusted dollars)
+  # universe: households
+  income_house_cat_b19001 <-
+    c("B19001_001",  # total
+      "B19001_002",  # less than $10,000
+      "B19001_003",  # $10,000 to $14,999
+      "B19001_004",  # $15,000 to $19,999
+      "B19001_005",  # $20,000 to $24,999
+      "B19001_006",  # $25,000 to $29,999
+      "B19001_007",  # $30,000 to $34,999
+      "B19001_008",  # $35,000 to $39,999
+      "B19001_009",  # $40,000 to $44,999
+      "B19001_010",  # $45,000 to $49,999
+      "B19001_011",  # $50,000 to $59,999
+      "B19001_012",  # $60,000 to $74,999
+      "B19001_013",  # $75,000 to $99,999
+      "B19001_014",  # $100,000 to $124,999
+      "B19001_015",  # $125,000 to $149,999
+      "B19001_016",  # $150,000 to $199,999
+      "B19001_017")  # $200,000 or more
+  
+  # median household income in the past 12 months (in 2012 inflation-adjusted dollars)
+  # universe: households
+  income_house_median_b19013 <-
+    c("B19013_001")
+  
+  # sex by earnings in the past 12 months (in 2012 inflation-adjusted dollars) for the population 16 years and over with earnings in the past 12 months
+  # universe: population 16 years and over with earnings
+  earnings_sex_cat_b20001 <-
+    c("B20001_001",  # total
+      "B20001_002",  # male
+      "B20001_003",  # $1 to $2,499 or loss
+      "B20001_004",  # $2,500 to $4,999
+      "B20001_005",  # $5,000 to $7,499
+      "B20001_006",  # $7,500 to $9,999
+      "B20001_007",  # $10,000 to $12,499
+      "B20001_008",  # $12,500 to $14,999
+      "B20001_009",  # $15,000 to $17,499
+      "B20001_010",  # $17,500 to $19,999
+      "B20001_011",  # $20,000 to $22,499
+      "B20001_012",  # $22,500 to $24,999
+      "B20001_013",  # $25,000 to $29,999
+      "B20001_014",  # $30,000 to $34,999
+      "B20001_015",  # $35,000 to $39,999
+      "B20001_016",  # $40,000 to $44,999
+      "B20001_017",  # $45,000 to $49,999
+      "B20001_018",  # $50,000 to $54,999
+      "B20001_019",  # $55,000 to $64,999
+      "B20001_020",  # $65,000 to $74,999
+      "B20001_021",  # $75,000 to $99,999
+      "B20001_022",  # $100,000 or more
+      "B20001_023",  # Female:
+      "B20001_024",  # $1 to $2,499 or loss
+      "B20001_025",  # $2,500 to $4,999
+      "B20001_026",  # $5,000 to $7,499
+      "B20001_027",  # $7,500 to $9,999
+      "B20001_028",  # $10,000 to $12,499
+      "B20001_029",  # $12,500 to $14,999
+      "B20001_030",  # $15,000 to $17,499
+      "B20001_031",  # $17,500 to $19,999
+      "B20001_032",  # $20,000 to $22,499
+      "B20001_033",  # $22,500 to $24,999
+      "B20001_034",  # $25,000 to $29,999
+      "B20001_035",  # $30,000 to $34,999
+      "B20001_036",  # $35,000 to $39,999
+      "B20001_037",  # $40,000 to $44,999
+      "B20001_038",  # $45,000 to $49,999
+      "B20001_039",  # $50,000 to $54,999
+      "B20001_040",  # $55,000 to $64,999
+      "B20001_041",  # $65,000 to $74,999
+      "B20001_042",  # $75,000 to $99,999
+      "B20001_043")  # $100,000 or more
+  
+  # median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
+  # universe: population 16 years and over with earnings
+  earnings_median_b20002 <-
+    c("B20002_001",  # total
+      "B20002_002",  # male
+      "B20002_003")  # female
+  
+  # employment status for the population 16 years and over
+  # universe: population 16 years and over
+  employment_cat_b23025 <-  # divide 5 by 3
+    c("B23025_001",  # total
+      "B23025_002",    # in labor force
+      "B23025_003",      # civilian labor force
+      "B23025_004",        # employed
+      "B23025_005",        # unemployed
+      "B23025_006",      # armed forces
+      "B23025_007")    # not in labor force
+    
+  # value
+  # universe: owner-occupied housing units
+  home_value_cat_b25075 <-
+    c("B25075_001",  # total
+      "B25075_002",  # less than $10,000
+      "B25075_003",  # $10,000 to $14,999
+      "B25075_004",  # $15,000 to $19,999
+      "B25075_005",  # $20,000 to $24,999
+      "B25075_006",  # $25,000 to $29,999
+      "B25075_007",  # $30,000 to $34,999
+      "B25075_008",  # $35,000 to $39,999
+      "B25075_009",  # $40,000 to $49,999
+      "B25075_010",  # $50,000 to $59,999
+      "B25075_011",  # $60,000 to $69,999
+      "B25075_012",  # $70,000 to $79,999
+      "B25075_013",  # $80,000 to $89,999
+      "B25075_014",  # $90,000 to $99,999
+      "B25075_015",  # $100,000 to $124,999
+      "B25075_016",  # $125,000 to $149,999
+      "B25075_017",  # $150,000 to $174,999
+      "B25075_018",  # $175,000 to $199,999
+      "B25075_019",  # $200,000 to $249,999
+      "B25075_020",  # $250,000 to $299,999
+      "B25075_021",  # $300,000 to $399,999
+      "B25075_022",  # $400,000 to $499,999
+      "B25075_023",  # $500,000 to $749,999
+      "B25075_024",  # $750,000 to $999,999
+      "B25075_025")  # $1,000,000 or more
+  
+  # median value (dollars)
+  # universe: owner-occupied housing units
+  home_value_median_b25077 <-
+    c("B25077_001")  # median value (dollars)
+  
+  # types of health insurance coverage by age
+  # universe: civilian noninstitutionalized population
+  health_insurance_cat_c27010 <-
+    c("C27010_001",  # total
+      "C27010_002",    # under 18 years
+      "C27010_003",      # with private health insurance only
+      "C27010_004",      # with public coverage only
+      "C27010_005",      # with both private and public coverage
+      "C27010_006",      # no health insurance coverage
+      "C27010_007",    # 18 to 34 years
+      "C27010_008",      # with private health insurance only
+      "C27010_009",      # with public coverage only
+      "C27010_010",      # with both private and public coverage
+      "C27010_011",      # no health insurance coverage
+      "C27010_012",    # 35 to 64 years
+      "C27010_013",      # with private health insurance only
+      "C27010_014",      # with public coverage only
+      "C27010_015",      # with both private and public coverage
+      "C27010_016",      # no health insurance coverage
+      "C27010_017",    # 65 years and over
+      "C27010_018",      # with private health insurance only
+      "C27010_019",      # with public coverage only
+      "C27010_020",      # with both private and public coverage
+      "C27010_021")      # no health insurance coverage
+  
+  # household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
+  # universe: households
+  ling_iso_b16002 <-
+    c("B16002_001",  # total
+      "B16002_002",    # English only
+      "B16002_003",    # Spanish:
+      "B16002_004",      # No one 14 and over speaks English only or speaks English "very well"
+      "B16002_005",      # At least one person 14 and over speaks English only or speaks English "very well"
+      "B16002_006",    # Other Indo-European languages:
+      "B16002_007",      # No one 14 and over speaks English only or speaks English "very well"
+      "B16002_008",      # At least one person 14 and over speaks English only or speaks English "very well"
+      "B16002_009",    # Asian and Pacific Island languages:
+      "B16002_010",      # No one 14 and over speaks English only or speaks English "very well"
+      "B16002_011",      # At least one person 14 and over speaks English only or speaks English "very well"
+      "B16002_012",    # Other languages: 
+      "B16002_013",      # No one 14 and over speaks English only or speaks English "very well"
+      "B16002_014")     # At least one person 14 and over speaks English only or speaks English "very well"
+  
+  # make list of needed variables
+  acs_totalcensus_var_list <- 
+    list(
+      edu_cat_b15003,
+      poverty_ratio_cat_c17002,
+      income_house_cat_b19001,
+      income_house_median_b19013,
+      earnings_sex_cat_b20001,
+      earnings_median_b20002,
+      employment_cat_b23025,
+      home_value_cat_b25075,
+      home_value_median_b25077,
+      health_insurance_cat_c27010,
+      ling_iso_b16002
+    )
+  
+  # make big master variable list
+  acs_totalcensus_var_vec <-
+    acs_totalcensus_var_list %>% 
+    reduce(c)
+    
+    # save the master variable list
+  save(
+    acs_totalcensus_var_vec, 
+    file = 
+      file.path("intermediate_data", 
+                "acs_totalcensus_var_vec.rdata")
+  )
+  
+  rm(
     edu_cat_b15003,
     poverty_ratio_cat_c17002,
     income_house_cat_b19001,
@@ -1051,38 +1103,12 @@ acs_totalcensus_var_list <-
     home_value_cat_b25075,
     home_value_median_b25077,
     health_insurance_cat_c27010,
-    ling_iso_b16002
-  )
-
-# make big master variable list
-acs_totalcensus_var_vec <-
-  acs_totalcensus_var_list %>% 
-  reduce(c)
-  
-  # save the master variable list
-save(
-  acs_totalcensus_var_vec, 
-  file = 
-    file.path("intermediate_data", 
-              "acs_totalcensus_var_vec.rdata")
-)
-
-rm(
-  edu_cat_b15003,
-  poverty_ratio_cat_c17002,
-  income_house_cat_b19001,
-  income_house_median_b19013,
-  earnings_sex_cat_b20001,
-  earnings_median_b20002,
-  employment_cat_b23025,
-  home_value_cat_b25075,
-  home_value_median_b25077,
-  health_insurance_cat_c27010,
-  ling_iso_b16002,
-  acs_totalcensus_var_list, 
-  acs_totalcensus_var_vec
-  )
-gc()
+    ling_iso_b16002,
+    acs_totalcensus_var_list, 
+    acs_totalcensus_var_vec
+    )
+  gc()
+}
 
 ```
 
@@ -1111,16 +1137,14 @@ if(!
                 "acs_totalcensus_var_vec.rdata")
   )
   
-  # set path to census data
-  Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
-  
-  # make vector of state abbreviations
-  state_abbreviation_character_vector <- 
-    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY", "PR")
-  
-  # remove puerto rico
-  state_abbreviation_character_vector_no_pr <- 
-    c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
+  # load state abbreviation character vector
+  load(
+    file = 
+      file.path(
+        "intermediate_data", 
+        "state_abbreviation_character_vector.rdata"
+      )
+    )
   
   # download generated data that totalcensus requires if haven't already
   if(
@@ -1156,7 +1180,7 @@ if(!
   acs_totalcensus_raw_dataframe <-
     read_acs5year(
       year = 2012,
-      states = state_abbreviation_character_vector_no_pr,
+      states = state_abbreviation_character_vector,
       table_contents =
         acs_totalcensus_var_vec,
       summary_level = "tract",
@@ -1167,6 +1191,23 @@ if(!
   acs_totalcensus_raw_tibble <- 
     as_tibble(acs_totalcensus_raw_dataframe)
   
+  # fix variable names
+  acs_totalcensus_raw_tibble <- 
+    acs_totalcensus_raw_tibble %>% 
+    column_name_fixer()
+  
+  # fix geoids
+  acs_totalcensus_raw_tibble <- 
+    acs_totalcensus_raw_tibble %>% 
+    mutate(
+      geoid = 
+        str_replace(
+          geoid,
+          "14000US", 
+          ""
+        )
+    )
+    
   # save raw tibble to disk
   save(
     acs_totalcensus_raw_tibble, 
@@ -1181,12 +1222,324 @@ if(!
   rm(
     acs_totalcensus_var_vec,
     state_abbreviation_character_vector, 
-    state_abbreviation_character_vector_no_pr,
     acs_totalcensus_raw_dataframe, 
     acs_totalcensus_raw_tibble
   )
   gc()
 }
+
+
+```
+
+
+### making census 2010 geography match acs 2012 geography
+
+```{r geography changes from 2010 to 2011}
+
+# https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2011/geography-changes.html
+
+# https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2012/geography-changes.html
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "acs_totalcensus_raw_tibble.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sf1_totalcensus_raw_tibble.rdata"
+      )
+  )
+
+# character vector of geoids from 2012 acs data
+geoids_acs <- 
+  acs_totalcensus_raw_tibble %>% 
+  pull(geoid)
+
+# character vector of geoids from 2010 census sf1 data
+geoids_sf1 <- 
+  sf1_totalcensus_raw_tibble %>% 
+  pull(geoid)
+
+# character vector of 2012 acs geoids not in 2010 census sf1
+acs_geoids_not_in_sf1 <- 
+  setdiff(geoids_acs, geoids_sf1)
+
+# character vector of 2012 acs geoids not in 2010 census sf1
+sf1_geoids_not_in_acs <- 
+  setdiff(geoids_sf1, geoids_acs)
+
+# manual acs geoids corresponding to and ordered by sf1_geoids_not_in_acs
+acs_geoids_for_sf1_geoids_not_in_acs <- 
+  c("04019002704",
+    "04019002906",
+    "04019004118",
+    "04019004121",
+    "04019004125",
+    "04019005200",
+    "04019005300",
+    "06037137000",
+    "36053030101",
+    "36053030102",
+    "36053030103",
+    "36053030200",
+    "36053030300",
+    "36053030401",
+    "36053030403",
+    "36053030600",
+    "36053030402",
+    "36065024800",
+    "36065024700",
+    "36065024900",
+    "36085009700")
+
+# manual sf1 2010 geoids of census tracts with boundary changes in acs 2012
+sf1_messed_up_tracts <- 
+  c("06037930401", 
+    "36065940200", 
+    "36085008900", 
+    "36065023000", 
+    "06037800204")
+
+# make concordance tibble
+sf1_acs_concordance_tibble <- 
+  tibble(sf1_geoid = sf1_geoids_not_in_acs, 
+         acs_geoid = acs_geoids_for_sf1_geoids_not_in_acs)
+
+# add acs equivalent-ish ids to sf1 table
+sf1_tibble_with_acs_concordance <- 
+  sf1_totalcensus_raw_tibble %>%   # summon the census
+  mutate(geoid_for_acs_join = geoid) %>%  # make new variable to use to join acs 
+  mutate(geoid_for_acs_join =  # replace sf1 geoids not found in acs with 
+           str_replace_all(    # equivalent acs geoids
+             geoid_for_acs_join,  # this is the column to be modified
+             setNames(  # this names the replacement values by their sf1 ids
+               acs_geoids_for_sf1_geoids_not_in_acs,  # replacements'("objects")
+               sf1_geoids_not_in_acs  # values to be replaced, or "names"
+               )  # thus this identifies the sf1 geoids as "names" and replaces
+             )    # them with their "object" values
+         ) 
+
+# check differences
+acs_concordance_geoids_not_in_sf1 <- 
+  setdiff(
+    sf1_tibble_with_acs_concordance$geoid_for_acs_join, 
+    sf1_tibble_with_acs_concordance$geoid
+  )
+
+sf1_geoids_not_in_acs_concordance_geoids <- 
+  setdiff(
+    sf1_tibble_with_acs_concordance$geoid,
+    sf1_tibble_with_acs_concordance$geoid_for_acs_join
+  )
+
+# save files
+save(sf1_acs_concordance_tibble, 
+     file = 
+       file.path(
+         "intermediate_data", 
+         "sf1_acs_concordance_tibble.rdata"
+       )
+     )
+save(sf1_tibble_with_acs_concordance, 
+     file = 
+       file.path(
+         "intermediate_data", 
+         "sf1_tibble_with_acs_concordance.rdata"
+       )
+     )
+    
+save(sf1_messed_up_tracts, 
+     file = 
+       file.path(
+         "intermediate_data", 
+         "sf1_messed_up_tracts.rdata"
+       )
+     )
+
+# remove the files
+rm(
+  acs_totalcensus_raw_tibble, 
+  sf1_totalcensus_raw_tibble, 
+  geoids_acs, 
+  geoids_sf1, 
+  acs_geoids_not_in_sf1, 
+  sf1_geoids_not_in_acs, 
+  acs_geoids_for_sf1_geoids_not_in_acs, 
+  sf1_messed_up_tracts,
+  sf1_acs_concordance_tibble, 
+  sf1_tibble_with_acs_concordance, 
+  acs_concordance_geoids_not_in_sf1, 
+  sf1_geoids_not_in_acs_concordance_geoids
+)
+gc()
+```
+
+
+### segregation
+
+```{r calculate segregation index}
+
+# load census dataset
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sf1_totalcensus_raw_tibble.rdata"
+    )
+)
+
+# load census tract neighbor data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "neighbor_tibble_long.rdata"
+    )
+)
+
+# import segregation variables (Black, Black/other, total)
+seg_vars <- 
+  sf1_totalcensus_raw_tibble %>% 
+  select(  # import the variables
+    geoid, 
+    p0050001, 
+    p0050004
+  ) %>%  # make total nonblack population variable
+  mutate(
+    tot_pop_no_black = p0050001 - p0050004
+  ) 
+
+# merge by the NEIGHBOR TRACT GEOID
+neighbors_with_census_tibble <- 
+  neighbor_tibble_long %>% 
+  left_join(
+    seg_vars, 
+    by = c("geoid_neighbor_tract" = "geoid")
+  )
+
+# get summaries by each PRIMARY TRACT for it and all its neighbors
+racial_isolation_index_tibble <- 
+  neighbors_with_census_tibble %>% 
+  group_by(geoid_primary_tract) %>% 
+  summarise(
+    neighborly_tot_pop_p0050001 = sum(p0050001), 
+    neighborly_black_p0050004 = sum(p0050004), 
+    neighborly_tot_pop_no_black = sum(tot_pop_no_black)
+  ) %>% 
+  mutate(
+    racial_isolation_index_k1 = 
+      neighborly_black_p0050004/
+      neighborly_tot_pop_p0050001) %>% 
+  select(
+    geoid_primary_tract, 
+    racial_isolation_index_k1
+  )
+
+# save the final file
+save(
+  racial_isolation_index_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "racial_isolation_index_tibble.rdata"
+    )
+)
+
+# remove extraneous files
+rm(
+  sf1_totalcensus_raw_tibble, 
+  neighbor_tibble_long, 
+  seg_vars,
+  neighbors_with_census_tibble, 
+  racial_isolation_index_tibble
+)
+
+```
+
+
+### merge sf1, acs, and segregation files
+
+```{r merge sf1, acs, and segregation}
+
+# load sf1 tibble
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sf1_tibble_with_acs_concordance.rdata"
+    )
+)
+
+# load acs tibble
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "acs_totalcensus_raw_tibble.rdata"
+    )
+)
+
+# load segregation
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "racial_isolation_index_tibble.rdata"
+    )
+)
+
+# delete duplicate variables from acs tibble
+acs_tibble_for_joining <- 
+  acs_totalcensus_raw_tibble %>% 
+  rename(pop_acs = population, 
+         geoid_acs = geoid) %>% 
+  select(
+    -c(name, 
+       geocomp, 
+       sumlev, 
+       state,
+       stusab,
+       lon, 
+       lat)
+  )
+
+# join everything
+demographic_tibble <- 
+  sf1_tibble_with_acs_concordance %>% 
+  left_join(
+    acs_tibble_for_joining, 
+    by = c("geoid_for_acs_join" = "geoid_acs")  # sf1 variable left, acs right
+  ) %>% 
+  left_join(
+    racial_isolation_index_tibble, 
+    by = c("geoid" = "geoid_primary_tract")  # sf1 variable left, acs right
+  )
+
+# save to file
+save(
+  demographic_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "demographic_tibble.rdata"
+    )
+)
+
+# remove files
+rm(
+  sf1_tibble_with_acs_concordance, 
+  acs_totalcensus_raw_tibble, 
+  racial_isolation_index_tibble, 
+  acs_tibble_for_joining, 
+  demographic_tibble
+)
+gc()
 
 ```
 
@@ -1700,7 +2053,7 @@ working_air_tibble <-
 non_us_state_codes <- 
   c(
     # "72",  # PR (now including)
-    # "78",  # Virgin Islands (now including)
+    "78",  # Virgin Islands (alas, no RUCA/census data)
     "CC",  # Canada
     "80"   # Mexico
     )
@@ -1829,8 +2182,19 @@ save(
     )
   )
 
-# remove the filtered air tibble
-rm(us_filtered_air_tibble)
+# remove the remaining files
+rm(non_us_state_codes, 
+   species_and_codes_from_data, 
+   fraction_codes, 
+   unadjusted_codes, 
+   op_codes, 
+   volatile_codes,
+   raw_air_tibble, 
+   us_filtered_air_tibble, 
+   species_and_codes_from_data_two,
+   observations_counts_by_code, 
+   remaining_drop_codes
+   )
 gc()
 
 ```
@@ -2014,6 +2378,7 @@ rm(
 
 ```
 
+
 ```{r count monitors by state}
 
 load(
@@ -2062,21 +2427,13 @@ save(
       )
 )
 
-virgin_data <- 
-  us_filtered_air_tibble %>% 
-  filter(state_name == "Virgin Islands")
-
-
-
-View(virgin_data)
-
 rm(
+  sparse_monitors,
   monitor_and_state, 
   state_monitor_counts
 )
 gc()
 ```
-
 
 
 ```{r make spatial files from monitor locations}
@@ -2102,7 +2459,7 @@ load(
   file = 
     file.path(
       "raw_data", 
-      "tigris_cbf_no_data.rdata"
+      "tigris_shapefiles_no_data.rdata"
     )
 )
 
@@ -2113,7 +2470,7 @@ sparse_monitors_nad83_sf <-
     coords = 
       c("longitude",
         "latitude"),
-    crs = st_crs(tigris_cbf_no_data) 
+    crs = st_crs(tigris_shapefiles_no_data) 
   ) 
 
 sparse_monitors_wgs84_sf <- 
@@ -2129,7 +2486,7 @@ sparse_monitors_wgs84_sf <-
 sparse_monitors_wgs84_to_nad_83_sf <- 
   st_transform(
     sparse_monitors_wgs84_sf, 
-    crs = st_crs(tigris_cbf_no_data))
+    crs = st_crs(tigris_shapefiles_no_data))
 
 monitors_sf <- 
   rbind(
@@ -2153,7 +2510,7 @@ rm(
   sparse_monitors_nad83_sf,
   sparse_monitors_wgs84_sf,
   monitors_sf,
-  tigris_cbf_no_data
+  tigris_shapefiles_no_data
   )
 gc()
 ```
@@ -2166,7 +2523,7 @@ load(
   file = 
     file.path(
       "raw_data", 
-      "tigris_cbf_no_data.rdata"
+      "tigris_shapefiles_no_data.rdata"
     )
   )
 
@@ -2180,7 +2537,7 @@ load(
   )
 
 projected_tracts <- 
-  tigris_cbf_no_data %>% 
+  tigris_shapefiles_no_data %>% 
   st_transform(crs = 5070)
 
 projected_monitors <-
@@ -2231,7 +2588,7 @@ save(
 # remove unneeded files
 rm(
   monitors_sf, 
-  tigris_cbf_no_data, 
+  tigris_shapefiles_no_data, 
   monitors_to_tracts, 
   projected_monitors,
   projected_tracts,
@@ -2244,7 +2601,7 @@ rm(
 
 ### joining the above back to census data
 
-```{r join tracts to census data}
+```{r join tracts to census data, eval=FALSE, include=FALSE}
 
 # load necessary files
 load(
@@ -2275,11 +2632,8 @@ little_monitors_to_tracts <-
   monitors_to_tracts %>% 
   st_drop_geometry() %>% 
   select(monitor_id, 
-         GEO_ID) %>% 
-  mutate(geoid_containing_tract = 
-           str_replace(GEO_ID, 
-                       "1400000US", 
-                       "")) %>% 
+         geoid) %>% 
+  mutate(geoid_containing_tract = geoid) %>% 
   select(monitor_id, 
          geoid_containing_tract)
 
@@ -2288,20 +2642,8 @@ simple_buffer <-
   st_drop_geometry() %>% 
   select(
     monitor_id, 
-    GEO_ID
-    ) %>%
-  mutate(
-    geoid = 
-      str_replace(
-        GEO_ID,
-        "1400000US", 
-        ""
-        )
-    ) %>% 
-  select(
-    monitor_id, 
     geoid
-    )
+    ) 
 
 air_with_containing_tracts <- 
   left_join(
@@ -2331,7 +2673,7 @@ save(
 ```
 
 
-```{r process ruca data}
+```{r process ruca data, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -2396,7 +2738,7 @@ save(
 ```
 
 
-```{r monitor subset for date}
+```{r monitor subset for date, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -2501,13 +2843,11 @@ ggsave("date_range_plot_species.png",plot=date_range_plot_species,width=20,heigh
 ```
 
 
-
-
 # BEGIN TRAVIS-FRIENDLY CODE
 
 ## ruca
 
-```{r ruca data}
+```{r ruca data, eval=FALSE, include=FALSE}
 
 # source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
 # downloaded 2019 June 11
@@ -2561,124 +2901,11 @@ if(
 ```
 
 
-## parameter and species codes
-
-```{r speciation parameter codes, results = "hide"}
-
-# source https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv
-# downloaded 2019 June 11
-# last updated 
-
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data", 
-      "speciation_parameter_codes.rdata"
-      )
-    )
-  ) {
-  
-  # download the speciation paramter codes
-  file_downloader(
-    desired_filename_as_string = "speciation_parameter_codes.csv",
-    web_address_as_string = "https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv", 
-    folder_as_string = "raw_data"
-    )
-
-  # read the parameter codes into memory
-  speciation_parameter_codes <- 
-    read_csv(
-      file.path("raw_data", 
-                "speciation_parameter_codes.csv"
-                )
-    )
-  
-  # fix column names
-  speciation_parameter_codes <-
-    column_name_fixer(
-     speciation_parameter_codes
-    )
-
-  # save the rdata file
-  save(
-    speciation_parameter_codes,
-    file = file.path(
-      "intermediate_data", 
-      "speciation_parameter_codes.rdata"
-    )
-  )
-
-  # remove the rdata from memory
-  rm(speciation_parameter_codes)
-  gc()
-}
-
-```
-
-
-```{r make parameter and species lists}
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "speciation_parameter_codes.rdata"
-      )
-)
-
-# make a list of all the species and their codes
-species_and_codes <- 
-  speciation_parameter_codes %>% 
-  select(parameter, parameter_code) %>% 
-  distinct
-
-# make a list of the organic carbon species and codes
-organic_carbon_rows <- 
-  species_and_codes %>% 
-  filter(str_detect(parameter, "OC"))
-
-# make a numeric vector of the organic carbon species and codes
-organic_carbon_codes <-
-  organic_carbon_rows %>% 
-  select(parameter_code) %>% 
-  pull()
-
-save(
-  species_and_codes, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "species_and_codes.rdata"
-    )
-  )
-
-save(
-  organic_carbon_codes, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "organic_carbon_codes.rdata"
-    )
-  )
-
-# remove created data from memory
-rm(
-  organic_carbon_rows,
-  organic_carbon_codes, 
-  speciation_parameter_codes,
-  species_and_codes)
-gc()
-
-```
-
-
-
-
 # DISCARDED CODE TOO GOOD TO DELETE
 
 ####census shapefile with data
 
-```{r census shapefile with dp1 data, results = "hide"}
+```{r census shapefile with dp1 data, eval=FALSE, include=FALSE, results=}
 
 # source http://www2.census.gov/geo/tiger/TIGER2010DP1/Tract_2010Census_DP1.zip?#
 # downloaded 19 June 2019
@@ -2741,7 +2968,7 @@ if(
 ```
 
 
-```{r census less detailed clipped cartographic boundary file}
+```{r census less detailed clipped cartographic boundary file, eval=FALSE, include=FALSE}
 
 # source "https://www2.census.gov/geo/tiger/GENZ2010/gz_2010_%s_140_00_500k.zip"
 # where %s is the state FIPS code
@@ -10832,7 +11059,6 @@ select_acs_tibble <-
 ```
 
 
-
 #### old code versions
 
 ```{r old speciator function, eval=FALSE, include=FALSE}
@@ -10976,6 +11202,307 @@ speciator <-
     )
     gc()
   }
+
+```
+
+
+#### parameter and species codes
+
+```{r speciation parameter codes, eval=FALSE, include=FALSE, results=}
+
+# source https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv
+# downloaded 2019 June 11
+# last updated 
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+      )
+    )
+  ) {
+  
+  # download the speciation paramter codes
+  file_downloader(
+    desired_filename_as_string = "speciation_parameter_codes.csv",
+    web_address_as_string = "https://aqs.epa.gov/aqsweb/documents/codetables/methods_speciation.csv", 
+    folder_as_string = "raw_data"
+    )
+
+  # read the parameter codes into memory
+  speciation_parameter_codes <- 
+    read_csv(
+      file.path("raw_data", 
+                "speciation_parameter_codes.csv"
+                )
+    )
+  
+  # fix column names
+  speciation_parameter_codes <-
+    column_name_fixer(
+     speciation_parameter_codes
+    )
+
+  # save the rdata file
+  save(
+    speciation_parameter_codes,
+    file = file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+    )
+  )
+
+  # remove the rdata from memory
+  rm(speciation_parameter_codes)
+  gc()
+}
+
+```
+
+
+```{r make parameter and species lists, eval=FALSE, include=FALSE}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "speciation_parameter_codes.rdata"
+      )
+)
+
+# make a list of all the species and their codes
+species_and_codes <- 
+  speciation_parameter_codes %>% 
+  select(parameter, parameter_code) %>% 
+  distinct
+
+# make a list of the organic carbon species and codes
+organic_carbon_rows <- 
+  species_and_codes %>% 
+  filter(str_detect(parameter, "OC"))
+
+# make a numeric vector of the organic carbon species and codes
+organic_carbon_codes <-
+  organic_carbon_rows %>% 
+  select(parameter_code) %>% 
+  pull()
+
+save(
+  species_and_codes, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "species_and_codes.rdata"
+    )
+  )
+
+save(
+  organic_carbon_codes, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "organic_carbon_codes.rdata"
+    )
+  )
+
+# remove created data from memory
+rm(
+  organic_carbon_rows,
+  organic_carbon_codes, 
+  speciation_parameter_codes,
+  species_and_codes)
+gc()
+
+```
+
+
+#### old segregation calculations
+
+```{r calculating segregation NOTE: USES ARCGIS, eval=FALSE, include=FALSE}
+
+# load(
+#   file = 
+#     file.path(
+#       "raw_data", 
+#       "tigris_shapefiles_no_data.rdata"
+#     )
+#   )
+
+census_adjacent <- 
+  read.csv(
+    file = 
+      file.path(
+        "raw_data", 
+        "censusadjacent.csv"
+      )
+  )
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "ruca_urban_only.rdata"
+    )
+)
+
+load(
+   file = 
+      file.path(
+        "intermediate_data",
+        "sf1_totalcensus_raw_tibble.rdata"
+        )
+   )
+
+# fix column names 
+sf1_totalcensus_seg_tibble <- 
+  column_name_fixer(
+    sf1_totalcensus_raw_tibble
+)
+
+# import census data (Black, Black/other, total)
+seg_vars <- 
+  sf1_totalcensus_seg_tibble %>% 
+  select(
+    geoid, 
+    p0050001, 
+    p0050004
+  )
+
+seg_vars <- 
+  seg_vars %>% 
+  mutate(
+    tot_pop_no_black = p0050001 - p0050004
+  )
+
+colnames(seg_vars)[1] <- 
+  "selfneighbor"
+
+
+# segregation index with nodes
+
+# keep nodes
+censusadjacentyesnodes <- census_adjacent
+censusadjacentyesnodes <- censusadjacentyesnodes[c(-5)]
+censusadjacentyesnodes <- as.data.frame(censusadjacentyesnodes[c(-4)])
+censusadjacentyesnodes$src_GEOID10 <- 
+  as.factor(censusadjacentyesnodes$src_GEOID10)
+censusadjacentyesnodes$nbr_GEOID10 <- 
+  as.factor(censusadjacentyesnodes$nbr_GEOID10)
+
+# get adjacent blocks into single column as single character w/ commas
+require(data.table)
+cayncon <- 
+  setDT(censusadjacentyesnodes)[,.(nbr_GEOID10=paste(nbr_GEOID10, collapse = ",")), by=src_GEOID10]
+cayncon$src_GEOID10 <- as.character(cayncon$src_GEOID10)
+
+# add own census tract to tracts
+cayncon$selfandfriends <- paste(cayncon$src_GEOID10, cayncon$nbr_GEOID10, sep=",")
+str(cayncon)
+
+# save file to disk
+save(cayncon,
+     file="cayncon.rdata")
+# load(file="cayncon.rdata")
+
+
+#### racial isolation index with nodes urban tracts ####
+
+monitorct <- 
+  cayncon
+
+# neighbors for each census tract plus itself
+temp <- strsplit(monitorct$selfandfriends, split=",")
+ltemp <- sapply(temp, length)
+ct.nb <- data.frame(censustract = rep(NA, sum(ltemp)), selfneighbor = NA)
+ct.nb[1:ltemp[1], "censustract"] <- monitorct[1, "src_GEOID10"]
+ct.nb[1:ltemp[1], "selfneighbor"] <- temp[[1]]
+for (i in 2:length(temp)) {
+  st <- sum(ltemp[1:i-1])
+  ct.nb[(st+1):(st+ltemp[i]), "censustract"] <- monitorct[i, "src_GEOID10"]
+  ct.nb[(st+1):(st+ltemp[i]), "selfneighbor"] <- temp[[i]]
+}
+
+# fix geoid for seg_vars 
+seg_vars <- 
+  seg_vars %>% 
+  mutate(
+    selfneighbortest = 
+      str_replace(
+        selfneighbor, 
+        "14000US",
+        ""
+      )
+  )
+
+# fix geoid for ct.nb 
+ct.nb <- 
+  ct.nb %>% 
+  mutate(
+    selfneighbortest = 
+      str_pad(
+        string = selfneighbor, 
+        width = 11, 
+        side = "left", 
+        pad = "0")
+  )
+  
+# merge the popoulation info
+segindcalcbasis <- 
+  merge(seg_vars, 
+        ct.nb, 
+        by="selfneighbortest")
+
+# aggregate by census tract
+aggregatevars <- 
+  segindcalcbasis %>% 
+  select(
+    censustract,
+    p0050001, 
+    p0050004, 
+    tot_pop_no_black
+  )
+
+aggregatedcensus <- 
+  aggregate(. ~ censustract, 
+            data = aggregatevars, sum)
+
+aggregatedcensus$finalsegregationindex <- 
+  aggregatedcensus$p0050004/aggregatedcensus$p0050001
+
+range(aggregatedcensus$finalsegregationindex)
+
+aggregatedcensus$GEOID10 <- aggregatedcensus$censustract
+
+ri_yes_nodes_urban_tracts <- 
+  aggregatedcensus[c("GEOID10",
+                     "finalsegregationindex")]
+
+ri_yes_nodes_urban_tracts$GEOID10 <- as.factor(ri_yes_nodes_urban_tracts$GEOID10)
+
+colnames(ri_yes_nodes_urban_tracts) <- c("tract_id","ri_nodes_urban")
+
+ri_final <- 
+  ri_yes_nodes_urban_tracts %>% 
+  mutate(
+    geoid = 
+        str_pad(
+        string = tract_id, 
+        width = 11, 
+        side = "left", 
+        pad = "0")
+  ) %>% 
+  arrange(geoid)
+
+save(
+  ri_final, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "ri_final"
+    )
+)
+
 
 ```
 
