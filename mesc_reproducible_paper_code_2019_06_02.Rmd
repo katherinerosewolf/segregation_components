@@ -1674,6 +1674,7 @@ gc()
 
 ```{r split air tibble into travis-y pieces}
 
+# load big filtered air tibble
 load(
   file = 
     file.path(
@@ -1682,13 +1683,13 @@ load(
     )
 )
 
+
 # air pollutants only tibble
 air_pollutant_tibble <- 
   us_filtered_air_tibble %>% 
   select(
     monitor_id, 
     poc, 
-    parameter_name, 
     parameter_code,
     sample_duration,
     date_local, 
@@ -1698,8 +1699,7 @@ air_pollutant_tibble <-
     arithmetic_mean, 
     `1st_max_value`,
     `1st_max_hour`, 
-    method_code, 
-    method_name
+    method_code
   )
 
 save(
@@ -1714,13 +1714,16 @@ save(
 rm(air_pollutant_tibble)
 gc()
 
+
 # method_tibble
 method_tibble <-
   us_filtered_air_tibble %>% 
-  select(method_code,
+  select(parameter_code, 
+         method_code,
          method_name) %>% 
   distinct() %>% 
-  arrange(method_code)
+  arrange(parameter_code, 
+          method_code)
 
 save(
   method_tibble, 
@@ -1733,6 +1736,28 @@ save(
 
 rm(method_tibble)
 gc()
+
+
+# parameter names and codes tibble
+parameter_names_codes_tibble <- 
+  us_filtered_air_tibble %>% 
+  select(parameter_code, 
+         parameter_name) %>% 
+  distinct() %>% 
+  arrange(parameter_code)
+
+save(
+  parameter_names_codes_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "parameter_names_codes_tibble.rdata"
+    )
+)
+
+rm(parameter_names_codes_tibble)
+gc()
+  
 
 # units of measure tibble
 units_of_measure_tibble <- 
@@ -1754,6 +1779,7 @@ save(
 
 rm(units_of_measure_tibble)
 gc()
+
 
 # monitor tibble
 air_monitor_tibble <- 
@@ -1785,6 +1811,7 @@ save(
 
 rm(air_monitor_tibble)
 gc()
+
 
 # total pm25 88101 tibble with 88101-only variables (pollutant standard, aqi)
 total_88101_pollutant_standard_aqi_tibble <- 
@@ -1828,7 +1855,7 @@ gc()
 
 # save needed files from the work above to memory_savers
 
-# air pollutants only tibble
+# air pollutant only tibble
 load(
   file = 
     file.path(
@@ -1849,7 +1876,7 @@ save(
 rm(air_pollutant_tibble)
 gc()
 
-# air monitors only tibble
+# air monitor only tibble
 load(
   file = 
     file.path(
