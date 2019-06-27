@@ -58,7 +58,7 @@ options(tigris_use_cache = TRUE)
 ```
 
 
-```{r functions for later use}
+```{r functions for general later use}
 
 # function to convert column names to snake case
 column_name_fixer <-
@@ -72,6 +72,8 @@ column_name_fixer <-
     new_names  # rename the columns in the original tibble
   return(tibble)
   }
+
+
 
 # create function that downloads files
 file_downloader <-
@@ -89,6 +91,8 @@ file_downloader <-
                     destfile = path, 
                     mode = "wb")
   }
+
+
 
 # function to download generated data without asking
 download_generated_data_auto <- 
@@ -111,157 +115,6 @@ download_generated_data_auto <-
         download_generated_data_auto()
     }
   }
-
-# function to read decennial data without asking about downloads
-read_decennial_auto <- 
-  function (year, states, table_contents = NULL, areas = NULL, 
-    geo_headers = NULL, summary_level = NULL, geo_comp = "total", 
-    show_progress = TRUE) 
-{
-    if (Sys.getenv("PATH_TO_CENSUS") == "") {
-        message(paste("Please set up the path to downloaded census data, following the instruction at", 
-            "https://github.com/GL-Li/totalcensus."))
-        return(NULL)
-    }
-    if (is.null(summary_level)) 
-        summary_level <- "*"
-    states <- toupper(states)
-    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
-    generated_data <- paste0(path_to_census, "/generated_data")
-    if (!file.exists(generated_data)) {
-        download_generated_data_auto()
-    }
-    else {
-        version_file <- paste0(generated_data, "/version.txt")
-        if (!file.exists(version_file)) {
-            download_generated_data_auto()
-        }
-        else {
-            version = readChar(version_file, 5)
-            if (version != "0.6.0") {
-                download_generated_data_auto()
-            }
-        }
-    }
-    if (year == 2010) {
-        ext <- ".ur1"
-    }
-    else if (year == 2000) {
-        ext <- ".uf1"
-    }
-    not_downloaded <- c()
-    for (st in states) {
-        geo_file <- paste0(path_to_census, "/census", year, "/", 
-            st, "/", tolower(st), "geo", year, ext)
-        if (!file.exists(geo_file)) {
-            not_downloaded <- c(not_downloaded, st)
-        }
-    }
-    if (length(not_downloaded) > 0) {
-            download_census("decennial", year, not_downloaded)
-    }
-    options(warn = -1)
-    if (is.null(areas) + is.null(geo_headers) == 0) {
-        stop("Must keep at least one of arguments areas and geo_headers NULL")
-    }
-    if (any(grepl("P0010001", table_contents))) {
-        message("P0010001 is the population column.")
-    }
-    table_contents <- table_contents[!grepl("P0010001", table_contents)]
-    table_contents <- c("population = P0010001", table_contents) %>% 
-        unique()
-    content_names <- organize_tablecontents(table_contents) %>% 
-        .[, name]
-    table_contents <- organize_tablecontents(table_contents) %>% 
-        .[, reference]
-    if (!is.null(areas)) {
-        dt <- read_decennial_areas_(year, states, table_contents, 
-            areas, summary_level, geo_comp, show_progress)
-    }
-    else {
-        dt <- read_decennial_geoheaders_(year, states, table_contents, 
-            geo_headers, summary_level, geo_comp, show_progress)
-    }
-    setnames(dt, table_contents, content_names)
-    options(warn = 0)
-    return(dt)
-  }
-
-# function to download acs data without asking
-read_acs5year_auto <- 
-  function (year, states, table_contents = NULL, areas = NULL, 
-    geo_headers = NULL, summary_level = NULL, geo_comp = "total", 
-    with_margin = FALSE, dec_fill = NULL, show_progress = TRUE) 
-{
-    if (Sys.getenv("PATH_TO_CENSUS") == "") {
-        message(paste("Please set up the path to downloaded census data", 
-            "following the instruction at", "https://github.com/GL-Li/totalcensus."))
-        return(NULL)
-    }
-    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
-    generated_data <- paste0(path_to_census, "/generated_data")
-    if (!file.exists(generated_data)) {
-        download_generated_data_auto()
-    }
-    else {
-        version_file <- paste0(generated_data, "/version.txt")
-        if (!file.exists(version_file)) {
-            download_generated_data_auto()
-        }
-        else {
-            version = readChar(version_file, 5)
-            if (version != "0.6.0") {
-                download_generated_data_auto()
-            }
-        }
-    }
-    not_downloaded <- c()
-    for (st in states) {
-        if (!file.exists(paste0(path_to_census, "/acs5year/", 
-            year, "/g", year, "5", tolower(st), ".csv"))) {
-            not_downloaded <- c(not_downloaded, st)
-        }
-    }
-    if (length(not_downloaded) > 0) {
-            download_census("acs5", year, not_downloaded)
-    }
-    if (is.null(summary_level)) 
-        summary_level <- "*"
-    states <- toupper(states)
-    if (is.null(areas) + is.null(geo_headers) == 0) {
-        stop("Must keep at least one of arguments areas and geo_headers NULL")
-    }
-    if (any(grepl("B01003_001", table_contents))) {
-        message("B01003_001 is the population column.")
-    }
-    table_contents <- table_contents[!grepl("B01003_001", table_contents)]
-    table_contents <- c("population = B01003_001", table_contents) %>% 
-        unique()
-    content_names <- organize_tablecontents(table_contents) %>% 
-        .[, name]
-    table_contents <- organize_tablecontents(table_contents) %>% 
-        .[, reference] %>% toupper()
-    options(warn = -1)
-    if (!is.null(areas)) {
-        dt <- read_acs5year_areas_(year, states, table_contents, 
-            areas, summary_level, geo_comp, with_margin, dec_fill, 
-            show_progress)
-    }
-    else {
-        geo_headers <- unique(geo_headers)
-        dt <- read_acs5year_geoheaders_(year, states, table_contents, 
-            geo_headers, summary_level, geo_comp, with_margin, 
-            dec_fill, show_progress)
-    }
-    setnames(dt, table_contents, content_names)
-    if (with_margin) {
-        setnames(dt, paste0(table_contents, "_m"), paste0(content_names, 
-            "_margin"))
-    }
-    options(warn = 0)
-    return(dt)
-  }
-
 
 ```
 
@@ -296,7 +149,7 @@ Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
 
 ### states for analyses
 
-```{r make state abbreviation character vector}
+```{r make state abbreviation character vector, eval=FALSE, include=FALSE}
 
 # check if file already exists
 if(!file.exists(file.path("pre_travis_intermediate_data", 
@@ -326,11 +179,11 @@ gc()
 
 ### census shapefile without data
 
-```{r census detailed shapefile without data}
+```{r census detailed shapefile without data, eval=FALSE, include=FALSE}
 
 # source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
 # where %s is the state FIPS code
-# downloaded 19 June 2019
+# downloaded 27 June 2019
 # last modified 23 June 2011 (state 60, others earlier)
 
 if(
@@ -398,8 +251,8 @@ if(
 ```{r ruca data, eval=FALSE, include=FALSE}
 
 # source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
-# downloaded . . . 
-# last updated 12/31/2013 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
+# downloaded 2017-06-27
+# last updated 2013-12-31 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
 
 if(
   !file.exists(
@@ -448,7 +301,7 @@ if(
 
 #### census variable lists
 
-```{r census variable lists}
+```{r census variable lists, eval=FALSE, include=FALSE}
 
 # check if variable list already exists
 if(!file.exists(file.path("pre_travis_intermediate_data", 
@@ -629,13 +482,13 @@ if(!file.exists(file.path("pre_travis_intermediate_data",
 
 #### census totalcensus variable pulls
 
-```{r sf1 totalcensus data download}
+```{r sf1 totalcensus data download, eval=FALSE, include=FALSE}
 
 # header information from
 # file source: https://www2.census.gov/census_2010/04-Summary_File_1/Urban_Rural_Update/
 # individual state files from there
-# downloaded 2019 June 18
-# last updated per website 2012 September 27
+# downloaded 2019-06-27
+# last updated per website 2012-09-27
 
 # check if the raw sf1 totalcensus tibble exists and if so, skip the whole chunk
 if(!
@@ -731,7 +584,7 @@ if(!
 
 #### acs variable lists
 
-```{r acs totalcensus variable lists}
+```{r acs totalcensus variable lists, eval=FALSE, include=FALSE}
 
 if(!file.exists(file.path("pre_travis_intermediate_data", 
                           "acs_totalcensus_var_vec.rdata"))) {
@@ -999,8 +852,8 @@ if(!file.exists(file.path("pre_travis_intermediate_data",
 ```{r acs totalcensus data download}
 
 # data downloaded from https://www2.census.gov/programs-surveys/acs/summary_file/2012/data/5_year_by_state/ (then individual state files)
-# downloaded 2019 June 18
-# last update per website 2015 Feburary 27
+# downloaded 2019-06-27
+# last update per website 2015-02-27
 
 # check if the acs totalcensus tibble exists and skip the whole chunk if not
 if(!
@@ -1226,11 +1079,13 @@ if(
     file.remove
     )
   
-  # remove list of tibbles from memory
-  rm(pm_25_frm_tibble_list)
-  
-  # remove big tibble from memory
-  rm(raw_pm_25_frm_tibble)
+  # remove files from memory
+  rm(pm_25_frm_csv_filename_list, 
+     pm_25_frm_tibble_name_list, 
+     pm_25_frm_files,
+     pm_25_frm_zip_filename_list,
+     pm_25_frm_tibble_list, 
+     raw_pm_25_frm_tibble)
   
   # clear memory
   gc()
@@ -1242,8 +1097,13 @@ if(
 
 ### species
 
-```{r functionalize speciation}
+```{r speciation file download via speciator function, eval=FALSE, include=FALSE}
 
+# source https://aqs.epa.gov/aqsweb/airdata/ (see vector below for exact)
+# downloaded 2019 June 19
+# last updated 2019 May 28 (all files)
+
+# make speciator function to download speciation files
 speciator <- 
   function(speciation_file_link) {
     
@@ -1356,15 +1216,6 @@ speciator <-
     gc()
   }
 
-```
-
-
-```{r speciation download by implementing speciator function en masse}
-
-# source https://aqs.epa.gov/aqsweb/airdata/ (see vector below for exact)
-# downloaded 2019 June 19
-# last updated 2019 May 28 (all files)
-
 # make list of speciation web addresses
 speciation_files <-
   c("https://aqs.epa.gov/aqsweb/airdata/daily_SPEC_2005.zip",
@@ -1390,7 +1241,7 @@ gc()
 ```
 
 
-```{r species big tibble}
+```{r species big tibble, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -1509,7 +1360,7 @@ if(
 
 ### air pollution in one big tibble
 
-```{r join pm25 total and speciation data}
+```{r join pm25 total and speciation data, eval=FALSE, include=FALSE}
 
 if(
   !file.exists(  # checks if tibble already exists
@@ -1567,7 +1418,7 @@ if(
 
 ### clean and shrink the air pollution data
 
-```{r clean big air pollution tibble}
+```{r clean big air pollution tibble, eval=FALSE, include=FALSE}
 
 # LOOK AT ORGANIC AND ELEMENTAL CARBON AGAIN
 
@@ -1748,7 +1599,7 @@ gc()
 ```
 
 
-```{r split air tibble into travis-y pieces}
+```{r split air tibble into travis-y pieces, eval=FALSE, include=FALSE}
 
 # load big filtered air tibble
 load(
@@ -1929,7 +1780,7 @@ gc()
 
 ## travis cleanup
 
-```{r save travis files in cheating folder}
+```{r save travis files in cheating folder, eval=FALSE, include=FALSE}
 
 # save needed files from the work above to memory_savers
 
@@ -3428,6 +3279,163 @@ ggsave("date_range_plot_species.png",plot=date_range_plot_species,width=20,heigh
 
 
 # DISCARDED CODE TOO GOOD TO DELETE
+
+#### old functions
+
+```{r old functions}
+
+# function to read decennial data without asking about downloads
+read_decennial_auto <- 
+  function (year, states, table_contents = NULL, areas = NULL, 
+    geo_headers = NULL, summary_level = NULL, geo_comp = "total", 
+    show_progress = TRUE) 
+{
+    if (Sys.getenv("PATH_TO_CENSUS") == "") {
+        message(paste("Please set up the path to downloaded census data, following the instruction at", 
+            "https://github.com/GL-Li/totalcensus."))
+        return(NULL)
+    }
+    if (is.null(summary_level)) 
+        summary_level <- "*"
+    states <- toupper(states)
+    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
+    generated_data <- paste0(path_to_census, "/generated_data")
+    if (!file.exists(generated_data)) {
+        download_generated_data_auto()
+    }
+    else {
+        version_file <- paste0(generated_data, "/version.txt")
+        if (!file.exists(version_file)) {
+            download_generated_data_auto()
+        }
+        else {
+            version = readChar(version_file, 5)
+            if (version != "0.6.0") {
+                download_generated_data_auto()
+            }
+        }
+    }
+    if (year == 2010) {
+        ext <- ".ur1"
+    }
+    else if (year == 2000) {
+        ext <- ".uf1"
+    }
+    not_downloaded <- c()
+    for (st in states) {
+        geo_file <- paste0(path_to_census, "/census", year, "/", 
+            st, "/", tolower(st), "geo", year, ext)
+        if (!file.exists(geo_file)) {
+            not_downloaded <- c(not_downloaded, st)
+        }
+    }
+    if (length(not_downloaded) > 0) {
+            download_census("decennial", year, not_downloaded)
+    }
+    options(warn = -1)
+    if (is.null(areas) + is.null(geo_headers) == 0) {
+        stop("Must keep at least one of arguments areas and geo_headers NULL")
+    }
+    if (any(grepl("P0010001", table_contents))) {
+        message("P0010001 is the population column.")
+    }
+    table_contents <- table_contents[!grepl("P0010001", table_contents)]
+    table_contents <- c("population = P0010001", table_contents) %>% 
+        unique()
+    content_names <- organize_tablecontents(table_contents) %>% 
+        .[, name]
+    table_contents <- organize_tablecontents(table_contents) %>% 
+        .[, reference]
+    if (!is.null(areas)) {
+        dt <- read_decennial_areas_(year, states, table_contents, 
+            areas, summary_level, geo_comp, show_progress)
+    }
+    else {
+        dt <- read_decennial_geoheaders_(year, states, table_contents, 
+            geo_headers, summary_level, geo_comp, show_progress)
+    }
+    setnames(dt, table_contents, content_names)
+    options(warn = 0)
+    return(dt)
+  }
+
+# function to download acs data without asking
+read_acs5year_auto <- 
+  function (year, states, table_contents = NULL, areas = NULL, 
+    geo_headers = NULL, summary_level = NULL, geo_comp = "total", 
+    with_margin = FALSE, dec_fill = NULL, show_progress = TRUE) 
+{
+    if (Sys.getenv("PATH_TO_CENSUS") == "") {
+        message(paste("Please set up the path to downloaded census data", 
+            "following the instruction at", "https://github.com/GL-Li/totalcensus."))
+        return(NULL)
+    }
+    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
+    generated_data <- paste0(path_to_census, "/generated_data")
+    if (!file.exists(generated_data)) {
+        download_generated_data_auto()
+    }
+    else {
+        version_file <- paste0(generated_data, "/version.txt")
+        if (!file.exists(version_file)) {
+            download_generated_data_auto()
+        }
+        else {
+            version = readChar(version_file, 5)
+            if (version != "0.6.0") {
+                download_generated_data_auto()
+            }
+        }
+    }
+    not_downloaded <- c()
+    for (st in states) {
+        if (!file.exists(paste0(path_to_census, "/acs5year/", 
+            year, "/g", year, "5", tolower(st), ".csv"))) {
+            not_downloaded <- c(not_downloaded, st)
+        }
+    }
+    if (length(not_downloaded) > 0) {
+            download_census("acs5", year, not_downloaded)
+    }
+    if (is.null(summary_level)) 
+        summary_level <- "*"
+    states <- toupper(states)
+    if (is.null(areas) + is.null(geo_headers) == 0) {
+        stop("Must keep at least one of arguments areas and geo_headers NULL")
+    }
+    if (any(grepl("B01003_001", table_contents))) {
+        message("B01003_001 is the population column.")
+    }
+    table_contents <- table_contents[!grepl("B01003_001", table_contents)]
+    table_contents <- c("population = B01003_001", table_contents) %>% 
+        unique()
+    content_names <- organize_tablecontents(table_contents) %>% 
+        .[, name]
+    table_contents <- organize_tablecontents(table_contents) %>% 
+        .[, reference] %>% toupper()
+    options(warn = -1)
+    if (!is.null(areas)) {
+        dt <- read_acs5year_areas_(year, states, table_contents, 
+            areas, summary_level, geo_comp, with_margin, dec_fill, 
+            show_progress)
+    }
+    else {
+        geo_headers <- unique(geo_headers)
+        dt <- read_acs5year_geoheaders_(year, states, table_contents, 
+            geo_headers, summary_level, geo_comp, with_margin, 
+            dec_fill, show_progress)
+    }
+    setnames(dt, table_contents, content_names)
+    if (with_margin) {
+        setnames(dt, paste0(table_contents, "_m"), paste0(content_names, 
+            "_margin"))
+    }
+    options(warn = 0)
+    return(dt)
+  }
+
+```
+
 
 #### census shapefile with data
 

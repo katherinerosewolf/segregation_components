@@ -2,9 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-hide_from_travis/
-raw_data/
-intermediate_data/
 documentation/
-mesc_thesis_code_2019_05_12.Rmd
-
+manual_to_ignore/
+pre_travis_intermediate_data/
+raw_data/

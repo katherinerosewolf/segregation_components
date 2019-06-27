@@ -1,4 +1,0 @@
-check column specifications for speciation files
-write code that only tibblizes them if they don't already exist
-figure out csv file existence
-add column fixer to all doohickeys
