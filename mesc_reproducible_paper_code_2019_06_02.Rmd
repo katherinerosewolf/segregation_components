@@ -2032,7 +2032,7 @@ gc()
 
 ## geography 
 
-```{r ruca data}
+```{r ruca data format}
 
 # read the data from the excel file
 load(
