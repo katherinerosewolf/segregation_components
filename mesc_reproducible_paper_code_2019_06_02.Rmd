@@ -320,223 +320,6 @@ gc()
 ```
 
 
-### census shapefile without data
-
-```{r census detailed shapefile without data}
-
-# source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
-# where %s is the state FIPS code
-# downloaded 19 June 2019
-# last modified 23 June 2011 (state 60, others earlier)
-
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data", 
-      "tigris_shapefiles_no_data.rdata"
-    )
-    )
-  ) {
-  
-  # load vector of state abbreviations
-  load(
-    file = 
-      file.path(
-        "intermediate_data", 
-        "state_abbreviation_character_vector.rdata"
-      )
-  )
-  
-  # download the data
-  tigris_shapefiles_no_data <- 
-    rbind_tigris(
-    map(
-      state_abbreviation_character_vector, 
-      function(x) {
-        tracts(
-          x, 
-          cb = FALSE, 
-          year = 2010, 
-          class = 'sf'
-          )
-        }
-      )
-  )
-  
-  # fix column names
-  tigris_shapefiles_no_data <- 
-    tigris_shapefiles_no_data %>% 
-    column_name_fixer()
-  
-  # save the result to disk
-  save(
-    tigris_shapefiles_no_data, 
-    file = 
-      file.path(
-        "raw_data", 
-        "tigris_shapefiles_no_data.rdata"
-      )
-  )
-  
-  # remove the shapefile
-  rm(
-    tigris_shapefiles_no_data, 
-    state_abbreviation_character_vector
-  )
-  gc()
-}
-
-```
-
-
-```{r make list of neighbors}
-
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data", 
-      "neighbor_tibble_long.rdata"
-    )
-  )
-) {
-
-  # load the census tract shapefiles
-  load(
-    file =
-      file.path(
-        "raw_data",
-        "tigris_shapefiles_no_data.rdata"
-      )
-    )
-  
-  # get character vector for numbers from 1 to the number of tracts
-  tract_order_character <- 
-    as.character(1:nrow(tigris_shapefiles_no_data))
-  
-  # pull the geoids as a vector
-  tigris_geoid_character <- 
-    tigris_shapefiles_no_data %>% 
-    pull(geoid10)
-  
-  # make tibble indexing tracts in order to match geoids with the spdep output
-  geoid_index_tibble <- 
-    tibble(index = tract_order_character, 
-           geoid = tigris_geoid_character)
-    
-  if(!file.exists(file.path("intermediate_data", "tract_neighbor_nb.rdata"))){
-    
-    # make a list of lists of neighbors to each tract (uses spdep package)
-    tract_neighbor_nb <-  
-      poly2nb(pl = tigris_shapefiles_no_data, 
-              queen = TRUE)
-  
-    # name the elements of the big list above with their tract indices
-    names(tract_neighbor_nb) <- tract_order_character
-  
-  } else {
-    
-    # load the file
-    load(
-      file.path(
-        "intermediate_data", 
-        "tract_neighbor_nb.rdata"
-      )
-    )
-  }
-  
-  # check if the neighbors-as-one-string tibble already exists
-  if(!file.exists(file.path("intermediate_data", 
-                            "neighbors_in_one_string_tibble.rdata"))){
-    
-  # if not, create it
-  neighbors_in_one_string_tibble <- 
-    map_df(  # makes a tibble from the output of poly2nb()
-      tract_neighbor_nb, 
-      paste,  # puts all the adjacent tracts into one string
-      collapse = ","  # separated by commas
-      ) %>%  # makes two columns from one row with column names
-    gather(key = "primary_tract",  
-           value = "adjacent_tracts") %>% 
-    mutate(  # adds column of the primary tract and its neighbors in one string
-      primary_and_adjacent_tracts = 
-        paste(primary_tract, 
-              adjacent_tracts, 
-              sep = ",")
-    )
-  
-    # save the result
-    save(neighbors_in_one_string_tibble,
-           file = file.path("intermediate_data", 
-                            "neighbors_in_one_string_tibble.rdata"))
-    
-  } else {  
-    
-    # otherwise load the relevant tibble
-    load(
-      file.path(
-        "intermediate_data", 
-        "neighbors_in_one_string_tibble.rdata"
-      )
-    )
-  }
-  
-  # make list of character vectors of neighbor tract indices
-  # ordered by primary tract index
-  split_tracts <- 
-    neighbors_in_one_string_tibble %>% 
-    pull(primary_and_adjacent_tracts) %>%  # pull the self and neighbor column
-    str_split(pattern = ",")  # split strings of neighbor indices
-  
-  # name each list element by its primary tract
-  names(split_tracts) <- 
-    neighbors_in_one_string_tibble$primary_tract
-  
-  # make long tibble repeating the primary tract for itself and every neighbor
-  neighbor_tibble_long <- 
-    as_tibble(  # makes it a tibble repeating the primary (index) for each neighbor
-      stack(split_tracts)[2:1]) %>%  # reorders them so that the primary tract comes first
-    rename(primary_tract = 1,  # renames the columns with meaningful names
-           neighbor_tract = 2) %>% 
-    mutate(  # coerce primary tract column (index) back to character
-      primary_tract = as.character(primary_tract)
-      ) %>% 
-    left_join(
-      geoid_index_tibble,  # join with the original geoids corresponding
-      by = c("primary_tract" = "index")  # to the primary tract
-      ) %>%  
-    rename(geoid_primary_tract = geoid) %>%  # rename geoid for primary tract
-    left_join(
-      geoid_index_tibble,  # join with the original geoids corresponding
-      by = c("neighbor_tract" = "index")  # to the neighbor tract
-      ) %>%  
-    rename(geoid_neighbor_tract = geoid) # rename geoid for neighbor tract
-  
-  save(
-    neighbor_tibble_long, 
-    file = 
-      file.path(
-        "intermediate_data", 
-        "neighbor_tibble_long.rdata"
-      )
-    )
-  
-  # remove all the files
-  rm(
-    tigris_shapefiles_no_data, 
-    tract_neighbor_nb,
-    tract_order_character, 
-    tigris_geoid_character,
-    geoid_index_tibble,
-    neighbors_in_one_string_tibble,
-    split_tracts,
-    neighbor_tibble_long
-  )
-  gc()
-}
-
-```
-
-
 ## demographic and ses data
 
 ### census
@@ -1232,317 +1015,6 @@ if(!
 ```
 
 
-### making census 2010 geography match acs 2012 geography
-
-```{r geography changes from 2010 to 2011}
-
-# https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2011/geography-changes.html
-
-# https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2012/geography-changes.html
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "acs_totalcensus_raw_tibble.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "sf1_totalcensus_raw_tibble.rdata"
-      )
-  )
-
-# character vector of geoids from 2012 acs data
-geoids_acs <- 
-  acs_totalcensus_raw_tibble %>% 
-  pull(geoid)
-
-# character vector of geoids from 2010 census sf1 data
-geoids_sf1 <- 
-  sf1_totalcensus_raw_tibble %>% 
-  pull(geoid)
-
-# character vector of 2012 acs geoids not in 2010 census sf1
-acs_geoids_not_in_sf1 <- 
-  setdiff(geoids_acs, geoids_sf1)
-
-# character vector of 2012 acs geoids not in 2010 census sf1
-sf1_geoids_not_in_acs <- 
-  setdiff(geoids_sf1, geoids_acs)
-
-# manual acs geoids corresponding to and ordered by sf1_geoids_not_in_acs
-acs_geoids_for_sf1_geoids_not_in_acs <- 
-  c("04019002704",
-    "04019002906",
-    "04019004118",
-    "04019004121",
-    "04019004125",
-    "04019005200",
-    "04019005300",
-    "06037137000",
-    "36053030101",
-    "36053030102",
-    "36053030103",
-    "36053030200",
-    "36053030300",
-    "36053030401",
-    "36053030403",
-    "36053030600",
-    "36053030402",
-    "36065024800",
-    "36065024700",
-    "36065024900",
-    "36085009700")
-
-# manual sf1 2010 geoids of census tracts with boundary changes in acs 2012
-sf1_messed_up_tracts <- 
-  c("06037930401", 
-    "36065940200", 
-    "36085008900", 
-    "36065023000", 
-    "06037800204")
-
-# make concordance tibble
-sf1_acs_concordance_tibble <- 
-  tibble(sf1_geoid = sf1_geoids_not_in_acs, 
-         acs_geoid = acs_geoids_for_sf1_geoids_not_in_acs)
-
-# add acs equivalent-ish ids to sf1 table
-sf1_tibble_with_acs_concordance <- 
-  sf1_totalcensus_raw_tibble %>%   # summon the census
-  mutate(geoid_for_acs_join = geoid) %>%  # make new variable to use to join acs 
-  mutate(geoid_for_acs_join =  # replace sf1 geoids not found in acs with 
-           str_replace_all(    # equivalent acs geoids
-             geoid_for_acs_join,  # this is the column to be modified
-             setNames(  # this names the replacement values by their sf1 ids
-               acs_geoids_for_sf1_geoids_not_in_acs,  # replacements'("objects")
-               sf1_geoids_not_in_acs  # values to be replaced, or "names"
-               )  # thus this identifies the sf1 geoids as "names" and replaces
-             )    # them with their "object" values
-         ) 
-
-# check differences
-acs_concordance_geoids_not_in_sf1 <- 
-  setdiff(
-    sf1_tibble_with_acs_concordance$geoid_for_acs_join, 
-    sf1_tibble_with_acs_concordance$geoid
-  )
-
-sf1_geoids_not_in_acs_concordance_geoids <- 
-  setdiff(
-    sf1_tibble_with_acs_concordance$geoid,
-    sf1_tibble_with_acs_concordance$geoid_for_acs_join
-  )
-
-# save files
-save(sf1_acs_concordance_tibble, 
-     file = 
-       file.path(
-         "intermediate_data", 
-         "sf1_acs_concordance_tibble.rdata"
-       )
-     )
-save(sf1_tibble_with_acs_concordance, 
-     file = 
-       file.path(
-         "intermediate_data", 
-         "sf1_tibble_with_acs_concordance.rdata"
-       )
-     )
-    
-save(sf1_messed_up_tracts, 
-     file = 
-       file.path(
-         "intermediate_data", 
-         "sf1_messed_up_tracts.rdata"
-       )
-     )
-
-# remove the files
-rm(
-  acs_totalcensus_raw_tibble, 
-  sf1_totalcensus_raw_tibble, 
-  geoids_acs, 
-  geoids_sf1, 
-  acs_geoids_not_in_sf1, 
-  sf1_geoids_not_in_acs, 
-  acs_geoids_for_sf1_geoids_not_in_acs, 
-  sf1_messed_up_tracts,
-  sf1_acs_concordance_tibble, 
-  sf1_tibble_with_acs_concordance, 
-  acs_concordance_geoids_not_in_sf1, 
-  sf1_geoids_not_in_acs_concordance_geoids
-)
-gc()
-```
-
-
-### segregation
-
-```{r calculate segregation index}
-
-# load census dataset
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "sf1_totalcensus_raw_tibble.rdata"
-    )
-)
-
-# load census tract neighbor data
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "neighbor_tibble_long.rdata"
-    )
-)
-
-# import segregation variables (Black, Black/other, total)
-seg_vars <- 
-  sf1_totalcensus_raw_tibble %>% 
-  select(  # import the variables
-    geoid, 
-    p0050001, 
-    p0050004
-  ) %>%  # make total nonblack population variable
-  mutate(
-    tot_pop_no_black = p0050001 - p0050004
-  ) 
-
-# merge by the NEIGHBOR TRACT GEOID
-neighbors_with_census_tibble <- 
-  neighbor_tibble_long %>% 
-  left_join(
-    seg_vars, 
-    by = c("geoid_neighbor_tract" = "geoid")
-  )
-
-# get summaries by each PRIMARY TRACT for it and all its neighbors
-racial_isolation_index_tibble <- 
-  neighbors_with_census_tibble %>% 
-  group_by(geoid_primary_tract) %>% 
-  summarise(
-    neighborly_tot_pop_p0050001 = sum(p0050001), 
-    neighborly_black_p0050004 = sum(p0050004), 
-    neighborly_tot_pop_no_black = sum(tot_pop_no_black)
-  ) %>% 
-  mutate(
-    racial_isolation_index_k1 = 
-      neighborly_black_p0050004/
-      neighborly_tot_pop_p0050001) %>% 
-  select(
-    geoid_primary_tract, 
-    racial_isolation_index_k1
-  )
-
-# save the final file
-save(
-  racial_isolation_index_tibble, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "racial_isolation_index_tibble.rdata"
-    )
-)
-
-# remove extraneous files
-rm(
-  sf1_totalcensus_raw_tibble, 
-  neighbor_tibble_long, 
-  seg_vars,
-  neighbors_with_census_tibble, 
-  racial_isolation_index_tibble
-)
-
-```
-
-
-### merge sf1, acs, and segregation files
-
-```{r merge sf1, acs, and segregation}
-
-# load sf1 tibble
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "sf1_tibble_with_acs_concordance.rdata"
-    )
-)
-
-# load acs tibble
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "acs_totalcensus_raw_tibble.rdata"
-    )
-)
-
-# load segregation
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "racial_isolation_index_tibble.rdata"
-    )
-)
-
-# delete duplicate variables from acs tibble
-acs_tibble_for_joining <- 
-  acs_totalcensus_raw_tibble %>% 
-  rename(pop_acs = population, 
-         geoid_acs = geoid) %>% 
-  select(
-    -c(name, 
-       geocomp, 
-       sumlev, 
-       state,
-       stusab,
-       lon, 
-       lat)
-  )
-
-# join everything
-demographic_tibble <- 
-  sf1_tibble_with_acs_concordance %>% 
-  left_join(
-    acs_tibble_for_joining, 
-    by = c("geoid_for_acs_join" = "geoid_acs")  # sf1 variable left, acs right
-  ) %>% 
-  left_join(
-    racial_isolation_index_tibble, 
-    by = c("geoid" = "geoid_primary_tract")  # sf1 variable left, acs right
-  )
-
-# save to file
-save(
-  demographic_tibble, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "demographic_tibble.rdata"
-    )
-)
-
-# remove files
-rm(
-  sf1_tibble_with_acs_concordance, 
-  acs_totalcensus_raw_tibble, 
-  racial_isolation_index_tibble, 
-  acs_tibble_for_joining, 
-  demographic_tibble
-)
-gc()
-
-```
-
 
 ## air pollution
 
@@ -2109,8 +1581,8 @@ remaining_drop_codes <-
     88308,  # carbonate carbon
     88312,  # total carbon (Total Carbon PM2.5 LC TOT)
     88313,  # black carbon (Black Carbon PM2.5 at 880 nm)
-    88314,   # UV carbon (UV Carbon PM2.5 at 370 nm)
-    88316  # optical EC (Optical EC PM2.5 LC TOT)
+    88314 #,   # UV carbon (UV Carbon PM2.5 at 370 nm)
+    # 88316  # optical EC (Optical EC PM2.5 LC TOT)
   )
 
 # remove non_states to make tibble of all monitors with any data in US
@@ -2199,6 +1671,802 @@ gc()
 
 ```
 
+
+```{r split air tibble into travis-y pieces}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "us_filtered_air_tibble.rdata"
+    )
+)
+
+# air pollutants only tibble
+air_pollutant_tibble <- 
+  us_filtered_air_tibble %>% 
+  select(
+    monitor_id, 
+    poc, 
+    parameter_name, 
+    parameter_code,
+    sample_duration,
+    date_local, 
+    event_type, 
+    observation_count, 
+    observation_percent, 
+    arithmetic_mean, 
+    `1st_max_value`,
+    `1st_max_hour`, 
+    method_code, 
+    method_name
+  )
+
+save(
+  air_pollutant_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_pollutant_tibble.rdata"
+    )
+)
+
+rm(air_pollutant_tibble)
+gc()
+
+# method_tibble
+method_tibble <-
+  us_filtered_air_tibble %>% 
+  select(method_code,
+         method_name) %>% 
+  distinct() %>% 
+  arrange(method_code)
+
+save(
+  method_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "method_tibble.rdata"
+    )
+)
+
+rm(method_tibble)
+gc()
+
+# units of measure tibble
+units_of_measure_tibble <- 
+  us_filtered_air_tibble %>% 
+  select(
+    parameter_code, 
+    units_of_measure
+  ) %>% 
+  distinct()
+
+save(
+  units_of_measure_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "units_of_measure_tibble.rdata"
+    )
+)
+
+rm(units_of_measure_tibble)
+gc()
+
+# monitor tibble
+air_monitor_tibble <- 
+  us_filtered_air_tibble %>% 
+  select(
+    monitor_id,
+    state_code,
+    county_code, 
+    site_num, 
+    latitude, 
+    longitude, 
+    datum, 
+    local_site_name, 
+    address, 
+    state_name, 
+    county_name, 
+    city_name, 
+    cbsa_name) %>% 
+  distinct()
+
+save(
+  air_monitor_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_monitor_tibble.rdata"
+    )
+)
+
+rm(air_monitor_tibble)
+gc()
+
+# total pm25 88101 tibble with 88101-only variables (pollutant standard, aqi)
+total_88101_pollutant_standard_aqi_tibble <- 
+  us_filtered_air_tibble %>% 
+  filter(parameter_code == 88101) %>% 
+  select(
+    monitor_id, 
+    poc, 
+    parameter_code, 
+    pollutant_standard, 
+    date_local, 
+    sample_duration,
+    date_local, 
+    event_type, 
+    observation_count, 
+    observation_percent, 
+    arithmetic_mean, 
+    `1st_max_value`,
+    `1st_max_hour`, 
+    aqi, 
+    method_code
+  )
+
+save(
+  total_88101_pollutant_standard_aqi_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "total_88101_pollutant_standard_aqi_tibble.rdata"
+    )
+)
+
+rm(total_88101_pollutant_standard_aqi_tibble, 
+   us_filtered_air_tibble)
+gc()
+
+```
+
+
+```{r save travis files in cheating folder}
+
+# save needed files from the work above to memory_savers
+
+# air pollutants only tibble
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_pollutant_tibble.rdata"
+    )
+)
+
+save(
+  air_pollutant_tibble, 
+  file = 
+    file.path(
+      "travis_memory_savers", 
+      "air_pollutant_tibble.rdata"
+    )
+)
+
+rm(air_pollutant_tibble)
+gc()
+
+# air monitors only tibble
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_monitor_tibble.rdata"
+    )
+)
+
+save(
+  air_monitor_tibble, 
+  file = 
+    file.path(
+      "travis_memory_savers", 
+      "air_monitor_tibble.rdata"
+    )
+)
+
+rm(air_monitor_tibble)
+gc()
+
+```
+
+
+# TRAVIS SHALL BEGIN HERE
+
+## geography 
+
+### census shapefile without data
+
+```{r census detailed shapefile without data}
+
+# source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
+# where %s is the state FIPS code
+# downloaded 19 June 2019
+# last modified 23 June 2011 (state 60, others earlier)
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "tigris_shapefiles_no_data.rdata"
+    )
+    )
+  ) {
+  
+  # load vector of state abbreviations
+  load(
+    file = 
+      file.path(
+        "intermediate_data", 
+        "state_abbreviation_character_vector.rdata"
+      )
+  )
+  
+  # download the data
+  tigris_shapefiles_no_data <- 
+    rbind_tigris(
+    map(
+      state_abbreviation_character_vector, 
+      function(x) {
+        tracts(
+          x, 
+          cb = FALSE, 
+          year = 2010, 
+          class = 'sf'
+          )
+        }
+      )
+  )
+  
+  # fix column names
+  tigris_shapefiles_no_data <- 
+    tigris_shapefiles_no_data %>% 
+    column_name_fixer()
+  
+  # save the result to disk
+  save(
+    tigris_shapefiles_no_data, 
+    file = 
+      file.path(
+        "raw_data", 
+        "tigris_shapefiles_no_data.rdata"
+      )
+  )
+  
+  # remove the shapefile
+  rm(
+    tigris_shapefiles_no_data, 
+    state_abbreviation_character_vector
+  )
+  gc()
+}
+
+```
+
+
+### ruca
+
+```{r ruca data, eval=FALSE, include=FALSE}
+
+# source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
+# downloaded 2019 June 11
+# last updated 12/31/2013 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
+
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "ruca_2010.rdata"
+      )
+    )
+  ) {
+  file_downloader(
+    desired_filename_as_string = "ruca_2010_raw.xlsx", 
+    web_address_as_string = 
+      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
+    folder_as_string = "raw_data"
+    )
+
+  # read the data from the excel file
+  ruca_2010_raw <- 
+    read_xlsx(
+      file.path(
+        "raw_data", 
+        "ruca_2010_raw.xlsx"
+        )
+      )
+  
+  # fix column names
+  ruca_2010 <-
+    column_name_fixer(
+      ruca_2010_raw
+    )
+
+  # save the shapefile
+  save(
+    ruca_2010,
+    file = file.path(
+      "intermediate_data", 
+      "ruca_2010.rdata"
+    )
+  )
+
+  # remove the shapefile from memory
+  rm(ruca_2010_raw, ruca_2010)
+  gc()
+}
+
+```
+
+
+## demographics
+
+### making census 2010 geography match acs 2012 geography
+
+```{r geography changes from 2010 to 2011}
+
+# https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2011/geography-changes.html
+
+# https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2012/geography-changes.html
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "acs_totalcensus_raw_tibble.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sf1_totalcensus_raw_tibble.rdata"
+      )
+  )
+
+# character vector of geoids from 2012 acs data
+geoids_acs <- 
+  acs_totalcensus_raw_tibble %>% 
+  pull(geoid)
+
+# character vector of geoids from 2010 census sf1 data
+geoids_sf1 <- 
+  sf1_totalcensus_raw_tibble %>% 
+  pull(geoid)
+
+# character vector of 2012 acs geoids not in 2010 census sf1
+acs_geoids_not_in_sf1 <- 
+  setdiff(geoids_acs, geoids_sf1)
+
+# character vector of 2012 acs geoids not in 2010 census sf1
+sf1_geoids_not_in_acs <- 
+  setdiff(geoids_sf1, geoids_acs)
+
+# manual acs geoids corresponding to and ordered by sf1_geoids_not_in_acs
+acs_geoids_for_sf1_geoids_not_in_acs <- 
+  c("04019002704",
+    "04019002906",
+    "04019004118",
+    "04019004121",
+    "04019004125",
+    "04019005200",
+    "04019005300",
+    "06037137000",
+    "36053030101",
+    "36053030102",
+    "36053030103",
+    "36053030200",
+    "36053030300",
+    "36053030401",
+    "36053030403",
+    "36053030600",
+    "36053030402",
+    "36065024800",
+    "36065024700",
+    "36065024900",
+    "36085009700")
+
+# manual sf1 2010 geoids of census tracts with boundary changes in acs 2012
+sf1_messed_up_tracts <- 
+  c("06037930401", 
+    "36065940200", 
+    "36085008900", 
+    "36065023000", 
+    "06037800204")
+
+# make concordance tibble
+sf1_acs_concordance_tibble <- 
+  tibble(sf1_geoid = sf1_geoids_not_in_acs, 
+         acs_geoid = acs_geoids_for_sf1_geoids_not_in_acs)
+
+# add acs equivalent-ish ids to sf1 table
+sf1_tibble_with_acs_concordance <- 
+  sf1_totalcensus_raw_tibble %>%   # summon the census
+  mutate(geoid_for_acs_join = geoid) %>%  # make new variable to use to join acs 
+  mutate(geoid_for_acs_join =  # replace sf1 geoids not found in acs with 
+           str_replace_all(    # equivalent acs geoids
+             geoid_for_acs_join,  # this is the column to be modified
+             setNames(  # this names the replacement values by their sf1 ids
+               acs_geoids_for_sf1_geoids_not_in_acs,  # replacements'("objects")
+               sf1_geoids_not_in_acs  # values to be replaced, or "names"
+               )  # thus this identifies the sf1 geoids as "names" and replaces
+             )    # them with their "object" values
+         ) 
+
+# check differences
+acs_concordance_geoids_not_in_sf1 <- 
+  setdiff(
+    sf1_tibble_with_acs_concordance$geoid_for_acs_join, 
+    sf1_tibble_with_acs_concordance$geoid
+  )
+
+sf1_geoids_not_in_acs_concordance_geoids <- 
+  setdiff(
+    sf1_tibble_with_acs_concordance$geoid,
+    sf1_tibble_with_acs_concordance$geoid_for_acs_join
+  )
+
+# save files
+save(sf1_acs_concordance_tibble, 
+     file = 
+       file.path(
+         "intermediate_data", 
+         "sf1_acs_concordance_tibble.rdata"
+       )
+     )
+save(sf1_tibble_with_acs_concordance, 
+     file = 
+       file.path(
+         "intermediate_data", 
+         "sf1_tibble_with_acs_concordance.rdata"
+       )
+     )
+    
+save(sf1_messed_up_tracts, 
+     file = 
+       file.path(
+         "intermediate_data", 
+         "sf1_messed_up_tracts.rdata"
+       )
+     )
+
+# remove the files
+rm(
+  acs_totalcensus_raw_tibble, 
+  sf1_totalcensus_raw_tibble, 
+  geoids_acs, 
+  geoids_sf1, 
+  acs_geoids_not_in_sf1, 
+  sf1_geoids_not_in_acs, 
+  acs_geoids_for_sf1_geoids_not_in_acs, 
+  sf1_messed_up_tracts,
+  sf1_acs_concordance_tibble, 
+  sf1_tibble_with_acs_concordance, 
+  acs_concordance_geoids_not_in_sf1, 
+  sf1_geoids_not_in_acs_concordance_geoids
+)
+gc()
+```
+
+
+### segregation
+
+```{r make list of neighbors}
+
+if(
+  !file.exists(
+    file.path(
+      "intermediate_data", 
+      "neighbor_tibble_long.rdata"
+    )
+  )
+) {
+
+  # load the census tract shapefiles
+  load(
+    file =
+      file.path(
+        "raw_data",
+        "tigris_shapefiles_no_data.rdata"
+      )
+    )
+  
+  # get character vector for numbers from 1 to the number of tracts
+  tract_order_character <- 
+    as.character(1:nrow(tigris_shapefiles_no_data))
+  
+  # pull the geoids as a vector
+  tigris_geoid_character <- 
+    tigris_shapefiles_no_data %>% 
+    pull(geoid10)
+  
+  # make tibble indexing tracts in order to match geoids with the spdep output
+  geoid_index_tibble <- 
+    tibble(index = tract_order_character, 
+           geoid = tigris_geoid_character)
+    
+  if(!file.exists(file.path("intermediate_data", "tract_neighbor_nb.rdata"))){
+    
+    # make a list of lists of neighbors to each tract (uses spdep package)
+    tract_neighbor_nb <-  
+      poly2nb(pl = tigris_shapefiles_no_data, 
+              queen = TRUE)
+  
+    # name the elements of the big list above with their tract indices
+    names(tract_neighbor_nb) <- tract_order_character
+  
+  } else {
+    
+    # load the file
+    load(
+      file.path(
+        "intermediate_data", 
+        "tract_neighbor_nb.rdata"
+      )
+    )
+  }
+  
+  # check if the neighbors-as-one-string tibble already exists
+  if(!file.exists(file.path("intermediate_data", 
+                            "neighbors_in_one_string_tibble.rdata"))){
+    
+  # if not, create it
+  neighbors_in_one_string_tibble <- 
+    map_df(  # makes a tibble from the output of poly2nb()
+      tract_neighbor_nb, 
+      paste,  # puts all the adjacent tracts into one string
+      collapse = ","  # separated by commas
+      ) %>%  # makes two columns from one row with column names
+    gather(key = "primary_tract",  
+           value = "adjacent_tracts") %>% 
+    mutate(  # adds column of the primary tract and its neighbors in one string
+      primary_and_adjacent_tracts = 
+        paste(primary_tract, 
+              adjacent_tracts, 
+              sep = ",")
+    )
+  
+    # save the result
+    save(neighbors_in_one_string_tibble,
+           file = file.path("intermediate_data", 
+                            "neighbors_in_one_string_tibble.rdata"))
+    
+  } else {  
+    
+    # otherwise load the relevant tibble
+    load(
+      file.path(
+        "intermediate_data", 
+        "neighbors_in_one_string_tibble.rdata"
+      )
+    )
+  }
+  
+  # make list of character vectors of neighbor tract indices
+  # ordered by primary tract index
+  split_tracts <- 
+    neighbors_in_one_string_tibble %>% 
+    pull(primary_and_adjacent_tracts) %>%  # pull the self and neighbor column
+    str_split(pattern = ",")  # split strings of neighbor indices
+  
+  # name each list element by its primary tract
+  names(split_tracts) <- 
+    neighbors_in_one_string_tibble$primary_tract
+  
+  # make long tibble repeating the primary tract for itself and every neighbor
+  neighbor_tibble_long <- 
+    as_tibble(  # makes it a tibble repeating the primary (index) for each neighbor
+      stack(split_tracts)[2:1]) %>%  # reorders them so that the primary tract comes first
+    rename(primary_tract = 1,  # renames the columns with meaningful names
+           neighbor_tract = 2) %>% 
+    mutate(  # coerce primary tract column (index) back to character
+      primary_tract = as.character(primary_tract)
+      ) %>% 
+    left_join(
+      geoid_index_tibble,  # join with the original geoids corresponding
+      by = c("primary_tract" = "index")  # to the primary tract
+      ) %>%  
+    rename(geoid_primary_tract = geoid) %>%  # rename geoid for primary tract
+    left_join(
+      geoid_index_tibble,  # join with the original geoids corresponding
+      by = c("neighbor_tract" = "index")  # to the neighbor tract
+      ) %>%  
+    rename(geoid_neighbor_tract = geoid) # rename geoid for neighbor tract
+  
+  save(
+    neighbor_tibble_long, 
+    file = 
+      file.path(
+        "intermediate_data", 
+        "neighbor_tibble_long.rdata"
+      )
+    )
+  
+  # remove all the files
+  rm(
+    tigris_shapefiles_no_data, 
+    tract_neighbor_nb,
+    tract_order_character, 
+    tigris_geoid_character,
+    geoid_index_tibble,
+    neighbors_in_one_string_tibble,
+    split_tracts,
+    neighbor_tibble_long
+  )
+  gc()
+}
+
+```
+
+
+```{r calculate segregation index}
+
+# load census dataset
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sf1_totalcensus_raw_tibble.rdata"
+    )
+)
+
+# load census tract neighbor data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "neighbor_tibble_long.rdata"
+    )
+)
+
+# import segregation variables (Black, Black/other, total)
+seg_vars <- 
+  sf1_totalcensus_raw_tibble %>% 
+  select(  # import the variables
+    geoid, 
+    p0050001, 
+    p0050004
+  ) %>%  # make total nonblack population variable
+  mutate(
+    tot_pop_no_black = p0050001 - p0050004
+  ) 
+
+# merge by the NEIGHBOR TRACT GEOID
+neighbors_with_census_tibble <- 
+  neighbor_tibble_long %>% 
+  left_join(
+    seg_vars, 
+    by = c("geoid_neighbor_tract" = "geoid")
+  )
+
+# get summaries by each PRIMARY TRACT for it and all its neighbors
+racial_isolation_index_tibble <- 
+  neighbors_with_census_tibble %>% 
+  group_by(geoid_primary_tract) %>% 
+  summarise(
+    neighborly_tot_pop_p0050001 = sum(p0050001), 
+    neighborly_black_p0050004 = sum(p0050004), 
+    neighborly_tot_pop_no_black = sum(tot_pop_no_black)
+  ) %>% 
+  mutate(
+    racial_isolation_index_k1 = 
+      neighborly_black_p0050004/
+      neighborly_tot_pop_p0050001) %>% 
+  select(
+    geoid_primary_tract, 
+    racial_isolation_index_k1
+  )
+
+# save the final file
+save(
+  racial_isolation_index_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "racial_isolation_index_tibble.rdata"
+    )
+)
+
+# remove extraneous files
+rm(
+  sf1_totalcensus_raw_tibble, 
+  neighbor_tibble_long, 
+  seg_vars,
+  neighbors_with_census_tibble, 
+  racial_isolation_index_tibble
+)
+
+```
+
+
+### merge sf1, acs, and segregation files
+
+```{r merge sf1, acs, and segregation}
+
+# load sf1 tibble
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sf1_tibble_with_acs_concordance.rdata"
+    )
+)
+
+# load acs tibble
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "acs_totalcensus_raw_tibble.rdata"
+    )
+)
+
+# load segregation
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "racial_isolation_index_tibble.rdata"
+    )
+)
+
+# delete duplicate variables from acs tibble
+acs_tibble_for_joining <- 
+  acs_totalcensus_raw_tibble %>% 
+  rename(pop_acs = population, 
+         geoid_acs = geoid) %>% 
+  select(
+    -c(name, 
+       geocomp, 
+       sumlev, 
+       state,
+       stusab,
+       lon, 
+       lat)
+  )
+
+# join everything
+demographic_tibble <- 
+  sf1_tibble_with_acs_concordance %>% 
+  left_join(
+    acs_tibble_for_joining, 
+    by = c("geoid_for_acs_join" = "geoid_acs")  # sf1 variable left, acs right
+  ) %>% 
+  left_join(
+    racial_isolation_index_tibble, 
+    by = c("geoid" = "geoid_primary_tract")  # sf1 variable left, acs right
+  )
+
+# save to file
+save(
+  demographic_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "demographic_tibble.rdata"
+    )
+)
+
+# remove files
+rm(
+  sf1_tibble_with_acs_concordance, 
+  acs_totalcensus_raw_tibble, 
+  racial_isolation_index_tibble, 
+  acs_tibble_for_joining, 
+  demographic_tibble
+)
+gc()
+
+```
+
+
+## monitor assignments
+
+### assign monitors
 
 ```{r count and type monitor locations}
 
@@ -2842,63 +3110,6 @@ ggsave("date_range_plot_species.png",plot=date_range_plot_species,width=20,heigh
 
 ```
 
-
-# BEGIN TRAVIS-FRIENDLY CODE
-
-## ruca
-
-```{r ruca data, eval=FALSE, include=FALSE}
-
-# source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
-# downloaded 2019 June 11
-# last updated 12/31/2013 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
-
-
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data", 
-      "ruca_2010.rdata"
-      )
-    )
-  ) {
-  file_downloader(
-    desired_filename_as_string = "ruca_2010_raw.xlsx", 
-    web_address_as_string = 
-      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
-    folder_as_string = "raw_data"
-    )
-
-  # read the data from the excel file
-  ruca_2010_raw <- 
-    read_xlsx(
-      file.path(
-        "raw_data", 
-        "ruca_2010_raw.xlsx"
-        )
-      )
-  
-  # fix column names
-  ruca_2010 <-
-    column_name_fixer(
-      ruca_2010_raw
-    )
-
-  # save the shapefile
-  save(
-    ruca_2010,
-    file = file.path(
-      "intermediate_data", 
-      "ruca_2010.rdata"
-    )
-  )
-
-  # remove the shapefile from memory
-  rm(ruca_2010_raw, ruca_2010)
-  gc()
-}
-
-```
 
 
 # DISCARDED CODE TOO GOOD TO DELETE
