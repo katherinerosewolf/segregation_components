@@ -276,6 +276,10 @@ if(!dir.exists(file.path("raw_data", "totalcensus"))) {
   dir.create(file.path("raw_data", "totalcensus"))
 }
 
+if(!dir.exists("pre_travis_intermediate_data")) {
+  dir.create("pre_travis_intermediate_data")
+}
+
 if(!dir.exists("intermediate_data")) {
   dir.create("intermediate_data")
 }
@@ -295,7 +299,7 @@ Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
 ```{r make state abbreviation character vector}
 
 # check if file already exists
-if(!file.exists(file.path("intermediate_data", 
+if(!file.exists(file.path("pre_travis_intermediate_data", 
                           "state_abbreviation_character_vector.rdata"))) {
   
 # make vector of state abbreviations (includes PR, no VI)
@@ -307,7 +311,7 @@ save(
   state_abbreviation_character_vector, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "state_abbreviation_character_vector.rdata"
     )
 )
@@ -315,6 +319,124 @@ save(
 # remove it
 rm(state_abbreviation_character_vector)
 gc()
+}
+
+```
+
+
+### census shapefile without data
+
+```{r census detailed shapefile without data}
+
+# source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
+# where %s is the state FIPS code
+# downloaded 19 June 2019
+# last modified 23 June 2011 (state 60, others earlier)
+
+if(
+  !file.exists(
+    file.path(
+      "pre_travis_intermediate_data", 
+      "tigris_shapefiles_no_data.rdata"
+    )
+    )
+  ) {
+  
+  # load vector of state abbreviations
+  load(
+    file = 
+      file.path(
+        "pre_travis_intermediate_data", 
+        "state_abbreviation_character_vector.rdata"
+      )
+  )
+  
+  # download the data
+  tigris_shapefiles_no_data <- 
+    rbind_tigris(
+    map(
+      state_abbreviation_character_vector, 
+      function(x) {
+        tracts(
+          x, 
+          cb = FALSE, 
+          year = 2010, 
+          class = 'sf'
+          )
+        }
+      )
+  )
+  
+  # fix column names
+  tigris_shapefiles_no_data <- 
+    tigris_shapefiles_no_data %>% 
+    column_name_fixer()
+  
+  # save the result to disk
+  save(
+    tigris_shapefiles_no_data, 
+    file = 
+      file.path(
+        "raw_data", 
+        "tigris_shapefiles_no_data.rdata"
+      )
+  )
+  
+  # remove the shapefile
+  rm(
+    tigris_shapefiles_no_data, 
+    state_abbreviation_character_vector
+  )
+  gc()
+}
+
+```
+
+
+### ruca
+
+```{r ruca data, eval=FALSE, include=FALSE}
+
+# source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
+# downloaded . . . 
+# last updated 12/31/2013 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
+
+if(
+  !file.exists(
+    file.path(
+      "raw_data", 
+      "ruca_2010_raw.rdata"
+      )
+    )
+  ) {
+  file_downloader(
+    desired_filename_as_string = "ruca_2010_raw.xlsx", 
+    web_address_as_string = 
+      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
+    folder_as_string = "raw_data"
+    )
+  
+  # read the data from the excel file
+  ruca_2010_raw <- 
+    read_xlsx(
+      file.path(
+        "raw_data", 
+        "ruca_2010_raw.xlsx"
+        )
+      )
+  
+  # save the excel file
+  save(
+    ruca_2010_raw, 
+    file = 
+      file.path(
+        "raw_data", 
+        "ruca_2010_raw.rdata"
+      )
+    )
+  
+  rm(ruca_2010_raw)
+  gc()
 }
 
 ```
@@ -329,7 +451,7 @@ gc()
 ```{r census variable lists}
 
 # check if variable list already exists
-if(!file.exists(file.path("intermediate_data", 
+if(!file.exists(file.path("pre_travis_intermediate_data", 
                           "sf1_totalcensus_var_vec.rdata"))) {
 
   # # view census variables
@@ -484,7 +606,7 @@ if(!file.exists(file.path("intermediate_data",
   save(
     sf1_totalcensus_var_vec, 
     file = 
-      file.path("intermediate_data", 
+      file.path("pre_travis_intermediate_data", 
                 "sf1_totalcensus_var_vec.rdata")
   )
   
@@ -519,8 +641,8 @@ if(!file.exists(file.path("intermediate_data",
 if(!
    file.exists(
      file.path(
-       "intermediate_data", 
-       "sf1_totalcensus_raw_tibble.rdata"
+       "raw_data", 
+       "sf1_totalcensus_raw_dataframe.rdata"
      )
    )
    ) {
@@ -529,7 +651,7 @@ if(!
   load(
     file = 
       file.path(
-        "intermediate_data", 
+        "pre_travis_intermediate_data", 
         "state_abbreviation_character_vector.rdata"
       )
   )
@@ -538,7 +660,7 @@ if(!
   load(
     file = 
       file.path(
-        "intermediate_data", 
+        "pre_travis_intermediate_data", 
         "sf1_totalcensus_var_vec.rdata")
   )
   
@@ -583,35 +705,13 @@ if(!
       summary_level = "tract"
   )
   
-  # make the dataframe into a tibble
-  sf1_totalcensus_raw_tibble <- 
-    as_tibble(sf1_totalcensus_raw_dataframe)
-
-  # fix column names 
-  sf1_totalcensus_raw_tibble <- 
-    column_name_fixer(
-      sf1_totalcensus_raw_tibble
-  )
-  
-  # fix geoids
-  sf1_totalcensus_raw_tibble <- 
-    sf1_totalcensus_raw_tibble %>% 
-    mutate(
-      geoid = 
-        str_replace(
-          geoid,
-          "14000US", 
-          ""
-        )
-    )
-  
   # save the tibble to disk
   save(
-    sf1_totalcensus_raw_tibble, 
+    sf1_totalcensus_raw_dataframe, 
     file = 
       file.path(
-        "intermediate_data",
-        "sf1_totalcensus_raw_tibble.rdata"
+        "raw_data",
+        "sf1_totalcensus_raw_dataframe.rdata"
         )
     )
   
@@ -619,8 +719,7 @@ if(!
   rm(
     sf1_totalcensus_var_vec,
     state_abbreviation_character_vector, 
-    sf1_totalcensus_raw_dataframe, 
-    sf1_totalcensus_raw_tibble
+    sf1_totalcensus_raw_dataframe
     )
   gc()
 }
@@ -634,7 +733,7 @@ if(!
 
 ```{r acs totalcensus variable lists}
 
-if(!file.exists(file.path("intermediate_data", 
+if(!file.exists(file.path("pre_travis_intermediate_data", 
                           "acs_totalcensus_var_vec.rdata"))) {
 
   # educational attainment for the population 25 years and over
@@ -871,7 +970,7 @@ if(!file.exists(file.path("intermediate_data",
   save(
     acs_totalcensus_var_vec, 
     file = 
-      file.path("intermediate_data", 
+      file.path("pre_travis_intermediate_data", 
                 "acs_totalcensus_var_vec.rdata")
   )
   
@@ -907,8 +1006,8 @@ if(!file.exists(file.path("intermediate_data",
 if(!
    file.exists(
      file.path(
-       "intermediate_data", 
-       "acs_totalcensus_raw_tibble.rdata"
+       "raw_data", 
+       "acs_totalcensus_raw_dataframe.rdata"
      )
    )
    ) {
@@ -916,7 +1015,7 @@ if(!
   # load variable names for reading
   load(
     file = 
-      file.path("intermediate_data", 
+      file.path("pre_travis_intermediate_data", 
                 "acs_totalcensus_var_vec.rdata")
   )
   
@@ -924,7 +1023,7 @@ if(!
   load(
     file = 
       file.path(
-        "intermediate_data", 
+        "pre_travis_intermediate_data", 
         "state_abbreviation_character_vector.rdata"
       )
     )
@@ -970,34 +1069,13 @@ if(!
       with_margin = TRUE
   )
   
-  # make it into a tibble
-  acs_totalcensus_raw_tibble <- 
-    as_tibble(acs_totalcensus_raw_dataframe)
-  
-  # fix variable names
-  acs_totalcensus_raw_tibble <- 
-    acs_totalcensus_raw_tibble %>% 
-    column_name_fixer()
-  
-  # fix geoids
-  acs_totalcensus_raw_tibble <- 
-    acs_totalcensus_raw_tibble %>% 
-    mutate(
-      geoid = 
-        str_replace(
-          geoid,
-          "14000US", 
-          ""
-        )
-    )
-    
-  # save raw tibble to disk
+  # save raw dataframe to disk
   save(
-    acs_totalcensus_raw_tibble, 
+    acs_totalcensus_raw_dataframe, 
     file = 
       file.path(
-        "intermediate_data", 
-        "acs_totalcensus_raw_tibble.rdata"
+        "raw_data", 
+        "acs_totalcensus_raw_dataframe.rdata"
       )
   )
   
@@ -1005,15 +1083,13 @@ if(!
   rm(
     acs_totalcensus_var_vec,
     state_abbreviation_character_vector, 
-    acs_totalcensus_raw_dataframe, 
-    acs_totalcensus_raw_tibble
+    acs_totalcensus_raw_dataframe
   )
   gc()
 }
 
 
 ```
-
 
 
 ## air pollution
@@ -1029,7 +1105,7 @@ if(!
 if(
   !file.exists(
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "raw_pm_25_frm_tibble.rdata"
       )
     )
@@ -1069,7 +1145,7 @@ if(
       pm_25_frm_zip_filename_list
       ),
     unzip,
-    exdir = "intermediate_data"
+    exdir = "pre_travis_intermediate_data"
     )
   
   # replace ".zip" with ".csv" in pm_25_frm_zip_filename_list
@@ -1090,7 +1166,7 @@ if(
   if(
     !file.exists(
       file.path(
-        "intermediate_data",
+        "pre_travis_intermediate_data",
         "pm_25_frm_tibble_list.rdata"
         )
       )
@@ -1098,7 +1174,7 @@ if(
     pm_25_frm_tibble_list <-  # if not reads .csv files into tibbles
       map(
         file.path(
-          "intermediate_data",
+          "pre_travis_intermediate_data",
           pm_25_frm_csv_filename_list),
         read_csv
         )
@@ -1107,7 +1183,7 @@ if(
     save(
       pm_25_frm_tibble_list,  # saves the tibbles to disk to avoid doing this again
       file = file.path(
-        "intermediate_data",
+        "pre_travis_intermediate_data",
         "pm_25_frm_tibble_list.rdata"
         )
       )
@@ -1115,7 +1191,7 @@ if(
   } else {
       load(
         file = file.path(
-        "intermediate_data",
+        "pre_travis_intermediate_data",
         "pm_25_frm_tibble_list.rdata"
         )
         )  # loads the tibbles if they don't already exist
@@ -1134,7 +1210,7 @@ if(
   save(
       raw_pm_25_frm_tibble,  # saves the tibbles to disk to avoid doing this again
       file = file.path(
-        "intermediate_data",
+        "pre_travis_intermediate_data",
         "raw_pm_25_frm_tibble.rdata"
         )
       )
@@ -1144,7 +1220,7 @@ if(
   # delete individual .csv files from disk
   map(
     file.path(
-      "intermediate_data",
+      "pre_travis_intermediate_data",
       pm_25_frm_csv_filename_list
       ),
     file.remove
@@ -1189,7 +1265,7 @@ speciator <-
      if(
       !file.exists(  # checks if tibble already exists
         file.path(
-          "intermediate_data",
+          "pre_travis_intermediate_data",
           speciation_rdata_filename
           )
         )
@@ -1208,7 +1284,7 @@ speciator <-
            "raw_data",
            speciation_zip_filename
            ), 
-         exdir = "intermediate_data"
+         exdir = "pre_travis_intermediate_data"
          )
       
        # replace ".zip" with ".csv" in speciation_zip_filename
@@ -1229,7 +1305,7 @@ speciator <-
          speciation_tibble <- 
            read_csv(
              file.path(
-               "intermediate_data",
+               "pre_travis_intermediate_data",
                speciation_csv_filename
                )
              )
@@ -1251,7 +1327,7 @@ speciator <-
          list = speciation_tibble_name,
          file = 
            file.path(
-             "intermediate_data",
+             "pre_travis_intermediate_data",
              speciation_rdata_filename
              )
        )
@@ -1259,7 +1335,7 @@ speciator <-
        # delete .csv file from disk
        map(
          file.path(
-           "intermediate_data",
+           "pre_travis_intermediate_data",
            speciation_csv_filename
            ),
          file.remove
@@ -1319,7 +1395,7 @@ gc()
 if(
   !file.exists(  # checks if tibble already exists
     file.path(
-      "intermediate_data",
+      "pre_travis_intermediate_data",
       "raw_speciation_tibble.rdata"
       )
     )
@@ -1332,7 +1408,7 @@ if(
   # load 2005 speciation file
   load(
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "daily_SPEC_2005.rdata"
       )
     )
@@ -1340,7 +1416,7 @@ if(
   # load 2006 speciation file
   load(
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "daily_SPEC_2006.rdata"
       )
     )
@@ -1373,7 +1449,7 @@ if(
       # load next speciation file
       load(
         file.path(
-          "intermediate_data", 
+          "pre_travis_intermediate_data", 
           speciation_filename
         )
       )
@@ -1416,7 +1492,7 @@ if(
     raw_speciation_tibble, 
     file = 
       file.path(
-        "intermediate_data", 
+        "pre_travis_intermediate_data", 
         "raw_speciation_tibble.rdata"
         )
   )
@@ -1438,7 +1514,7 @@ if(
 if(
   !file.exists(  # checks if tibble already exists
     file.path(
-      "intermediate_data",
+      "pre_travis_intermediate_data",
       "raw_air_tibble.rdata"
       )
     )
@@ -1447,7 +1523,7 @@ if(
   # load the total pm2.5 tibble
   load(
     file.path(
-      "intermediate_data",
+      "pre_travis_intermediate_data",
       "raw_pm_25_frm_tibble.rdata"
     )
   )
@@ -1455,7 +1531,7 @@ if(
   # load the pm2.5 speciation tibble
   load(
     file.path(
-      "intermediate_data",
+      "pre_travis_intermediate_data",
       "raw_speciation_tibble.rdata"
     )
   )
@@ -1476,7 +1552,7 @@ if(
     raw_air_tibble,
     file =
       file.path(
-        "intermediate_data",
+        "pre_travis_intermediate_data",
         "raw_air_tibble.rdata"
       ))
   
@@ -1499,7 +1575,7 @@ if(
 load(
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "raw_air_tibble.rdata"
     )
 )
@@ -1607,7 +1683,7 @@ save(
   us_raw_air_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "us_raw_air_tibble.rdata"
   )
 )
@@ -1649,7 +1725,7 @@ save(
   us_filtered_air_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "us_filtered_air_tibble.rdata"
     )
   )
@@ -1678,7 +1754,7 @@ gc()
 load(
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "us_filtered_air_tibble.rdata"
     )
 )
@@ -1706,7 +1782,7 @@ save(
   air_pollutant_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "air_pollutant_tibble.rdata"
     )
 )
@@ -1729,7 +1805,7 @@ save(
   method_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "method_tibble.rdata"
     )
 )
@@ -1750,7 +1826,7 @@ save(
   parameter_names_codes_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "parameter_names_codes_tibble.rdata"
     )
 )
@@ -1772,7 +1848,7 @@ save(
   units_of_measure_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "units_of_measure_tibble.rdata"
     )
 )
@@ -1804,7 +1880,7 @@ save(
   air_monitor_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "air_monitor_tibble.rdata"
     )
 )
@@ -1839,7 +1915,7 @@ save(
   total_88101_pollutant_standard_aqi_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "total_88101_pollutant_standard_aqi_tibble.rdata"
     )
 )
@@ -1851,15 +1927,127 @@ gc()
 ```
 
 
+## travis cleanup
+
 ```{r save travis files in cheating folder}
 
 # save needed files from the work above to memory_savers
+
+# state abbreviation character vector
+load(
+  file = 
+    file.path(
+      "pre_travis_intermediate_data", 
+      "state_abbreviation_character_vector.rdata"
+    )
+)
+
+save(
+  state_abbreviation_character_vector, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "state_abbreviation_character_vector.rdata"
+    )
+)
+
+rm(state_abbreviation_character_vector)
+gc()
+
+
+# geography files
+load(
+  file = 
+    file.path(
+      "raw_data", 
+      "tigris_shapefiles_no_data.rdata"
+    )
+)
+
+save(
+  tigris_shapefiles_no_data, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tigris_shapefiles_no_data.rdata"
+    )
+)
+
+rm(tigris_shapefiles_no_data)
+gc()
+
+
+# ruca files
+load(
+  file =
+    file.path(
+      "raw_data",
+      "ruca_2010_raw.rdata"
+    )
+  )
+
+save(
+  ruca_2010_raw,
+  file =
+    file.path(
+      "intermediate_data",
+      "ruca_2010_raw.rdata"
+    )
+  )
+
+rm(ruca_2010_raw)
+gc()
+
+
+# sf1 census 2010 data
+load(
+  file = 
+    file.path(
+      "raw_data", 
+      "sf1_totalcensus_raw_dataframe.rdata"
+      )
+  )
+
+save(
+  sf1_totalcensus_raw_dataframe,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sf1_totalcensus_raw_dataframe.rdata"
+      )
+  )
+
+rm(sf1_totalcensus_raw_dataframe)
+gc()
+
+
+# acs 2012 data
+load(
+  file = 
+    file.path(
+      "raw_data", 
+      "acs_totalcensus_raw_dataframe.rdata"
+    )
+)
+
+save(
+  acs_totalcensus_raw_dataframe,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "acs_totalcensus_raw_dataframe.rdata"
+      )
+  )
+
+rm(acs_totalcensus_raw_dataframe)
+gc()
+
 
 # air pollutant only tibble
 load(
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "air_pollutant_tibble.rdata"
     )
 )
@@ -1868,7 +2056,7 @@ save(
   air_pollutant_tibble, 
   file = 
     file.path(
-      "travis_memory_savers", 
+      "intermediate_data", 
       "air_pollutant_tibble.rdata"
     )
 )
@@ -1876,11 +2064,12 @@ save(
 rm(air_pollutant_tibble)
 gc()
 
+
 # air monitor only tibble
 load(
   file = 
     file.path(
-      "intermediate_data", 
+      "pre_travis_intermediate_data", 
       "air_monitor_tibble.rdata"
     )
 )
@@ -1889,12 +2078,100 @@ save(
   air_monitor_tibble, 
   file = 
     file.path(
-      "travis_memory_savers", 
+      "intermediate_data", 
       "air_monitor_tibble.rdata"
     )
 )
 
 rm(air_monitor_tibble)
+gc()
+
+
+# method_tibble
+load(
+  file = 
+    file.path(
+      "pre_travis_intermediate_data", 
+      "method_tibble.rdata"
+    )
+)
+
+save(
+  method_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "method_tibble.rdata"
+    )
+)
+
+rm(method_tibble)
+gc()
+
+
+# parameter names and codes tibble
+load(
+  file = 
+    file.path(
+      "pre_travis_intermediate_data", 
+      "parameter_names_codes_tibble.rdata"
+    )
+)
+
+save(
+  parameter_names_codes_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "parameter_names_codes_tibble.rdata"
+    )
+)
+
+rm(parameter_names_codes_tibble)
+gc()
+  
+
+# units of measure tibble
+load(
+  file = 
+    file.path(
+      "pre_travis_intermediate_data", 
+      "units_of_measure_tibble.rdata"
+    )
+)
+
+save(
+  units_of_measure_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "units_of_measure_tibble.rdata"
+    )
+)
+
+rm(units_of_measure_tibble)
+gc()
+
+
+# total pm25 88101 tibble with 88101-only variables (pollutant standard, aqi)
+load(
+  file = 
+    file.path(
+      "pre_travis_intermediate_data", 
+      "total_88101_pollutant_standard_aqi_tibble.rdata"
+    )
+)
+
+save(
+  total_88101_pollutant_standard_aqi_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "total_88101_pollutant_standard_aqi_tibble.rdata"
+    )
+)
+
+rm(total_88101_pollutant_standard_aqi_tibble)
 gc()
 
 ```
@@ -1904,127 +2181,138 @@ gc()
 
 ## geography 
 
-### census shapefile without data
+```{r ruca data}
 
-```{r census detailed shapefile without data}
-
-# source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
-# where %s is the state FIPS code
-# downloaded 19 June 2019
-# last modified 23 June 2011 (state 60, others earlier)
-
-if(
-  !file.exists(
+# read the data from the excel file
+load(
+  file = 
     file.path(
       "intermediate_data", 
-      "tigris_shapefiles_no_data.rdata"
+      "ruca_2010_raw.rdata"
     )
+)
+  
+# fix column names
+ruca_2010 <-
+  column_name_fixer(
+    ruca_2010_raw
+  )
+
+# save the shapefile
+save(
+  ruca_2010,
+  file = file.path(
+    "intermediate_data", 
+    "ruca_2010.rdata"
+  )
+)
+
+# remove the shapefile from memory
+rm(ruca_2010_raw, 
+   ruca_2010)
+gc()
+
+```
+
+## demographic file formatting
+
+```{r census data format}
+
+# load raw sf1 census dataframe
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "sf1_totalcensus_raw_dataframe.rdata"
     )
-  ) {
-  
-  # load vector of state abbreviations
-  load(
-    file = 
-      file.path(
-        "intermediate_data", 
-        "state_abbreviation_character_vector.rdata"
+)
+# make the dataframe into a tibble
+sf1_totalcensus_tibble <- 
+  as_tibble(sf1_totalcensus_raw_dataframe)
+
+# fix column names 
+sf1_totalcensus_tibble <- 
+  column_name_fixer(
+    sf1_totalcensus_tibble
+)
+
+# fix geoids
+sf1_totalcensus_tibble <- 
+  sf1_totalcensus_tibble %>% 
+  mutate(
+    geoid = 
+      str_replace(
+        geoid,
+        "14000US", 
+        ""
+      )
+  )
+
+# save the tibble to disk
+save(
+  sf1_totalcensus_tibble, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "sf1_totalcensus_tibble.rdata"
       )
   )
   
-  # download the data
-  tigris_shapefiles_no_data <- 
-    rbind_tigris(
-    map(
-      state_abbreviation_character_vector, 
-      function(x) {
-        tracts(
-          x, 
-          cb = FALSE, 
-          year = 2010, 
-          class = 'sf'
-          )
-        }
-      )
+# remove working files
+rm(
+  sf1_totalcensus_raw_dataframe, 
+  sf1_totalcensus_tibble
   )
-  
-  # fix column names
-  tigris_shapefiles_no_data <- 
-    tigris_shapefiles_no_data %>% 
-    column_name_fixer()
-  
-  # save the result to disk
-  save(
-    tigris_shapefiles_no_data, 
-    file = 
-      file.path(
-        "raw_data", 
-        "tigris_shapefiles_no_data.rdata"
-      )
-  )
-  
-  # remove the shapefile
-  rm(
-    tigris_shapefiles_no_data, 
-    state_abbreviation_character_vector
-  )
-  gc()
-}
+gc()
 
 ```
 
 
-### ruca
+```{r acs data format}
 
-```{r ruca data, eval=FALSE, include=FALSE}
-
-# source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
-# downloaded 2019 June 11
-# last updated 12/31/2013 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
-
-
-if(
-  !file.exists(
+# load raw dataframe
+load(
+  file = 
     file.path(
       "intermediate_data", 
-      "ruca_2010.rdata"
-      )
+      "acs_totalcensus_raw_dataframe.rdata"
     )
-  ) {
-  file_downloader(
-    desired_filename_as_string = "ruca_2010_raw.xlsx", 
-    web_address_as_string = 
-      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
-    folder_as_string = "raw_data"
-    )
+)
 
-  # read the data from the excel file
-  ruca_2010_raw <- 
-    read_xlsx(
-      file.path(
-        "raw_data", 
-        "ruca_2010_raw.xlsx"
-        )
-      )
-  
-  # fix column names
-  ruca_2010 <-
-    column_name_fixer(
-      ruca_2010_raw
-    )
+# make it into a tibble
+acs_totalcensus_tibble <- 
+  as_tibble(acs_totalcensus_raw_dataframe)
 
-  # save the shapefile
-  save(
-    ruca_2010,
-    file = file.path(
-      "intermediate_data", 
-      "ruca_2010.rdata"
-    )
+# fix variable names
+acs_totalcensus_tibble <- 
+  acs_totalcensus_tibble %>% 
+  column_name_fixer()
+
+# fix geoids
+acs_totalcensus_tibble <- 
+  acs_totalcensus_tibble %>% 
+  mutate(
+    geoid = 
+      str_replace(
+        geoid,
+        "14000US", 
+        ""
+      )
   )
 
-  # remove the shapefile from memory
-  rm(ruca_2010_raw, ruca_2010)
-  gc()
-}
+# save
+save(
+  acs_totalcensus_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "acs_totalcensus_tibble.rdata"
+    )
+)
+
+rm(acs_totalcensus_raw_dataframe, 
+   acs_totalcensus_tibble)
+gc()
 
 ```
 
@@ -2043,7 +2331,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "acs_totalcensus_raw_tibble.rdata"
+      "acs_totalcensus_tibble.rdata"
     )
 )
 
@@ -2051,18 +2339,18 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "sf1_totalcensus_raw_tibble.rdata"
+      "sf1_totalcensus_tibble.rdata"
       )
   )
 
 # character vector of geoids from 2012 acs data
 geoids_acs <- 
-  acs_totalcensus_raw_tibble %>% 
+  acs_totalcensus_tibble %>% 
   pull(geoid)
 
 # character vector of geoids from 2010 census sf1 data
 geoids_sf1 <- 
-  sf1_totalcensus_raw_tibble %>% 
+  sf1_totalcensus_tibble %>% 
   pull(geoid)
 
 # character vector of 2012 acs geoids not in 2010 census sf1
@@ -2112,7 +2400,7 @@ sf1_acs_concordance_tibble <-
 
 # add acs equivalent-ish ids to sf1 table
 sf1_tibble_with_acs_concordance <- 
-  sf1_totalcensus_raw_tibble %>%   # summon the census
+  sf1_totalcensus_tibble %>%   # summon the census
   mutate(geoid_for_acs_join = geoid) %>%  # make new variable to use to join acs 
   mutate(geoid_for_acs_join =  # replace sf1 geoids not found in acs with 
            str_replace_all(    # equivalent acs geoids
@@ -2163,8 +2451,8 @@ save(sf1_messed_up_tracts,
 
 # remove the files
 rm(
-  acs_totalcensus_raw_tibble, 
-  sf1_totalcensus_raw_tibble, 
+  acs_totalcensus_tibble, 
+  sf1_totalcensus_tibble, 
   geoids_acs, 
   geoids_sf1, 
   acs_geoids_not_in_sf1, 
@@ -2197,7 +2485,7 @@ if(
   load(
     file =
       file.path(
-        "raw_data",
+        "intermediate_data",
         "tigris_shapefiles_no_data.rdata"
       )
     )
@@ -2337,7 +2625,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "sf1_totalcensus_raw_tibble.rdata"
+      "sf1_totalcensus_tibble.rdata"
     )
 )
 
@@ -2352,7 +2640,7 @@ load(
 
 # import segregation variables (Black, Black/other, total)
 seg_vars <- 
-  sf1_totalcensus_raw_tibble %>% 
+  sf1_totalcensus_tibble %>% 
   select(  # import the variables
     geoid, 
     p0050001, 
@@ -2400,7 +2688,7 @@ save(
 
 # remove extraneous files
 rm(
-  sf1_totalcensus_raw_tibble, 
+  sf1_totalcensus_tibble, 
   neighbor_tibble_long, 
   seg_vars,
   neighbors_with_census_tibble, 
@@ -2428,7 +2716,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "acs_totalcensus_raw_tibble.rdata"
+      "acs_totalcensus_tibble.rdata"
     )
 )
 
@@ -2443,7 +2731,7 @@ load(
 
 # delete duplicate variables from acs tibble
 acs_tibble_for_joining <- 
-  acs_totalcensus_raw_tibble %>% 
+  acs_totalcensus_tibble %>% 
   rename(pop_acs = population, 
          geoid_acs = geoid) %>% 
   select(
@@ -2481,7 +2769,7 @@ save(
 # remove files
 rm(
   sf1_tibble_with_acs_concordance, 
-  acs_totalcensus_raw_tibble, 
+  acs_totalcensus_tibble, 
   racial_isolation_index_tibble, 
   acs_tibble_for_joining, 
   demographic_tibble
@@ -2495,7 +2783,7 @@ gc()
 
 ### assign monitors
 
-```{r count and type monitor locations}
+```{r count and type monitor locations, eval=FALSE, include=FALSE}
 
 # load tibble for monitor counts
 load(
@@ -2674,7 +2962,7 @@ rm(
 ```
 
 
-```{r count monitors by state}
+```{r count monitors by state, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -2731,7 +3019,7 @@ gc()
 ```
 
 
-```{r make spatial files from monitor locations}
+```{r make spatial files from monitor locations, eval=FALSE, include=FALSE}
 
 # load needed files
 load(
@@ -2811,7 +3099,7 @@ gc()
 ```
 
 
-```{r assign tracts to monitors}
+```{r assign tracts to monitors, eval=FALSE, include=FALSE}
 
 # load needed files
 load(
@@ -3141,7 +3429,7 @@ ggsave("date_range_plot_species.png",plot=date_range_plot_species,width=20,heigh
 
 # DISCARDED CODE TOO GOOD TO DELETE
 
-####census shapefile with data
+#### census shapefile with data
 
 ```{r census shapefile with dp1 data, eval=FALSE, include=FALSE, results=}
 
@@ -11588,14 +11876,14 @@ load(
    file = 
       file.path(
         "intermediate_data",
-        "sf1_totalcensus_raw_tibble.rdata"
+        "sf1_totalcensus_tibble.rdata"
         )
    )
 
 # fix column names 
 sf1_totalcensus_seg_tibble <- 
   column_name_fixer(
-    sf1_totalcensus_raw_tibble
+    sf1_totalcensus_tibble
 )
 
 # import census data (Black, Black/other, total)
