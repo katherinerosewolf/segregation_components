@@ -2866,7 +2866,7 @@ rm(air_monitor_tibble,
 ```
 
 
-```{r count monitors by state, eval=FALSE, include=FALSE}
+```{r count monitors by state}
 
 load(
   file = 
@@ -2879,13 +2879,13 @@ load(
 load(
   file = 
     file.path(
-      "intermediate_data", 
-      "us_filtered_air_tibble.rdata"
+      "travis_cache", 
+      "air_monitor_tibble.rdata"
       )
   )
 
 monitor_and_state <- 
-  us_filtered_air_tibble %>% 
+  air_monitor_tibble %>% 
   select(
     monitor_id, 
     state_name, 
@@ -2893,6 +2893,7 @@ monitor_and_state <-
   ) %>% 
   distinct()
 
+# count monitors by type and state
 state_monitor_counts <- 
   left_join(
     sparse_monitors,
@@ -2915,6 +2916,7 @@ save(
 )
 
 rm(
+  air_monitor_tibble,
   sparse_monitors,
   monitor_and_state, 
   state_monitor_counts
@@ -2923,7 +2925,7 @@ gc()
 ```
 
 
-```{r make spatial files from monitor locations, eval=FALSE, include=FALSE}
+```{r make spatial files from monitor locations}
 
 # load needed files
 load(
@@ -2945,7 +2947,7 @@ load(
 load(
   file = 
     file.path(
-      "raw_data", 
+      "tigris_cache", 
       "tigris_shapefiles_no_data.rdata"
     )
 )
@@ -3335,7 +3337,7 @@ ggsave("date_range_plot_species.png",plot=date_range_plot_species,width=20,heigh
 
 #### old functions
 
-```{r old functions}
+```{r old functions, eval=FALSE, include=FALSE}
 
 # function to read decennial data without asking about downloads
 read_decennial_auto <- 
