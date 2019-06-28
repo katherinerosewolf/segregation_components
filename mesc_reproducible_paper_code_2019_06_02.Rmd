@@ -2857,9 +2857,6 @@ save(
       )
   )
 
-# make a table of monitor types
-table(sparse_monitors$monitor_type)
-
 # isolate NAD83 monitors
 sparse_monitors_nad83 <- 
   sparse_monitors %>% 
@@ -3134,7 +3131,7 @@ rm(
 
 ```{r join tracts to air data}
 
-# load necessary files
+# load needed files
 load(
   file = 
     file.path(
@@ -3271,10 +3268,6 @@ dates_by_monitor_species_only <-
   ) %>% 
   arrange(first_date, last_date) %>% 
   mutate(monitor_id = factor(monitor_id, unique(monitor_id)))
-
-nrow(dates_by_monitor_species_only)
-table(dates_by_monitor_pm_only$monitor_type)
-table(dates_by_monitor_species_only$monitor_type)
 
 # 1,715 monitors
 date_range_plot_pm <- 
