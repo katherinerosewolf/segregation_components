@@ -2704,7 +2704,7 @@ monitor_locations <-
 monitor_locations_and_parameter_codes <- 
   monitor_id_and_code %>% 
   left_join(monitor_locations, 
-            by = monitor_id)
+            by = "monitor_id")
 
 # save the above
 save(
@@ -2850,19 +2850,17 @@ save(
   )
 
 # remove the created files
-rm(
-  air_pollutant_tibble, 
-  air_monitor_tibble,
-  monitor_id_and_code, 
-  monitor_locations,
-  monitor_locations_and_parameter_codes, 
-  datum_order,
-  monitor_locations_and_parameter_codes_ordered, 
-  monitor_locations_and_parameter_codes_marked, 
-  monitor_locations_and_parameter_codes_counts,
-  sparse_monitors,
-  sparse_monitors_nad83, 
-  sparse_monitors_wgs84
+rm(air_monitor_tibble,
+   monitor_id_and_code, 
+   monitor_locations,
+   monitor_locations_and_parameter_codes, 
+   datum_order,
+   monitor_locations_and_parameter_codes_ordered, 
+   monitor_locations_and_parameter_codes_marked, 
+   monitor_locations_and_parameter_codes_counts,
+   sparse_monitors,
+   sparse_monitors_nad83, 
+   sparse_monitors_wgs84
 )
 
 ```

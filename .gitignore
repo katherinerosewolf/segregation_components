@@ -6,3 +6,4 @@ documentation/
 manual_to_ignore/
 pre_travis_intermediate_data/
 raw_data/
+intermediate_data/
