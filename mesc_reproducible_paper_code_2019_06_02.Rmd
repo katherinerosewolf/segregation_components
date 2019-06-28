@@ -193,7 +193,7 @@ gc()
 if(
   !file.exists(
     file.path(
-      "pre_travis_intermediate_data", 
+      "raw_data", 
       "tigris_shapefiles_no_data.rdata"
     )
     )
@@ -243,6 +243,155 @@ if(
   rm(
     tigris_shapefiles_no_data, 
     state_abbreviation_character_vector
+  )
+  gc()
+}
+
+```
+
+
+```{r make list of tract neighbors for later segregation, eval=FALSE, include=FALSE}
+
+if(
+  !file.exists(
+    file.path(
+      "pre_travis_intermediate_data", 
+      "neighbor_tibble_long.rdata"
+    )
+  )
+) {
+
+  # load the census tract shapefiles
+  load(
+    file =
+      file.path(
+        "raw_data",
+        "tigris_shapefiles_no_data.rdata"
+      )
+    )
+  
+  # get character vector for numbers from 1 to the number of tracts
+  tract_order_character <- 
+    as.character(1:nrow(tigris_shapefiles_no_data))
+  
+  # pull the geoids as a vector
+  tigris_geoid_character <- 
+    tigris_shapefiles_no_data %>% 
+    pull(geoid10)
+  
+  # make tibble indexing tracts in order to match geoids with the spdep output
+  geoid_index_tibble <- 
+    tibble(index = tract_order_character, 
+           geoid = tigris_geoid_character)
+    
+  if(!file.exists(file.path("pre_travis_intermediate_data", "tract_neighbor_nb.rdata"))){
+    
+    # make a list of lists of neighbors to each tract (uses spdep package)
+    tract_neighbor_nb <-  
+      poly2nb(pl = tigris_shapefiles_no_data, 
+              queen = TRUE)
+  
+    # name the elements of the big list above with their tract indices
+    names(tract_neighbor_nb) <- tract_order_character
+  
+  } else {
+    
+    # load the file
+    load(
+      file.path(
+        "pre_travis_intermediate_data", 
+        "tract_neighbor_nb.rdata"
+      )
+    )
+  }
+  
+  # check if the neighbors-as-one-string tibble already exists
+  if(!file.exists(file.path(
+    "pre_travis_intermediate_data", 
+    "neighbors_in_one_string_tibble.rdata"))){
+    
+  # if not, create it
+  neighbors_in_one_string_tibble <- 
+    map_df(  # makes a tibble from the output of poly2nb()
+      tract_neighbor_nb, 
+      paste,  # puts all the adjacent tracts into one string
+      collapse = ","  # separated by commas
+      ) %>%  # makes two columns from one row with column names
+    gather(key = "primary_tract",  
+           value = "adjacent_tracts") %>% 
+    mutate(  # adds column of the primary tract and its neighbors in one string
+      primary_and_adjacent_tracts = 
+        paste(primary_tract, 
+              adjacent_tracts, 
+              sep = ",")
+    )
+  
+    # save the result
+    save(neighbors_in_one_string_tibble,
+           file = file.path("pre_travis_intermediate_data", 
+                            "neighbors_in_one_string_tibble.rdata"))
+    
+  } else {  
+    
+    # otherwise load the relevant tibble
+    load(
+      file.path(
+        "pre_travis_intermediate_data", 
+        "neighbors_in_one_string_tibble.rdata"
+      )
+    )
+  }
+  
+  # make list of character vectors of neighbor tract indices
+  # ordered by primary tract index
+  split_tracts <- 
+    neighbors_in_one_string_tibble %>% 
+    pull(primary_and_adjacent_tracts) %>%  # pull the self and neighbor column
+    str_split(pattern = ",")  # split strings of neighbor indices
+  
+  # name each list element by its primary tract
+  names(split_tracts) <- 
+    neighbors_in_one_string_tibble$primary_tract
+  
+  # make long tibble repeating the primary tract for itself and every neighbor
+  neighbor_tibble_long <- 
+    as_tibble(  # makes it a tibble repeating the primary (index) for each neighbor
+      stack(split_tracts)[2:1]) %>%  # reorders them so that the primary tract comes first
+    rename(primary_tract = 1,  # renames the columns with meaningful names
+           neighbor_tract = 2) %>% 
+    mutate(  # coerce primary tract column (index) back to character
+      primary_tract = as.character(primary_tract)
+      ) %>% 
+    left_join(
+      geoid_index_tibble,  # join with the original geoids corresponding
+      by = c("primary_tract" = "index")  # to the primary tract
+      ) %>%  
+    rename(geoid_primary_tract = geoid) %>%  # rename geoid for primary tract
+    left_join(
+      geoid_index_tibble,  # join with the original geoids corresponding
+      by = c("neighbor_tract" = "index")  # to the neighbor tract
+      ) %>%  
+    rename(geoid_neighbor_tract = geoid) # rename geoid for neighbor tract
+  
+  save(
+    neighbor_tibble_long, 
+    file = 
+      file.path(
+        "pre_travis_intermediate_data", 
+        "neighbor_tibble_long.rdata"
+      )
+    )
+  
+  # remove all the files
+  rm(
+    tigris_shapefiles_no_data, 
+    tract_neighbor_nb,
+    tract_order_character, 
+    tigris_geoid_character,
+    geoid_index_tibble,
+    neighbors_in_one_string_tibble,
+    split_tracts,
+    neighbor_tibble_long
   )
   gc()
 }
@@ -1832,6 +1981,28 @@ rm(tigris_shapefiles_no_data)
 gc()
 
 
+# neighbor file
+load(
+  file = 
+    file.path(
+      "pre_travis_intermediate_data", 
+      "neighbor_tibble_long.rdata"
+    )
+)
+
+save(
+  neighbor_tibble_long, 
+  file = 
+    file.path(
+      "travis_cache", 
+      "neighbor_tibble_long.rdata"
+    )
+  )
+
+rm(neighbor_tibble_long)
+gc()  
+
+
 # ruca files
 load(
   file =
@@ -2325,154 +2496,6 @@ gc()
 
 ### segregation
 
-```{r make list of neighbors}
-
-if(
-  !file.exists(
-    file.path(
-      "intermediate_data", 
-      "neighbor_tibble_long.rdata"
-    )
-  )
-) {
-
-  # load the census tract shapefiles
-  load(
-    file =
-      file.path(
-        "travis_cache",
-        "tigris_shapefiles_no_data.rdata"
-      )
-    )
-  
-  # get character vector for numbers from 1 to the number of tracts
-  tract_order_character <- 
-    as.character(1:nrow(tigris_shapefiles_no_data))
-  
-  # pull the geoids as a vector
-  tigris_geoid_character <- 
-    tigris_shapefiles_no_data %>% 
-    pull(geoid10)
-  
-  # make tibble indexing tracts in order to match geoids with the spdep output
-  geoid_index_tibble <- 
-    tibble(index = tract_order_character, 
-           geoid = tigris_geoid_character)
-    
-  if(!file.exists(file.path("intermediate_data", "tract_neighbor_nb.rdata"))){
-    
-    # make a list of lists of neighbors to each tract (uses spdep package)
-    tract_neighbor_nb <-  
-      poly2nb(pl = tigris_shapefiles_no_data, 
-              queen = TRUE)
-  
-    # name the elements of the big list above with their tract indices
-    names(tract_neighbor_nb) <- tract_order_character
-  
-  } else {
-    
-    # load the file
-    load(
-      file.path(
-        "intermediate_data", 
-        "tract_neighbor_nb.rdata"
-      )
-    )
-  }
-  
-  # check if the neighbors-as-one-string tibble already exists
-  if(!file.exists(file.path("intermediate_data", 
-                            "neighbors_in_one_string_tibble.rdata"))){
-    
-  # if not, create it
-  neighbors_in_one_string_tibble <- 
-    map_df(  # makes a tibble from the output of poly2nb()
-      tract_neighbor_nb, 
-      paste,  # puts all the adjacent tracts into one string
-      collapse = ","  # separated by commas
-      ) %>%  # makes two columns from one row with column names
-    gather(key = "primary_tract",  
-           value = "adjacent_tracts") %>% 
-    mutate(  # adds column of the primary tract and its neighbors in one string
-      primary_and_adjacent_tracts = 
-        paste(primary_tract, 
-              adjacent_tracts, 
-              sep = ",")
-    )
-  
-    # save the result
-    save(neighbors_in_one_string_tibble,
-           file = file.path("intermediate_data", 
-                            "neighbors_in_one_string_tibble.rdata"))
-    
-  } else {  
-    
-    # otherwise load the relevant tibble
-    load(
-      file.path(
-        "intermediate_data", 
-        "neighbors_in_one_string_tibble.rdata"
-      )
-    )
-  }
-  
-  # make list of character vectors of neighbor tract indices
-  # ordered by primary tract index
-  split_tracts <- 
-    neighbors_in_one_string_tibble %>% 
-    pull(primary_and_adjacent_tracts) %>%  # pull the self and neighbor column
-    str_split(pattern = ",")  # split strings of neighbor indices
-  
-  # name each list element by its primary tract
-  names(split_tracts) <- 
-    neighbors_in_one_string_tibble$primary_tract
-  
-  # make long tibble repeating the primary tract for itself and every neighbor
-  neighbor_tibble_long <- 
-    as_tibble(  # makes it a tibble repeating the primary (index) for each neighbor
-      stack(split_tracts)[2:1]) %>%  # reorders them so that the primary tract comes first
-    rename(primary_tract = 1,  # renames the columns with meaningful names
-           neighbor_tract = 2) %>% 
-    mutate(  # coerce primary tract column (index) back to character
-      primary_tract = as.character(primary_tract)
-      ) %>% 
-    left_join(
-      geoid_index_tibble,  # join with the original geoids corresponding
-      by = c("primary_tract" = "index")  # to the primary tract
-      ) %>%  
-    rename(geoid_primary_tract = geoid) %>%  # rename geoid for primary tract
-    left_join(
-      geoid_index_tibble,  # join with the original geoids corresponding
-      by = c("neighbor_tract" = "index")  # to the neighbor tract
-      ) %>%  
-    rename(geoid_neighbor_tract = geoid) # rename geoid for neighbor tract
-  
-  save(
-    neighbor_tibble_long, 
-    file = 
-      file.path(
-        "intermediate_data", 
-        "neighbor_tibble_long.rdata"
-      )
-    )
-  
-  # remove all the files
-  rm(
-    tigris_shapefiles_no_data, 
-    tract_neighbor_nb,
-    tract_order_character, 
-    tigris_geoid_character,
-    geoid_index_tibble,
-    neighbors_in_one_string_tibble,
-    split_tracts,
-    neighbor_tibble_long
-  )
-  gc()
-}
-
-```
-
-
 ```{r calculate segregation index}
 
 # load census dataset
@@ -2488,7 +2511,7 @@ load(
 load(
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "neighbor_tibble_long.rdata"
     )
 )
@@ -2638,33 +2661,58 @@ gc()
 
 ### assign monitors
 
-```{r count and type monitor locations, eval=FALSE, include=FALSE}
+```{r count and type monitor locations}
 
-# load tibble for monitor counts
+# load air pollutant tibble for monitor counts
 load(
   file = 
     file.path(
-      "intermediate_data",
-      "us_filtered_air_tibble.rdata"
+      "travis_cache",
+      "air_pollutant_tibble.rdata"
       )
   )
 
 # isolate columns needed for monitor counting
-monitor_location_data <- 
-  us_filtered_air_tibble %>% 
+monitor_id_and_code <- 
+  air_pollutant_tibble %>% 
+  dplyr::select(monitor_id,
+                parameter_code) %>% 
+  distinct()
+
+# remove the air pollutant tibble to save memory
+rm(air_pollutant_tibble)
+gc()
+
+# load the air monitor tibble
+load(
+  file = 
+    file.path(
+      "travis_cache",
+      "air_monitor_tibble.rdata"
+      )
+  )
+
+# isolate columns needed for monitor counting
+monitor_locations <- 
+  air_monitor_tibble %>% 
   dplyr::select(monitor_id, 
                 latitude, 
                 longitude, 
-                datum, 
-                parameter_code)
+                datum)
+
+# join parameter code information to monitor information
+monitor_locations_and_parameter_codes <- 
+  monitor_id_and_code %>% 
+  left_join(monitor_locations, 
+            by = monitor_id)
 
 # save the above
 save(
-  monitor_location_data, 
+  monitor_locations_and_parameter_codes, 
   file = 
     file.path(
       "intermediate_data",
-      "monitor_location_data.rdata"
+      "monitor_locations_and_parameter_codes.rdata"
       )
   )
 
@@ -2679,16 +2727,16 @@ datum_order <-
     )
 
 # order the monitor locations in order to convert the fewest possible
-monitor_location_data_ordered <- 
+monitor_locations_and_parameter_codes_ordered <- 
   full_join(
     datum_order, 
-    monitor_location_data, 
+    monitor_locations_and_parameter_codes, 
     by = "datum"
     )
 
 # isolate unique monitor-parameter combinations
-monitor_location_data_marked <-
-  monitor_location_data_ordered %>% 
+monitor_locations_and_parameter_codes_marked <-
+  monitor_locations_and_parameter_codes_ordered %>% 
    distinct(
      monitor_id,
      parameter_code, 
@@ -2696,8 +2744,8 @@ monitor_location_data_marked <-
      )
 
 # classify monitors as for total pm25, species, or both
-monitor_location_data_marked <- 
-  monitor_location_data_marked %>%
+monitor_locations_and_parameter_codes_marked <- 
+  monitor_locations_and_parameter_codes_marked %>%
   mutate(
     monitor_pm25 = 
       ifelse(
@@ -2723,17 +2771,17 @@ monitor_location_data_marked <-
 
 # save the above
 save(
-  monitor_location_data_marked, 
+  monitor_locations_and_parameter_codes_marked, 
   file = 
     file.path(
       "intermediate_data", 
-      "monitor_location_data_marked.rdata"
+      "monitor_locations_and_parameter_codes_marked.rdata"
       )
   )
 
 # classify monitors as total pm2.5, species, or both
-monitor_location_data_counts <- 
-  monitor_location_data_marked %>% 
+monitor_locations_and_parameter_codes_counts <- 
+  monitor_locations_and_parameter_codes_marked %>% 
   add_count(monitor_id) %>% 
   mutate(monitor_type = 
            ifelse(
@@ -2753,7 +2801,7 @@ monitor_location_data_counts <-
 
 # only keep the two columns for monitor classification
 sparse_monitors <- 
-  monitor_location_data_counts %>% 
+  monitor_locations_and_parameter_codes_counts %>% 
   distinct(monitor_id, 
            monitor_type,
            .keep_all = TRUE)
@@ -2803,12 +2851,15 @@ save(
 
 # remove the created files
 rm(
-  us_filtered_air_tibble,
-  monitor_location_data, 
+  air_pollutant_tibble, 
+  air_monitor_tibble,
+  monitor_id_and_code, 
+  monitor_locations,
+  monitor_locations_and_parameter_codes, 
   datum_order,
-  monitor_location_data_ordered, 
-  monitor_location_data_marked, 
-  monitor_location_data_counts,
+  monitor_locations_and_parameter_codes_ordered, 
+  monitor_locations_and_parameter_codes_marked, 
+  monitor_locations_and_parameter_codes_counts,
   sparse_monitors,
   sparse_monitors_nad83, 
   sparse_monitors_wgs84
