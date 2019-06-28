@@ -2219,23 +2219,64 @@ load(
 )
   
 # fix column names
-ruca_2010 <-
-  column_name_fixer(
-    ruca_2010_raw
-  )
+ruca_simple <-
+  ruca_2010_raw %>% 
+  column_name_fixer %>%  # fix column names
+  select(
+    tract_id = 4, 
+    ruca_prime = 5, 
+    ruca_second = 6
+  ) %>% 
+  mutate(urban = 'noturban')
 
-# save the shapefile
+
+# set to urban or not urban based on RUCA codes
+ruca_simple <- 
+  within(ruca_simple, 
+         urban[ruca_second == 1.0 | 
+               ruca_second == 1.1 | 
+               ruca_second == 2.0 | 
+               ruca_second == 2.1 | 
+               ruca_second == 3.0 | 
+               ruca_second == 3.1 | 
+               ruca_second == 4.1 | 
+               ruca_second == 5.1 | 
+               ruca_second == 6.1 | 
+               ruca_second == 7.1 | 
+               ruca_second == 8.1 | 
+               ruca_second == 9.1 | 
+               ruca_second == 10.1] <- 
+           'urban')
+
+ruca_urban_only <- 
+  ruca_simple %>% 
+  filter(
+    urban == 'urban'
+    )
+
+# save useful files
 save(
-  ruca_2010,
-  file = file.path(
-    "intermediate_data", 
-    "ruca_2010.rdata"
-  )
+  ruca_simple, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "ruca_simple.rdata"
+    )
+)
+
+save(
+  ruca_urban_only, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "ruca_urban_only.rdata"
+    )
 )
 
 # remove the shapefile from memory
 rm(ruca_2010_raw, 
-   ruca_2010)
+   ruca_simple,
+   ruca_urban_only)
 gc()
 
 ```
@@ -3011,7 +3052,7 @@ gc()
 load(
   file = 
     file.path(
-      "raw_data", 
+      "travis_cache", 
       "tigris_shapefiles_no_data.rdata"
     )
   )
@@ -3025,15 +3066,17 @@ load(
     )
   )
 
+# project the tracts to the NAD 83 Conus Albers Equal Area projection, a flat one, to make distances comparable
 projected_tracts <- 
   tigris_shapefiles_no_data %>% 
   st_transform(crs = 5070)
 
+# project the monitors to the same
 projected_monitors <-
   monitors_sf %>% 
   st_transform(crs = 5070)
 
-# join tracts to monitors (CHECK AGAINST ARCGIS)
+# join tracts to monitors
 monitors_to_tracts <- 
   st_join(
     projected_monitors, 
@@ -3050,7 +3093,7 @@ save(
     )
 )
 
-# monitor buffer!
+# make one-kilometer buffer around the monitor
 buffer_monitors_one_km <- 
   projected_monitors %>% 
   st_buffer(dist = 1000)
@@ -3073,7 +3116,6 @@ save(
     )
 )
 
-
 # remove unneeded files
 rm(
   monitors_sf, 
@@ -3088,9 +3130,9 @@ rm(
 ```
 
 
-### joining the above back to census data
+### joining the above to air data
 
-```{r join tracts to census data, eval=FALSE, include=FALSE}
+```{r join tracts to air data}
 
 # load necessary files
 load(
@@ -3112,35 +3154,39 @@ load(
 load(
   file = 
     file.path(
-      "intermediate_data", 
-      "us_filtered_air_tibble.rdata"
+      "travis_cache", 
+      "air_pollutant_tibble.rdata"
       )
   )
 
+# make tibble with only monitor ids and geoids for buffer file
 little_monitors_to_tracts <- 
   monitors_to_tracts %>% 
   st_drop_geometry() %>% 
   select(monitor_id, 
-         geoid) %>% 
-  mutate(geoid_containing_tract = geoid) %>% 
+         geoid10) %>% 
+  mutate(geoid_containing_tract = geoid10) %>% 
   select(monitor_id, 
          geoid_containing_tract)
 
-simple_buffer <- 
+# make tibble with only monitor ids and geoids for buffer file
+little_buffers_one_km_to_tracts <- 
   buffers_one_km_to_tracts %>% 
   st_drop_geometry() %>% 
   select(
     monitor_id, 
-    geoid
+    geoid10
     ) 
 
+# join air pollution data to tracts
 air_with_containing_tracts <- 
   left_join(
-    us_filtered_air_tibble, 
+    air_pollutant_tibble, 
     little_monitors_to_tracts, 
     by = "monitor_id"
   )
 
+# save air with containing tracts
 save(
   air_with_containing_tracts, 
   file = 
@@ -3150,79 +3196,14 @@ save(
       )
   )
 
-save(
-  simple_buffer, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "simple_buffer.rdata"
-      )
-  )
-
-```
-
-
-```{r process ruca data, eval=FALSE, include=FALSE}
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "ruca_2010.rdata"
-    )
+rm(monitors_to_tracts, 
+   buffers_one_km_to_tracts, 
+   air_pollutant_tibble, 
+   little_monitors_to_tracts,
+   little_buffers_one_km_to_tracts, 
+   air_with_containing_tracts
 )
-
-ruca_simple <- 
-  ruca_2010[,c(4,5,6)]
-
-names(ruca_simple) <- 
-  c("tract_id",
-    "ruca_prime",
-    "ruca_second")
-
-# set to urban or not urban based on RUCA codes
-ruca_simple$urban <- 'noturban'
-ruca_simple <- 
-  within(ruca_simple, 
-         urban[ruca_second == 1.0 | 
-                 ruca_second == 1.1 | 
-                 ruca_second == 2.0 | 
-                 ruca_second == 2.1 | 
-                 ruca_second == 3.0 | 
-                 ruca_second == 3.1 | 
-                 ruca_second == 4.1 | 
-                 ruca_second == 5.1 | 
-                 ruca_second == 6.1 | 
-                 ruca_second == 7.1 | 
-                 ruca_second == 8.1 | 
-                 ruca_second == 9.1 | 
-                 ruca_second == 10.1] <- 
-           'urban')
-
-ruca_urban_only <- 
-  ruca_simple %>% 
-  filter(
-    urban == 'urban'
-    )
-
-save(
-  ruca_simple, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "ruca_simple.rdata"
-    )
-)
-
-save(
-  ruca_urban_only, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "ruca_urban_only.rdata"
-    )
-)
-
+gc()
 
 ```
 
