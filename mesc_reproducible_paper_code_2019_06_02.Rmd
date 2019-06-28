@@ -3043,7 +3043,7 @@ gc()
 ```
 
 
-```{r assign tracts to monitors, eval=FALSE, include=FALSE}
+```{r assign tracts to monitors}
 
 # load needed files
 load(
