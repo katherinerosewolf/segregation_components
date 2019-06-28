@@ -133,6 +133,10 @@ if(!dir.exists("pre_travis_intermediate_data")) {
   dir.create("pre_travis_intermediate_data")
 }
 
+if(!dir.exists("travis_cache")) {
+  dir.create("travis_cache")
+}
+
 if(!dir.exists("intermediate_data")) {
   dir.create("intermediate_data")
 }
@@ -849,7 +853,7 @@ if(!file.exists(file.path("pre_travis_intermediate_data",
 
 #### acs totalcensus pulls
 
-```{r acs totalcensus data download}
+```{r acs totalcensus data download, eval=FALSE, include=FALSE}
 
 # data downloaded from https://www2.census.gov/programs-surveys/acs/summary_file/2012/data/5_year_by_state/ (then individual state files)
 # downloaded 2019-06-27
@@ -949,7 +953,7 @@ if(!
 
 ### pm2.5
 
-```{r pm2.5 total frm}
+```{r pm2.5 total frm, eval=FALSE, include=FALSE}
 
 # source https://aqs.epa.gov/aqsweb/airdata/ (see vector below for exact)
 # downloaded 2019 June 19
@@ -1797,7 +1801,7 @@ save(
   state_abbreviation_character_vector, 
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "state_abbreviation_character_vector.rdata"
     )
 )
@@ -1819,7 +1823,7 @@ save(
   tigris_shapefiles_no_data, 
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "tigris_shapefiles_no_data.rdata"
     )
 )
@@ -1841,7 +1845,7 @@ save(
   ruca_2010_raw,
   file =
     file.path(
-      "intermediate_data",
+      "travis_cache",
       "ruca_2010_raw.rdata"
     )
   )
@@ -1863,7 +1867,7 @@ save(
   sf1_totalcensus_raw_dataframe,
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "sf1_totalcensus_raw_dataframe.rdata"
       )
   )
@@ -1885,7 +1889,7 @@ save(
   acs_totalcensus_raw_dataframe,
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "acs_totalcensus_raw_dataframe.rdata"
       )
   )
@@ -1907,7 +1911,7 @@ save(
   air_pollutant_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "air_pollutant_tibble.rdata"
     )
 )
@@ -1929,7 +1933,7 @@ save(
   air_monitor_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "air_monitor_tibble.rdata"
     )
 )
@@ -1951,7 +1955,7 @@ save(
   method_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "method_tibble.rdata"
     )
 )
@@ -1973,7 +1977,7 @@ save(
   parameter_names_codes_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "parameter_names_codes_tibble.rdata"
     )
 )
@@ -1995,7 +1999,7 @@ save(
   units_of_measure_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "units_of_measure_tibble.rdata"
     )
 )
@@ -2017,7 +2021,7 @@ save(
   total_88101_pollutant_standard_aqi_tibble, 
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "total_88101_pollutant_standard_aqi_tibble.rdata"
     )
 )
@@ -2038,7 +2042,7 @@ gc()
 load(
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "ruca_2010_raw.rdata"
     )
 )
@@ -2073,7 +2077,7 @@ gc()
 load(
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "sf1_totalcensus_raw_dataframe.rdata"
     )
 )
@@ -2125,7 +2129,7 @@ gc()
 load(
   file = 
     file.path(
-      "intermediate_data", 
+      "travis_cache", 
       "acs_totalcensus_raw_dataframe.rdata"
     )
 )
@@ -2336,7 +2340,7 @@ if(
   load(
     file =
       file.path(
-        "intermediate_data",
+        "travis_cache",
         "tigris_shapefiles_no_data.rdata"
       )
     )
