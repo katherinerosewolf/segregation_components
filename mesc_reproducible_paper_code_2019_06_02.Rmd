@@ -2947,7 +2947,7 @@ load(
 load(
   file = 
     file.path(
-      "tigris_cache", 
+      "travis_cache", 
       "tigris_shapefiles_no_data.rdata"
     )
 )
