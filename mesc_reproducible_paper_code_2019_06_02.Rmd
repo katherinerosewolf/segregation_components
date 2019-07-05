@@ -32,6 +32,7 @@ library(readxl)
 library(tidyverse)
 library(totalcensus)
 library(spdep)
+library(lubridate)
 
 ```
 
@@ -139,6 +140,10 @@ if(!dir.exists("travis_cache")) {
 
 if(!dir.exists("intermediate_data")) {
   dir.create("intermediate_data")
+}
+
+if(!dir.exists(file.path("intermediate_data", "plots"))) {
+  dir.create(file.path("intermediate_data", "plots"))
 }
 
 # set path to census data
@@ -1637,11 +1642,11 @@ fraction_codes <-
            str_detect(parameter_name, "OC[0-9]")) %>% 
   pull(parameter_code)
 
-# get unadjusted codes
-unadjusted_codes <- 
-  species_and_codes_from_data %>% 
-  filter(str_detect(parameter_name, "nadjusted")) %>% 
-  pull(parameter_code)
+# # get unadjusted codes
+# unadjusted_codes <- 
+#   species_and_codes_from_data %>% 
+#   filter(str_detect(parameter_name, "nadjusted")) %>% 
+#   pull(parameter_code)
   
 # get OP carbon codes
 op_codes <- 
@@ -1670,7 +1675,7 @@ us_raw_air_tibble <-
   working_air_tibble %>% 
   filter(!(state_code %in% non_us_state_codes))  # removes non-US sites
 
-# make monitor id
+# make monitor id and monitor id with poc
 us_raw_air_tibble <- 
   us_raw_air_tibble %>% 
   mutate(
@@ -1679,8 +1684,10 @@ us_raw_air_tibble <-
         state_code, 
         county_code, 
         site_num, 
-        sep="-")
-  )
+        sep="-"), 
+    poc = str_pad(poc, 2, pad = "0"),
+    monitor_id_poc = str_c(monitor_id, "-", poc)
+    )
 
 # save the plain us tibble
 save(
@@ -1703,7 +1710,7 @@ us_filtered_air_tibble <-
   filter(!(parameter_code %in% fraction_codes)) %>%  # remove fractions
   filter(!(parameter_code %in% op_codes)) %>%  # remove pyrolized carbon
   filter(!(parameter_code %in% volatile_codes)) %>%  # remove weird nitrate
-  filter(!(parameter_code %in% unadjusted_codes)) %>%  # remove unadjusteds
+#  filter(!(parameter_code %in% unadjusted_codes)) %>%  # remove unadjusteds
   filter(!(parameter_code %in% remaining_drop_codes))  # remove remaining drops
 
 # remove the us raw tibble
@@ -1738,7 +1745,6 @@ save(
 rm(non_us_state_codes, 
    species_and_codes_from_data, 
    fraction_codes, 
-   unadjusted_codes, 
    op_codes, 
    volatile_codes,
    raw_air_tibble, 
@@ -1770,6 +1776,7 @@ air_pollutant_tibble <-
   select(
     monitor_id, 
     poc, 
+    monitor_id_poc,
     parameter_code,
     sample_duration,
     date_local, 
@@ -2694,6 +2701,346 @@ rm(
   demographic_tibble
 )
 gc()
+
+```
+
+
+## air data
+
+### carbon disasters
+
+```{r investigating carbon}
+
+# load air data file
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "air_pollutant_tibble.rdata"
+    )
+)
+
+# load pollutant names
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "parameter_names_codes_tibble.rdata"
+))
+
+# make tibble with pollutant names
+names_pollutant_tibble <- 
+  air_pollutant_tibble %>% 
+  left_join(
+    parameter_names_codes_tibble, 
+    by = "parameter_code"
+  )
+
+# what are the pollutant names
+pollutant_names <- 
+  names_pollutant_tibble %>% 
+  select(parameter_name, parameter_code) %>% 
+  distinct()
+
+# make a tibble for just the carbon
+carbon_tibble <- 
+  names_pollutant_tibble %>% 
+  filter(str_detect(parameter_name, "EC") | 
+           str_detect(parameter_name, "OC") | 
+           str_detect(parameter_name, "carbon") |
+            str_detect(parameter_name, "CARBON") |
+           str_detect(parameter_name, "TC")
+         )
+
+ec_tibble <- 
+  carbon_tibble %>% 
+  filter(
+    str_detect(parameter_name, "EC")
+  )
+
+ec_parameter_codes_monitor_counts <- 
+  ec_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code) %>% 
+  distinct() %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+oc_tibble <- 
+  carbon_tibble %>% 
+  filter(
+    str_detect(parameter_name, "OC")
+  )
+
+oc_parameter_codes_monitor_counts <- 
+  oc_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code) %>% 
+  distinct() %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+# summarize each by date
+carbon_by_date <- 
+  carbon_tibble %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  summarize(first_date = min(date_local), 
+            last_date = max(date_local))
+
+# summarize each by date and monitor
+carbon_by_date_by_monitor <- 
+  carbon_tibble %>% 
+  group_by(monitor_id, parameter_name, parameter_code) %>% 
+  summarize(first_date = min(date_local), 
+            last_date = max(date_local)) %>% 
+  arrange(monitor_id)
+
+# count carbon parameter codes by monitor 
+parameter_codes_monitor_counts <- 
+  carbon_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code) %>% 
+  distinct() %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+# count overall number of monitors with carbon data
+carbon_monitor_count <- 
+  carbon_tibble %>% 
+  select(monitor_id) %>% 
+  distinct() %>% 
+  tally()
+
+# monitors with EC gold standard throughout the period
+carbon_ec_monitor_id <- 
+  carbon_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code, date_local) %>% 
+  filter(parameter_code == 88321) %>% 
+  group_by(monitor_id, poc) %>% 
+  summarize(min_date = min(date_local), 
+            max_date = max(date_local)) %>% 
+  arrange(min_date, max_date)
+
+# table of monitors
+carbon_monitor_table <- 
+  carbon_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code, date_local) %>% 
+  group_by(monitor_id, poc, parameter_code) %>% 
+  summarise(first_date = min(date_local), 
+            last_date = max(date_local), 
+            observations = n()) %>% 
+  arrange(monitor_id, poc, parameter_code)
+
+
+```
+
+
+```{r carbon conversions}
+
+### load files
+
+# load air data file
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "air_pollutant_tibble.rdata"
+    )
+)
+
+# make list of data frames for conversion
+converted_tibbles <- 
+  list()
+
+### elemental carbon
+
+# convert 88307	EC CSN PM2.5 LC TOT
+# 88321 EC PM2.5 LC TOR
+converted_tibbles[["ec_88307_to_88321_conversion_tibble"]] <- 
+  air_pollutant_tibble %>% 
+  filter(parameter_code == 88307) %>% 
+  mutate(parameter_code = 99307, 
+         arithmetic_mean = arithmetic_mean / 0.71 - 0.08/0.71)
+
+# convert 88380 EC CSN_Rev Unadjusted PM2.5 LC TOR to 
+# 88321 EC PM2.5 LC TOR
+converted_tibbles[["ec_88380_to_88321_conversion_tibble"]] <- 
+  air_pollutant_tibble %>% 
+  filter(parameter_code == 88380) %>% 
+  mutate(parameter_code = 99380, 
+         arithmetic_mean = arithmetic_mean / 0.98 - 0.02/0.98)
+
+
+### organic carbon
+
+# convert 88305	OC CSN Unadjusted PM2.5 LC TOT
+# 88320 OC PM2.5 LC TOR
+converted_tibbles[["ec_88305_to_88320_conversion_tibble"]] <- 
+  air_pollutant_tibble %>% 
+  filter(parameter_code == 88305) %>% 
+  mutate(parameter_code = 99305, 
+         arithmetic_mean = arithmetic_mean / 1.41 - 1.21/1.41)
+
+# convert 88370 OC CSN_Rev Unadjusted PM2.5 LC TOR to 
+# 88320 OC PM2.5 LC TOR
+converted_tibbles[["ec_88370_to_88320_conversion_tibble"]] <- 
+  air_pollutant_tibble %>% 
+  filter(parameter_code == 88370) %>% 
+  mutate(parameter_code = 99370, 
+         arithmetic_mean = arithmetic_mean / 1.04 - 0.20/1.04)
+
+# combine all of the above
+air_pollutant_conversion_tibble <- 
+  air_pollutant_tibble %>% 
+  bind_rows(converted_tibbles) 
+  
+
+# save the air pollution conversion tibble
+save(
+  air_pollutant_conversion_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_pollutant_conversion_tibble.rdata"
+    )
+)
+
+# remove tibbles
+rm(air_pollutant_tibble,
+   air_pollutant_conversion_tibble, 
+   converted_tibbles)
+gc()
+  
+```
+
+
+```{r elemental carbon variable selection}
+
+# load air pollution with conversions
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_pollutant_conversion_tibble.rdata"
+    )
+)
+
+# load parameter names and codes
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "parameter_names_codes_tibble.rdata"
+    )
+)
+
+# converted and unconverted parameter code vectors
+ec_converted_codes <- 
+  c(99307, 99380)
+ec_unconverted_codes <- 
+  c(88307, 88380)
+
+oc_converted_codes <- 
+  c(99305, 99370)
+oc_unconverted_codes <- 
+  c(88305, 88370)
+
+ec_names_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "EC")) %>% 
+  pull(parameter_code) %>% 
+  combine(ec_converted_codes)
+
+oc_names_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "OC")) %>% 
+  pull(parameter_code) %>% 
+  combine(oc_converted_codes)
+
+ec_conversion_tibble <- 
+  air_pollutant_conversion_tibble %>% 
+  filter(
+    parameter_code %in%
+      ec_names_codes
+  ) %>% 
+  filter(
+    !(parameter_code %in% 
+        ec_unconverted_codes)
+  )
+  
+oc_conversion_tibble <- 
+  air_pollutant_conversion_tibble %>% 
+  filter(
+    parameter_code %in%
+      oc_names_codes
+  ) %>% 
+  filter(
+    !(parameter_code %in% 
+        oc_unconverted_codes)
+  )
+
+# ec conversion tibble
+# summarize each by date and monitor
+ec_monitor_tibble <- 
+  ec_conversion_tibble %>% 
+  select(monitor_id, poc, parameter_code, date_local) %>% 
+  group_by(monitor_id, poc, parameter_code) %>% 
+  summarise(first_date = min(date_local), 
+            last_date = max(date_local), 
+            observations = n()) %>% 
+  arrange(monitor_id, poc, parameter_code)
+
+ec_pocs_by_site <- 
+  ec_monitor_tibble %>% 
+  select(monitor_id, poc) %>% 
+  distinct() %>% 
+  group_by(monitor_id) %>% 
+  mutate(poc = as.character(poc)) %>% 
+  summarize(poc_count = n()) %>% 
+  arrange(poc_count)
+
+ec_monitor_ids <- 
+  ec_conversion_tibble %>% 
+  select(monitor_id) %>% 
+  distinct() %>% 
+  pull()
+
+# thingie <- 
+#   ggplot(
+#     data = ec_conversion_tibble[ec_conversion_tibble$monitor_id_poc == "01-073-0023-05",],
+#     aes(x = date_local, y = arithmetic_mean, color = factor(parameter_code))
+#   ) + 
+#   geom_point(aes(shape = factor(parameter_code)), size = 1, alpha = 0.5) +
+#   scale_x_date(date_labels = "%Y-%m-%d", date_breaks = "5 days", minor_breaks = "1 day") +
+#   theme(axis.text.x = element_text(angle = 90, size = 3))
+# 
+# ggsave(filename = file.path("intermediate_data", "plots", "thingie.jpg"), plot = thingie, device = NULL, path = NULL,
+#   scale = 1, width = 180, height = 5, units = c("cm"),
+#   dpi = 300, limitsize = FALSE)
+# 
+# thingie
+
+# PLAN
+# FOR EACH DATE AT EACH MONITOR
+# TOTAL DIFFERENT KINDS OF CODES
+# CHOOSE CODE FROM PRIORITY LIST
+# USE THAT ONE
+# FLAG ERROR IN CASE OF TIE
+
+  
+```
+
+
+
+```{r make graphs by monitor}
+
+```
+
+
+
+```{r organic carbon variable selection ?!?}
+
+
 
 ```
 
