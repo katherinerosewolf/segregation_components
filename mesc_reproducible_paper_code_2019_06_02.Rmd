@@ -2705,6 +2705,88 @@ gc()
 ```
 
 
+```{r deriving demographic variables}
+
+# load demographic tibble
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "demographic_tibble.rdata"
+    )
+)
+
+demographic_constructed <- 
+  demographic_tibble
+
+# remove the raw tibble to save memory
+rm(demographic_tibble)
+gc()
+
+# # total population
+# demographic_constructed <- 
+#   demographic_constructed %>% 
+#   mutate(
+#     pop_tot = , 
+#     land_area_km2 = , 
+#     water_area_km2 = ,
+#     pop_dense_km2 = , 
+#     hh_inc_med = , 
+#     med_age = ,
+#     age_0_19_pct = , 
+#     age_20_64_pct = , 
+#     age_65_plus_pct = ,
+#     unemp_pct = ,
+#     hh_val_med = ,
+#     nhw_pct = , 
+#     native_pct = , 
+#     latinx_pct = ,
+#     black_pct = , 
+#     ed_hs_pct = , 
+#     eng_lim_hh_pct = ,
+#     rent_occ_hh_pct = ,
+#     own_occ_hh_pct = , 
+#     pov_pct = ,
+#     pov_200_pct = , 
+#     female_pct = ,
+#     earn_indv_med = ,
+#     hlth_ins_pct = 
+#   )
+
+# save constructed variables
+save(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "demographic_constructed.rdata"
+    )
+)
+
+# cleanup
+rm(demographic_constructed)
+gc()
+
+
+```
+
+
+
+
+```{r construct ACS variables, eval=FALSE, include=FALSE}
+
+
+
+# save constructed variables
+save(acs_geo_cats,
+     file = "acs_geo_cats.rdata")
+
+# make constructed variables into .csv
+write.csv(acs_geo_cats,
+          file = "acs_geo_cats.csv")
+
+```
+
+
 ## air data
 
 ### carbon disasters
@@ -2934,49 +3016,35 @@ load(
     )
 )
 
-# converted and unconverted parameter code vectors
+
+# numeric vectors of converted and unconverted codes for ec
 ec_converted_codes <- 
   c(99307, 99380)
 ec_unconverted_codes <- 
   c(88307, 88380)
 
-oc_converted_codes <- 
-  c(99305, 99370)
-oc_unconverted_codes <- 
-  c(88305, 88370)
+# make tibble of ec names and codes
+ec_names_and_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "EC"))
 
-ec_names_codes <- 
+# make numeric vector of all ec codes
+ec_codes <- 
   parameter_names_codes_tibble %>% 
   filter(str_detect(parameter_name, "EC")) %>% 
   pull(parameter_code) %>% 
   combine(ec_converted_codes)
 
-oc_names_codes <- 
-  parameter_names_codes_tibble %>% 
-  filter(str_detect(parameter_name, "OC")) %>% 
-  pull(parameter_code) %>% 
-  combine(oc_converted_codes)
-
+# filter tibble for only elemental carbon data considered for inclusion
 ec_conversion_tibble <- 
   air_pollutant_conversion_tibble %>% 
   filter(
     parameter_code %in%
-      ec_names_codes
+      ec_codes
   ) %>% 
   filter(
     !(parameter_code %in% 
-        ec_unconverted_codes)
-  )
-  
-oc_conversion_tibble <- 
-  air_pollutant_conversion_tibble %>% 
-  filter(
-    parameter_code %in%
-      oc_names_codes
-  ) %>% 
-  filter(
-    !(parameter_code %in% 
-        oc_unconverted_codes)
+        ec_unconverted_codes)  # take out raw pre-conversion rows
   )
 
 # ec conversion tibble
@@ -2990,6 +3058,7 @@ ec_monitor_tibble <-
             observations = n()) %>% 
   arrange(monitor_id, poc, parameter_code)
 
+# counts of poc codes by monitor_id
 ec_pocs_by_site <- 
   ec_monitor_tibble %>% 
   select(monitor_id, poc) %>% 
@@ -2999,11 +3068,209 @@ ec_pocs_by_site <-
   summarize(poc_count = n()) %>% 
   arrange(poc_count)
 
+# monitor id character vector
 ec_monitor_ids <- 
   ec_conversion_tibble %>% 
   select(monitor_id) %>% 
   distinct() %>% 
   pull()
+
+# make tibble of parameter codes and priority rankings
+ec_priority_tibble <- 
+  tibble(
+    parameter_code = 
+      c(88321, 99380, 99307, 88381, 88357, 88316),
+    parameter_priority = 
+      c(1, 2, 3, 4, 5, 6)
+  )
+
+# tibble including only the best data point for each day
+ec_select_tibble <- 
+  ec_conversion_tibble %>% 
+  left_join(ec_priority_tibble, 
+            by = "parameter_code") %>% 
+  arrange(monitor_id_poc, date_local) %>% 
+  group_by(monitor_id_poc, date_local) %>% 
+  arrange(parameter_priority, .by_group = TRUE) %>% 
+  slice(1)
+
+# checking the select and full ec tibbles for all the date-monitor-id-poc combinations
+ec_conversion_date_check <- 
+  ec_conversion_tibble %>% 
+  select(
+    monitor_id_poc, 
+    date_local
+  ) %>% 
+  distinct() %>% 
+  tally()
+
+ec_selected_date_check <- 
+  ec_select_tibble %>% 
+  ungroup() %>% 
+  select(
+    monitor_id_poc, 
+    date_local
+  ) %>% 
+# distinct() %>% 
+  tally()
+
+# save the select tibble to disk
+save(ec_select_tibble, 
+     file = 
+       file.path(
+         "intermediate_data", 
+         "ec_select_tibble.rdata"
+       )
+     )
+  
+
+rm(air_pollutant_conversion_tibble, 
+   parameter_names_codes_tibble, 
+   ec_converted_codes, 
+   ec_unconverted_codes)
+gc()
+
+  
+```
+
+
+
+```{r organic carbon variable selection}
+
+# load air pollution with conversions
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "air_pollutant_conversion_tibble.rdata"
+    )
+)
+
+# load parameter names and codes
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "parameter_names_codes_tibble.rdata"
+    )
+)
+
+# numeric vectors of converted and unconverted codes for ec and oc
+oc_converted_codes <- 
+  c(99305, 99370)
+oc_unconverted_codes <- 
+  c(88305, 88370)
+
+# make tibble of oc names and codes
+oc_names_and_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "OC"))
+
+# make numeric vector of all oc codes
+oc_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "OC")) %>% 
+  pull(parameter_code) %>% 
+  combine(oc_converted_codes)
+
+# filter tibble for only organic carbon data considered for inclusion
+oc_conversion_tibble <- 
+  air_pollutant_conversion_tibble %>% 
+  filter(
+    parameter_code %in%
+      oc_codes
+  ) %>% 
+  filter(
+    !(parameter_code %in% 
+        oc_unconverted_codes)  # take out raw pre-conversion rows
+  )
+
+# oc conversion tibble
+# summarize each by date and monitor
+oc_monitor_tibble <- 
+  oc_conversion_tibble %>% 
+  select(monitor_id, poc, parameter_code, date_local) %>% 
+  group_by(monitor_id, poc, parameter_code) %>% 
+  summarise(first_date = min(date_local), 
+            last_date = max(date_local), 
+            observations = n()) %>% 
+  arrange(monitor_id, poc, parameter_code)
+
+# counts of poc codes by monitor_id
+oc_pocs_by_site <- 
+  oc_monitor_tibble %>% 
+  select(monitor_id, poc) %>% 
+  distinct() %>% 
+  group_by(monitor_id) %>% 
+  mutate(poc = as.character(poc)) %>% 
+  summarize(poc_count = n()) %>% 
+  arrange(poc_count)
+
+# monitor id character vector
+oc_monitor_ids <- 
+  oc_conversion_tibble %>% 
+  select(monitor_id) %>% 
+  distinct() %>% 
+  pull()
+
+# make tibble of parameter codes and priority rankings
+oc_priority_tibble <- 
+  tibble(
+    parameter_code = 
+      c(88320, 99370, 99305, 88382, 88355),
+    parameter_priority = 
+      c(1, 2, 3, 4, 5)
+  )
+
+# tibble including only the best data point for each day
+oc_select_tibble <- 
+  oc_conversion_tibble %>% 
+  left_join(oc_priority_tibble,  # add the priority codes
+            by = "parameter_code") %>% 
+  arrange(monitor_id_poc, date_local) %>% 
+  group_by(monitor_id_poc, date_local) %>% 
+  arrange(parameter_priority, .by_group = TRUE) %>%  # sort in priority order
+  slice(1)  # take highest priority row for each monitor and date
+
+# checking the select and full oc tibbles for all the date-monitor-id-poc combinations
+oc_conversion_date_check <- 
+  oc_conversion_tibble %>% 
+  select(
+    monitor_id_poc, 
+    date_local
+  ) %>% 
+  distinct() %>% 
+  tally()
+
+oc_selected_date_check <- 
+  oc_select_tibble %>% 
+  ungroup() %>% 
+  select(
+    monitor_id_poc, 
+    date_local
+  ) %>% 
+# distinct() %>% 
+  tally()
+
+save(oc_select_tibble, 
+     file = 
+       file.path(
+         "intermediate_data", 
+         "oc_select_tibble.rdata"
+       )
+     )
+  
+rm(air_pollutant_conversion_tibble, 
+   parameter_names_codes_tibble, 
+   oc_converted_codes, 
+   oc_unconverted_codes)
+gc()
+
+```
+
+
+
+```{r make graphs by monitor, eval=FALSE, include=FALSE}
 
 # thingie <- 
 #   ggplot(
@@ -3020,30 +3287,7 @@ ec_monitor_ids <-
 # 
 # thingie
 
-# PLAN
-# FOR EACH DATE AT EACH MONITOR
-# TOTAL DIFFERENT KINDS OF CODES
-# CHOOSE CODE FROM PRIORITY LIST
-# USE THAT ONE
-# FLAG ERROR IN CASE OF TIE
-
-  
 ```
-
-
-
-```{r make graphs by monitor}
-
-```
-
-
-
-```{r organic carbon variable selection ?!?}
-
-
-
-```
-
 
 ## monitor assignments
 
