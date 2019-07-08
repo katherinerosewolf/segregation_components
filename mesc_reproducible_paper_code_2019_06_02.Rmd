@@ -2705,7 +2705,33 @@ gc()
 ```
 
 
-```{r deriving demographic variables}
+### add land area
+
+```{r land area to demographic tibble}
+
+# load tigris shapefiles
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "tigris_shapefiles_no_data.rdata"
+    )
+)
+
+# pull the geoid, land area, water area, drop geography
+area_tibble <- 
+  tigris_shapefiles_no_data %>% 
+  st_drop_geometry() %>%  # drop the geometry
+  as_tibble() %>%  # make result into a tibble
+  select(
+    geoid = geoid10,  # select and rename geoid
+    aland10,  # select land area
+    awater10  # select water area
+  )
+
+# remove shapefiles
+rm(tigris_shapefiles_no_data)
+gc()
 
 # load demographic tibble
 load(
@@ -2716,42 +2742,331 @@ load(
     )
 )
 
-demographic_constructed <- 
-  demographic_tibble
+# join demographic tibble to area tibble
+demographic_area_tibble <- 
+  demographic_tibble %>% 
+  left_join(
+    area_tibble, 
+    by = "geoid"
+  )
 
-# remove the raw tibble to save memory
-rm(demographic_tibble)
+# save demographic area tibble
+save(
+  demographic_area_tibble, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "demographic_area_tibble.rdata"
+    )
+)
+
+# remove unneeded files
+rm(area_tibble, demographic_tibble, demographic_area_tibble)
 gc()
 
-# # total population
-# demographic_constructed <- 
-#   demographic_constructed %>% 
-#   mutate(
-#     pop_tot = , 
-#     land_area_km2 = , 
-#     water_area_km2 = ,
-#     pop_dense_km2 = , 
-#     hh_inc_med = , 
-#     med_age = ,
-#     age_0_19_pct = , 
-#     age_20_64_pct = , 
-#     age_65_plus_pct = ,
-#     unemp_pct = ,
-#     hh_val_med = ,
-#     nhw_pct = , 
-#     native_pct = , 
-#     latinx_pct = ,
-#     black_pct = , 
-#     ed_hs_pct = , 
-#     eng_lim_hh_pct = ,
-#     rent_occ_hh_pct = ,
-#     own_occ_hh_pct = , 
-#     pov_pct = ,
-#     pov_200_pct = , 
-#     female_pct = ,
-#     earn_indv_med = ,
-#     hlth_ins_pct = 
-#   )
+```
+
+
+### construct derived variables
+
+```{r deriving demographic variables}
+
+# load demographic area tibble
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "demographic_area_tibble.rdata"
+    )
+)
+
+# make the constructed tibble
+demographic_constructed <- 
+  demographic_area_tibble
+
+# remove the raw tibble to save memory
+rm(demographic_area_tibble)
+gc()
+
+colnames(demographic_constructed)
+
+# total population sf1 p1 p0010001
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    pop_tot_p0010001 = population)
+
+# land and water area and population density
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    land_area_m2 = aland10, 
+    water_area_m2 = awater10, 
+    land_area_km2 = aland10 / 1000000, 
+    water_area_km2 = awater10 / 1000000, 
+    pop_dense_km2 = population / land_area_km2)
+
+# income household median b19013_001
+  # median household income in the past 12 months (in 2012 inflation-adjusted dollars)
+  # universe: households
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    inc_hh_med_b19013_001 = b19013_001, 
+    inc_hh_med_b19013_001_margin = b19013_001_margin)
+
+# median age sf1 p13 p0130001
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    age_median_p0130001 = p0130001)
+
+# age percentages sf1 p12
+  # sex by age
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    age_0_19_pct = 
+      (p0120003 +   # male under 5 years
+       p0120004 +   # male 5 to 9 years
+       p0120005 +   # male 10 to 14 years
+       p0120006 +   # male 15 to 17 years
+       p0120007 +   # male 18 and 19 years
+       p0120027 +   # female under 5 years
+       p0120028 +   # female 5 to 9 years
+       p0120029 +   # female 10 to 14 years
+       p0120030 +   # female 15 to 17 years
+       p0120031) /  # female 18 and 19 years
+      pop_tot_p0010001,  # divide by total population
+    age_20_64_pct = 
+      (p0120008 +   # male 20 years
+       p0120009 +   # male 21 years
+       p0120010 +   # male 22 to 24 years
+       p0120011 +   # male 25 to 29 years
+       p0120012 +   # male 30 to 24 years
+       p0120013 +   # male 35 to 39 years
+       p0120014 +   # male 40 to 44 years
+       p0120015 +   # male 45 to 49 years
+       p0120016 +   # male 50 to 54 years
+       p0120017 +   # male 55 to 59 years
+       p0120018 +   # male 60 and 61 years
+       p0120019 +   # male 62 to 64 years
+       p0120032 +   # female 20 years
+       p0120033 +   # female 21 years
+       p0120034 +   # female 22 to 24 years
+       p0120035 +   # female 25 to 29 years
+       p0120036 +   # female 30 to 34 years
+       p0120037 +   # female 35 to 39 years
+       p0120038 +   # female 40 to 44 years
+       p0120039 +   # female 45 to 49 years
+       p0120040 +   # female 50 to 54 years
+       p0120041 +   # female 55 to 59 years
+       p0120042 +   # female 60 and 61 years
+       p0120043) /  # female 62 to 64 years
+      pop_tot_p0010001,  # total population
+    age_65_plus_pct = 
+      (p0120020 +   # male 65 and 66 years
+       p0120021 +   # male 67 to 69 years
+       p0120022 +   # male 70 to 74 years
+       p0120023 +   # male 75 to 79 years
+       p0120024 +   # male 80 to 84 years
+       p0120025 +   # male 85 years and over
+       p0120044 +   # female 65 and 66 years
+       p0120045 +   # female 67 to 69 years
+       p0120046 +   # female 70 to 74 years
+       p0120047 +   # female 75 to 79 years
+       p0120048 +   # female 80 to 84 years
+       p0120049) /  # female 85 years and over
+    pop_tot_p0010001)  # total population
+
+# unemployed percentage b25075
+  # employment status for the population 16 years and over
+  # universe: population 16 years and over
+  # note: below uses % unemployed in civilian labor force only
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    unemp_pct_b25075_005_003 = b23025_005 / b23025_003, 
+    unemp_pct_b25075_005_marg_num = b23025_005_margin, 
+    unemp_pct_b25075_003_marg_denom = b23025_003_margin
+    )
+
+# median home value b25077
+  # median value (dollars)
+  # universe: owner-occupied housing units
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    home_val_med_b25077 = b25077_001, 
+    home_val_med_b25077_marg = b25077_001_margin
+  )
+
+# race and ethnicity sf1 p5
+  # hispanic or latino origin by race
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    not_hisp_lat_pct_p0050002 = 
+      p0050002 / p0050001,
+    white_nhl_pct_p0050003 = 
+      p0050003 / p0050001,
+    black_nhl_pct_p0050004 = 
+      p0050004 / p0050001, 
+    aian_nhl_pct_p0050005 = 
+      p0050005 / p0050001,
+    asian_nhl_p0050006 = 
+      p0050006 / p0050001,
+    nhopi_nhl_p0050007 = 
+      p0050007 / p0050001, 
+    some_other_nhl_p0050008 =
+      p0050008 / p0050001,
+    two_more_nhl_p0050009 =
+      p0050009 / p0050001,
+    hisp_lat_pct_p0050010 = 
+      p0050010 / p0050001,
+    white_hl_p0050011 = 
+      p0050011 / p0050001, 
+    black_hl_p0050012 = 
+      p0050012 / p0050001, 
+    aian_hl_p0050013 = 
+      p0050013 / p0050001, 
+    asian_hl_p0050014 = 
+      p0050014 / p0050001,
+    nhopi_hl_p0050015 = 
+      p0050015 / p0050001, 
+    some_other_hl_p0050016 = 
+      p0050016 / p0050001, 
+    two_more_hl_p0050017 = 
+      p0050017 / p0050001,
+    aian_nhopi_nhl_pct_p0050005_07 = 
+      (p0050005 + p0050007) / p0050001, 
+    all_aian_nhopi_pct_p0050005_07_13_15 =
+      (p0050005 + p0050007 + p0050013 + p0050015) / p0050001, 
+    some_other_and_two_more_nhl_p0050008_009 = 
+      (p0050008 + p0050009) / p0050001)
+    
+# at least high school education b15003
+  # educational attainment for the population 25 years and over
+  # universe: population 25 years and over
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    education_high_school_b15003_17_to_25 = 
+      b15003_017 +
+      b15003_018 +
+      b15003_019 +
+      b15003_020 +
+      b15003_021 +
+      b15003_022 +
+      b15003_023 +
+      b15003_024 +
+      b15003_025
+    )
+
+# limited english percent of households b16002
+  # household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
+  # universe: households
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    ling_iso_pct_b16002_004_007_010_013 =
+      (b16002_004 + b16002_007 + b16002_010 + b16002_013) / b16002_001
+    )
+
+# housing tenure by household (renter and owner occupancy) sf1 h4
+  # housing tenure (SF1 H4)
+  # universe: occupied housing units
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    rent_occ_hh_pct_h0040004 = h0040004 / h0040001,
+    own_occ_hh_pct = (h0040002 + h0040003) / h0040001
+  )
+
+# housing tenure by people (renter and owner occupancy) sf1 h11
+  # population in occupied housing units by tenure
+  # universe: population in occupied housing units
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    rent_occ_pop_pct = h0110004 / h0110001, 
+    own_occ_pop_pct = (h0110002 + h0110003) / h0110001
+  )
+
+# poverty percentages c17002
+  # ratio of income to poverty level in the past 12 months
+  # universe: population for whom poverty status is determined
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    pov_below_pct_c17002_002_to_003 = 
+      (c17002_002 + 
+       c17002_003) / 
+       c17002_001,
+    pov_below_125_pct_c17002_002_to_004 = 
+      (c17002_002 + 
+       c17002_003 + 
+       c17002_004) / 
+       c17002_001,
+    pov_below_150_pct_c17002_002_to_005 = 
+      (c17002_002 + 
+       c17002_003 + 
+       c17002_004 + 
+       c17002_005) / 
+       c17002_001,
+    pov_below_185_pct_c17002_002_to_006 = 
+      (c17002_002 + 
+       c17002_003 + 
+       c17002_004 + 
+       c17002_005 + 
+       c17002_006) / 
+       c17002_001, 
+    pov_below_200_pct_c17002_002_to_007 = 
+      (c17002_002 + 
+       c17002_003 + 
+       c17002_004 + 
+       c17002_005 + 
+       c17002_006 + 
+       c17002_007) / 
+       c17002_001
+  )
+
+# female percentages sf1 p12
+  # sex by age (SF1 P12)
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    female_pct_p0120026 = 
+      p0120026 / p0120001
+  )
+
+# median individual earnings b20002
+  # median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
+  # universe: population 16 years and over with earnings
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    earn_ind_med_b20002_001 = 
+      b20002_001
+  )
+
+# health insurance percentage c27010
+  # types of health insurance coverage by age
+  # universe: civilian noninstitutionalized population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    hlth_ins_none_pct_c27010_006_011_016_021 = 
+      (c27010_006 +
+       c27010_011 +
+       c27010_016 +
+       c27010_021) /
+       c27010_001
+    )
 
 # save constructed variables
 save(
@@ -2762,29 +3077,14 @@ save(
     )
 )
 
-# cleanup
-rm(demographic_constructed)
-gc()
+# # cleanup
+# rm(demographic_constructed)
+# gc()
 
 
 ```
 
 
-
-
-```{r construct ACS variables, eval=FALSE, include=FALSE}
-
-
-
-# save constructed variables
-save(acs_geo_cats,
-     file = "acs_geo_cats.rdata")
-
-# make constructed variables into .csv
-write.csv(acs_geo_cats,
-          file = "acs_geo_cats.csv")
-
-```
 
 
 ## air data
