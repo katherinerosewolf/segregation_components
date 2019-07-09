@@ -515,6 +515,74 @@ if(!file.exists(file.path("pre_travis_intermediate_data",
   # P0050016      Some Other Race alone
   # P0050017      Two or More Races
   
+  # race (SF1 PCT23)
+  # Universe: Total population
+  race_sf1_pct23 <- 
+    sprintf("PCT023%0.4d", 1:24)
+  
+  # PCT0230001  Total: 
+  # PCT0230002  Population of one race: 
+  # PCT0230003    White 
+  # PCT0230004    Black or African American 
+  # PCT0230005    American Indian and Alaska Native 
+  # PCT0230006    Asian: 
+  # PCT0230007      Asian Indian 
+  # PCT0230008      Chinese (including Taiwanese) 
+  # PCT0230009      Filipino 
+  # PCT0230010      Japanese 
+  # PCT0230011      Korean 
+  # PCT0230012      Vietnamese 
+  # PCT0230013      Other Asian 
+  # PCT0230014    Native Hawaiian and Other Pacific Islander: 
+  # PCT0230015      Native Hawaiian 
+  # PCT0230016      Guamanian or Chamorro 
+  # PCT0230017      Samoan 
+  # PCT0230018      Other Pacific Islander 
+  # PCT0230019    Some Other Race 
+  # PCT0230020    Population of Two or More Races 
+  # PCT0230021      White; American Indian and Alaska Native 
+  # PCT0230022      White; Asian 
+  # PCT0230023      White; Black or African American 
+  # PCT0230024      White; Some Other Race 
+  
+  # hispanic or latino by specific orgiin (SF1, PCT11) [31]
+  # Universe: Total population
+  hisp_lat_origin_sf1_pct11 <- 
+    sprintf("PCT011%0.4d", 1:31)
+  
+  # PCT0110001  Total:
+  # PCT0110002    Not Hispanic or Latino (001–199, 300–999) 
+  # PCT0110003    Hispanic or Latino (200–299): 
+  # PCT0110004      Mexican (210–220) 
+  # PCT0110005      Puerto Rican (260–269) 
+  # PCT0110006      Cuban (270–274) 
+  # PCT0110007      Dominican (275–279) 
+  # PCT0110008      Central American (excluding Mexican) (221–230): 
+  # PCT0110009        Costa Rican (221) 
+  # PCT0110010        Guatemalan (222) 
+  # PCT0110011        Honduran (223) 
+  # PCT0110012        Nicaraguan (224) 
+  # PCT0110013        Panamanian (225) 
+  # PCT0110014        Salvadoran (226) 
+  # PCT0110015        Other Central American (227–230) 
+  # PCT0110016      South American (231–249): 
+  # PCT0110017        Argentinean (231) 
+  # PCT0110018        Bolivian (232) 
+  # PCT0110019        Chilean (233) 
+  # PCT0110020        Colombian (234) 
+  # PCT0110021        Ecuadorian (235) 
+  # PCT0110022        Paraguayan (236) 
+  # PCT0110023        Peruvian (237) 
+  # PCT0110024        Uruguayan (238) 
+  # PCT0110025        Venezuelan (239) 
+  # PCT0110026        Other South American (240–249) 
+  # PCT0110027      Other Hispanic or Latino (200–209, 250–259, 280–299): 
+  # PCT0110028        Spaniard (200–209) 
+  # PCT0110029        Spanish (282) 
+  # PCT0110030        Spanish American (286) 
+  # PCT0110031        All other Hispanic or Latino (250–259, 280–281, 283–285, 287–299) 
+  
+  
   # sex by age (SF1 P12)
   # universe: total population
   sex_by_age_sf1_p12 <- 
@@ -601,6 +669,8 @@ if(!file.exists(file.path("pre_travis_intermediate_data",
     list(
       total_pop_sf1_p1,
       race_sf1_p5,
+      race_sf1_pct23, 
+      hisp_lat_origin_sf1_pct11,
       sex_by_age_sf1_p12,
       age_median_sf1_p13,
       occupancy_sf1_h3,
@@ -2790,6 +2860,10 @@ gc()
 
 colnames(demographic_constructed)
 
+#### census
+
+#### demographic variables
+
 # total population sf1 p1 p0010001
 demographic_constructed <-
   demographic_constructed %>%
@@ -2806,14 +2880,63 @@ demographic_constructed <-
     water_area_km2 = awater10 / 1000000, 
     pop_dense_km2 = population / land_area_km2)
 
-# income household median b19013_001
-  # median household income in the past 12 months (in 2012 inflation-adjusted dollars)
-  # universe: households
+
+# race and ethnicity sf1 p5
+  # hispanic or latino origin by race
+  # universe: total population
 demographic_constructed <-
   demographic_constructed %>%
   mutate(
-    inc_hh_med_b19013_001 = b19013_001, 
-    inc_hh_med_b19013_001_margin = b19013_001_margin)
+    not_hisp_lat_pct_p0050002 = 
+      p0050002 / p0050001,
+    white_nhl_pct_p0050003 = 
+      p0050003 / p0050001,
+    black_nhl_pct_p0050004 = 
+      p0050004 / p0050001, 
+    aian_nhl_pct_p0050005 = 
+      p0050005 / p0050001,
+    asian_nhl_p0050006 = 
+      p0050006 / p0050001,
+    nhopi_nhl_p0050007 = 
+      p0050007 / p0050001, 
+    some_other_nhl_p0050008 =
+      p0050008 / p0050001,
+    two_more_nhl_p0050009 =
+      p0050009 / p0050001,
+    hisp_lat_pct_p0050010 = 
+      p0050010 / p0050001,
+    white_hl_p0050011 = 
+      p0050011 / p0050001, 
+    black_hl_p0050012 = 
+      p0050012 / p0050001, 
+    aian_hl_p0050013 = 
+      p0050013 / p0050001, 
+    asian_hl_p0050014 = 
+      p0050014 / p0050001,
+    nhopi_hl_p0050015 = 
+      p0050015 / p0050001, 
+    some_other_hl_p0050016 = 
+      p0050016 / p0050001, 
+    two_more_hl_p0050017 = 
+      p0050017 / p0050001,
+    aian_nhopi_nhl_pct_p0050005_07 = 
+      (p0050005 + p0050007) / p0050001, 
+    all_aian_nhopi_pct_p0050005_07_13_15 =
+      (p0050005 + p0050007 + p0050013 + p0050015) / p0050001, 
+    some_other_and_two_more_nhl_p0050008_009 = 
+      (p0050008 + p0050009) / p0050001)
+
+
+# female percentages sf1 p12
+  # sex by age (SF1 P12)
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    female_pct_p0120026 = 
+      p0120026 / p0120001
+  )
+
 
 # median age sf1 p13 p0130001
   # universe: total population
@@ -2821,6 +2944,7 @@ demographic_constructed <-
   demographic_constructed %>%
   mutate(
     age_median_p0130001 = p0130001)
+
 
 # age percentages sf1 p12
   # sex by age
@@ -2881,6 +3005,42 @@ demographic_constructed <-
        p0120049) /  # female 85 years and over
     pop_tot_p0010001)  # total population
 
+
+# housing tenure by household (renter and owner occupancy) sf1 h4
+  # housing tenure (SF1 H4)
+  # universe: occupied housing units
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    rent_occ_hh_pct_h0040004 = h0040004 / h0040001,
+    own_occ_hh_pct = (h0040002 + h0040003) / h0040001
+  )
+
+
+# housing tenure by people (renter and owner occupancy) sf1 h11
+  # population in occupied housing units by tenure
+  # universe: population in occupied housing units
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    rent_occ_pop_pct = h0110004 / h0110001, 
+    own_occ_pop_pct = (h0110002 + h0110003) / h0110001
+  )
+
+
+
+#### american community survey
+
+# income household median b19013_001
+  # median household income in the past 12 months (in 2012 inflation-adjusted dollars)
+  # universe: households
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    inc_hh_med_b19013_001 = b19013_001, 
+    inc_hh_med_b19013_001_margin = b19013_001_margin)
+
+
 # unemployed percentage b25075
   # employment status for the population 16 years and over
   # universe: population 16 years and over
@@ -2893,6 +3053,7 @@ demographic_constructed <-
     unemp_pct_b25075_003_marg_denom = b23025_003_margin
     )
 
+
 # median home value b25077
   # median value (dollars)
   # universe: owner-occupied housing units
@@ -2903,50 +3064,6 @@ demographic_constructed <-
     home_val_med_b25077_marg = b25077_001_margin
   )
 
-# race and ethnicity sf1 p5
-  # hispanic or latino origin by race
-  # universe: total population
-demographic_constructed <-
-  demographic_constructed %>%
-  mutate(
-    not_hisp_lat_pct_p0050002 = 
-      p0050002 / p0050001,
-    white_nhl_pct_p0050003 = 
-      p0050003 / p0050001,
-    black_nhl_pct_p0050004 = 
-      p0050004 / p0050001, 
-    aian_nhl_pct_p0050005 = 
-      p0050005 / p0050001,
-    asian_nhl_p0050006 = 
-      p0050006 / p0050001,
-    nhopi_nhl_p0050007 = 
-      p0050007 / p0050001, 
-    some_other_nhl_p0050008 =
-      p0050008 / p0050001,
-    two_more_nhl_p0050009 =
-      p0050009 / p0050001,
-    hisp_lat_pct_p0050010 = 
-      p0050010 / p0050001,
-    white_hl_p0050011 = 
-      p0050011 / p0050001, 
-    black_hl_p0050012 = 
-      p0050012 / p0050001, 
-    aian_hl_p0050013 = 
-      p0050013 / p0050001, 
-    asian_hl_p0050014 = 
-      p0050014 / p0050001,
-    nhopi_hl_p0050015 = 
-      p0050015 / p0050001, 
-    some_other_hl_p0050016 = 
-      p0050016 / p0050001, 
-    two_more_hl_p0050017 = 
-      p0050017 / p0050001,
-    aian_nhopi_nhl_pct_p0050005_07 = 
-      (p0050005 + p0050007) / p0050001, 
-    all_aian_nhopi_pct_p0050005_07_13_15 =
-      (p0050005 + p0050007 + p0050013 + p0050015) / p0050001, 
-    some_other_and_two_more_nhl_p0050008_009 = 
-      (p0050008 + p0050009) / p0050001)
     
 # at least high school education b15003
   # educational attainment for the population 25 years and over
@@ -2966,6 +3083,7 @@ demographic_constructed <-
       b15003_025
     )
 
+
 # limited english percent of households b16002
   # household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
   # universe: households
@@ -2976,25 +3094,6 @@ demographic_constructed <-
       (b16002_004 + b16002_007 + b16002_010 + b16002_013) / b16002_001
     )
 
-# housing tenure by household (renter and owner occupancy) sf1 h4
-  # housing tenure (SF1 H4)
-  # universe: occupied housing units
-demographic_constructed <-
-  demographic_constructed %>%
-  mutate(
-    rent_occ_hh_pct_h0040004 = h0040004 / h0040001,
-    own_occ_hh_pct = (h0040002 + h0040003) / h0040001
-  )
-
-# housing tenure by people (renter and owner occupancy) sf1 h11
-  # population in occupied housing units by tenure
-  # universe: population in occupied housing units
-demographic_constructed <-
-  demographic_constructed %>%
-  mutate(
-    rent_occ_pop_pct = h0110004 / h0110001, 
-    own_occ_pop_pct = (h0110002 + h0110003) / h0110001
-  )
 
 # poverty percentages c17002
   # ratio of income to poverty level in the past 12 months
@@ -3034,15 +3133,6 @@ demographic_constructed <-
        c17002_001
   )
 
-# female percentages sf1 p12
-  # sex by age (SF1 P12)
-  # universe: total population
-demographic_constructed <-
-  demographic_constructed %>%
-  mutate(
-    female_pct_p0120026 = 
-      p0120026 / p0120001
-  )
 
 # median individual earnings b20002
   # median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
@@ -3434,7 +3524,6 @@ gc()
 ```
 
 
-
 ```{r organic carbon variable selection}
 
 # load air pollution with conversions
@@ -3569,7 +3658,6 @@ gc()
 ```
 
 
-
 ```{r make graphs by monitor, eval=FALSE, include=FALSE}
 
 # thingie <- 
@@ -3588,6 +3676,7 @@ gc()
 # thingie
 
 ```
+
 
 ## monitor assignments
 
@@ -3934,7 +4023,7 @@ gc()
 ```
 
 
-```{r assign tracts to monitors}
+```{r assign tracts to monitors, eval=FALSE, include=FALSE}
 
 # load needed files
 load(
@@ -4020,7 +4109,7 @@ rm(
 
 ### joining the above to air data
 
-```{r join tracts to air data}
+```{r join tracts to air data, eval=FALSE, include=FALSE}
 
 # load needed files
 load(
