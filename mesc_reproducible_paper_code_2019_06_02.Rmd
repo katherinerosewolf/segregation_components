@@ -404,55 +404,6 @@ if(
 ```
 
 
-### ruca
-
-```{r ruca data, eval=FALSE, include=FALSE}
-
-# source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
-# downloaded 2017-06-27
-# last updated 2013-12-31 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
-
-if(
-  !file.exists(
-    file.path(
-      "raw_data", 
-      "ruca_2010_raw.rdata"
-      )
-    )
-  ) {
-  file_downloader(
-    desired_filename_as_string = "ruca_2010_raw.xlsx", 
-    web_address_as_string = 
-      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
-    folder_as_string = "raw_data"
-    )
-  
-  # read the data from the excel file
-  ruca_2010_raw <- 
-    read_xlsx(
-      file.path(
-        "raw_data", 
-        "ruca_2010_raw.xlsx"
-        )
-      )
-  
-  # save the excel file
-  save(
-    ruca_2010_raw, 
-    file = 
-      file.path(
-        "raw_data", 
-        "ruca_2010_raw.rdata"
-      )
-    )
-  
-  rm(ruca_2010_raw)
-  gc()
-}
-
-```
-
-
 ## demographic and ses data
 
 ### census
@@ -1169,6 +1120,125 @@ if(!
   gc()
 }
 
+
+```
+
+
+### historical income
+
+```{r historical income table download}
+
+# source https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls
+# downloaded 2019-07-09 (ET)
+# last updated 2018-08-28 per https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-income-households.html
+
+# check if the historical income file exists and skip the whole chunk if not
+if(!
+   file.exists(
+     file.path(
+       "raw_data", 
+       "inc_hh_hist_raw.rdata"
+     )
+   )
+  ) {
+  file_downloader(
+    desired_filename_as_string = "inc_hh_hist_raw.xls", 
+    web_address_as_string = 
+      "https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls", 
+    folder_as_string = "raw_data"
+    )
+  
+  # read the data from the excel file (current dollars only)
+  inc_hh_hist_raw <- 
+    read_xls(
+      path = 
+        file.path(
+          "raw_data", 
+          "inc_hh_hist_raw.xls"
+          ), 
+      range = "A7:G58", 
+      col_names = 
+        c("year", 
+          "number_thousands", 
+          "lowest", 
+          "second", 
+          "third", 
+          "fourth", 
+          "lower_limit_top_5_pct")
+      )
+  
+  # save the data
+  save(
+    inc_hh_hist_raw, 
+    file = 
+      file.path(
+        "raw_data", 
+        "inc_hh_hist_raw.rdata"
+      )
+    )
+  
+  # load(
+  #   file = 
+  #     file.path(
+  #       "raw_data", 
+  #       "inc_hh_hist_raw.rdata"
+  #     )
+  # )
+  
+  rm(inc_hh_hist_raw)
+  gc()
+}
+   
+   
+   
+```
+
+
+### ruca
+
+```{r ruca data download, eval=FALSE, include=FALSE}
+
+# source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
+# downloaded 2017-06-27
+# last updated 2013-12-31 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
+
+if(
+  !file.exists(
+    file.path(
+      "raw_data", 
+      "ruca_2010_raw.rdata"
+      )
+    )
+  ) {
+  file_downloader(
+    desired_filename_as_string = "ruca_2010_raw.xlsx", 
+    web_address_as_string = 
+      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
+    folder_as_string = "raw_data"
+    )
+  
+  # read the data from the excel file
+  ruca_2010_raw <- 
+    read_xlsx(
+      file.path(
+        "raw_data", 
+        "ruca_2010_raw.xlsx"
+        )
+      )
+  
+  # save the excel file
+  save(
+    ruca_2010_raw, 
+    file = 
+      file.path(
+        "raw_data", 
+        "ruca_2010_raw.rdata"
+      )
+    )
+  
+  rm(ruca_2010_raw)
+  gc()
+}
 
 ```
 
@@ -2010,7 +2080,7 @@ gc()
 
 ## travis cleanup
 
-```{r save travis files in cheating folder, eval=FALSE, include=FALSE}
+```{r save travis files in cheating folder}
 
 # save needed files from the work above to memory_savers
 
@@ -2080,28 +2150,6 @@ rm(neighbor_tibble_long)
 gc()  
 
 
-# ruca files
-load(
-  file =
-    file.path(
-      "raw_data",
-      "ruca_2010_raw.rdata"
-    )
-  )
-
-save(
-  ruca_2010_raw,
-  file =
-    file.path(
-      "travis_cache",
-      "ruca_2010_raw.rdata"
-    )
-  )
-
-rm(ruca_2010_raw)
-gc()
-
-
 # sf1 census 2010 data
 load(
   file = 
@@ -2143,6 +2191,50 @@ save(
   )
 
 rm(acs_totalcensus_raw_dataframe)
+gc()
+
+
+# historical income tibble
+load(
+  file =
+    file.path(
+      "raw_data", 
+      "inc_hh_hist_raw.rdata"
+    )
+)
+
+save(
+  inc_hh_hist_raw,
+  file =
+    file.path(
+      "travis_cache", 
+      "inc_hh_hist_raw.rdata"
+    )
+)
+
+rm(inc_hh_hist_raw)
+gc()
+
+
+# ruca files
+load(
+  file =
+    file.path(
+      "raw_data",
+      "ruca_2010_raw.rdata"
+    )
+  )
+
+save(
+  ruca_2010_raw,
+  file =
+    file.path(
+      "travis_cache",
+      "ruca_2010_raw.rdata"
+    )
+  )
+
+rm(ruca_2010_raw)
 gc()
 
 
@@ -3157,6 +3249,34 @@ demographic_constructed <-
        c27010_021) /
        c27010_001
     )
+
+# # income concentration at the extremes (ice)
+# # 2012 US Census historical income tables
+# income_house_2017_bottom_fifth_maximum <- 
+#   24638
+# income_house_2017_second_fifth_maximum <- 
+#   47110
+# income_house_2017_third_fifth_maximum <- 
+#   77552
+# income_house_2017_fourth_fifth_maximum <- 
+#   126855
+# 
+# acs_geo_cats$income_house_2017_bottom_quintile_24638 <- 
+#   acs_geo_cats$B19001_002 +   # estimated as through $24999
+#   acs_geo_cats$B19001_003 +
+#   acs_geo_cats$B19001_004 +
+#   acs_geo_cats$B19001_005
+# acs_geo_cats$income_house_2017_top_quintile_126855 <- 
+#   acs_geo_cats$B19001_015 +   # estimated as $125,000
+#   acs_geo_cats$B19001_016 +
+#   acs_geo_cats$B19001_017 
+# acs_geo_cats$income_house_total_count_B19001_001 <-
+#   acs_geo_cats$B19001_001
+# 
+# acs_geo_cats$ice_B19001 <- 
+#   (acs_geo_cats$income_house_2017_top_quintile_126855 - 
+#      acs_geo_cats$income_house_2017_bottom_quintile_24638) /
+#   acs_geo_cats$income_house_total_count_B19001_001
 
 # save constructed variables
 save(
