@@ -4300,7 +4300,7 @@ gc()
 ```
 
 
-```{r assign tracts to monitors, eval=FALSE, include=FALSE}
+```{r assign tracts to monitors}
 
 # load needed files
 load(
@@ -4347,18 +4347,156 @@ save(
     )
 )
 
+save(
+  projected_monitors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_monitors.rdata"
+    )
+)
+
+save(
+  projected_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# remove files
+rm(
+  monitors_sf, 
+  tigris_shapefiles_no_data, 
+  projected_monitors,
+  projected_tracts,
+  monitors_to_tracts
+)
+
+```
+
+
+```{r buffers, eval=FALSE, include=FALSE}
+
+# load projected monitor sf
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_monitors.rdata"
+    )
+  )
+
+# load projected tract sf
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+  )
+
 # make one-kilometer buffer around the monitor
 buffer_monitors_one_km <- 
   projected_monitors %>% 
   st_buffer(dist = 1000)
 
-# join buffers to tracts
+# two-kilometer
+buffer_monitors_two_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 2000)
+
+# two-point-five-kilometer
+buffer_monitors_two_point_five_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 2500)
+
+# three-kilometer
+buffer_monitors_three_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 3000)
+
+# four-kilometer
+buffer_monitors_four_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 4000)
+
+# five-kilometer
+buffer_monitors_five_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 5000)
+
+# six-kilometer
+buffer_monitors_six_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 6000)
+
+# seven-kilometer
+buffer_monitors_seven_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 7000)
+
+# seven-point_five_kilometer
+buffer_monitors_seven_point_five_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 7500)
+
+# eight-kilometer
+buffer_monitors_eight_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 8000)
+
+# nine-kilometer
+buffer_monitors_nine_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 9000)
+
+# ten-kilometer
+buffer_monitors_ten_km <- 
+  projected_monitors %>% 
+  st_buffer(dist = 10000)
+
+# join one-km buffers to tracts
 buffers_one_km_to_tracts <- 
   st_join(
     buffer_monitors_one_km, 
     projected_tracts, 
     left = TRUE
   )
+
+# join two-km buffers to tracts
+buffers_two_km_to_tracts <- 
+  st_join(
+    buffer_monitors_two_km, 
+    projected_tracts, 
+    left = TRUE
+  )
+
+# join three-km buffers to tracts
+buffers_three_km_to_tracts <- 
+  st_join(
+    buffer_monitors_three_km, 
+    projected_tracts, 
+    left = TRUE
+  )
+
+# join four-km buffers to tracts
+buffers_four_km_to_tracts <- 
+  st_join(
+    buffer_monitors_four_km, 
+    projected_tracts, 
+    left = TRUE
+  )
+
+# join five-km buffers to tracts
+buffers_five_km_to_tracts <- 
+  st_join(
+    buffer_monitors_five_km, 
+    projected_tracts, 
+    left = TRUE
+  )
+
 
 # save buffers joined to tracts
 save(
@@ -4380,6 +4518,7 @@ rm(
   buffer_monitors_one_km, 
   buffers_one_km_to_tracts
 )
+gc()
 
 ```
 
