@@ -1126,7 +1126,7 @@ if(!
 
 ### historical income
 
-```{r historical income table download}
+```{r historical income table download, eval=FALSE, include=FALSE}
 
 # source https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls
 # downloaded 2019-07-09 (ET)
@@ -2080,7 +2080,7 @@ gc()
 
 ## travis cleanup
 
-```{r save travis files in cheating folder}
+```{r save travis files in cheating folder, eval=FALSE, include=FALSE}
 
 # save needed files from the work above to memory_savers
 
@@ -3917,8 +3917,7 @@ save(oc_select_tibble,
      )
 
 # remove files used
-rm(air_pollutant_conversion_tibble, 
-   parameter_names_codes_tibble, 
+rm(parameter_names_codes_tibble, 
    oc_converted_codes, 
    oc_unconverted_codes, 
    oc_names_and_codes, 
