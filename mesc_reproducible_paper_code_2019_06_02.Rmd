@@ -2553,6 +2553,49 @@ gc()
 ```
 
 
+```{r 2012 household income quantiles data format}
+
+# load raw historical data
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "inc_hh_hist_raw.rdata"
+    )
+)
+
+# pull the cutoffs for the 2012 household income quantiles for ice
+inc_hh_2012_cutoffs <- 
+  inc_hh_hist_raw %>% 
+  filter(
+    year == "2012"
+  ) %>% 
+  select(
+    lowest, 
+    second, 
+    third, 
+    fourth
+  )
+
+# save file to disk
+save(
+  inc_hh_2012_cutoffs, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "inc_hh_2012_cutoffs.rdata"
+      )
+)
+
+# remove variables from working memory
+rm(inc_hh_hist_raw, 
+   inc_hh_2012_cutoffs)
+gc()
+
+
+```
+
+
 ## demographics
 
 ### making census 2010 geography match acs 2012 geography
@@ -2942,6 +2985,15 @@ load(
     )
 )
 
+# # load 2012 household income tibble (don't actually need it)
+# load(
+#   file = 
+#     file.path(
+#       "intermediate_data", 
+#       "inc_hh_2012_cutoffs.rdata"
+#     )
+# )
+
 # make the constructed tibble
 demographic_constructed <- 
   demographic_area_tibble
@@ -2949,8 +3001,6 @@ demographic_constructed <-
 # remove the raw tibble to save memory
 rm(demographic_area_tibble)
 gc()
-
-colnames(demographic_constructed)
 
 #### census
 
@@ -3236,6 +3286,7 @@ demographic_constructed <-
       b20002_001
   )
 
+
 # health insurance percentage c27010
   # types of health insurance coverage by age
   # universe: civilian noninstitutionalized population
@@ -3250,17 +3301,39 @@ demographic_constructed <-
        c27010_001
     )
 
+
 # # income concentration at the extremes (ice)
 # # 2012 US Census historical income tables
-# income_house_2017_bottom_fifth_maximum <- 
-#   24638
-# income_house_2017_second_fifth_maximum <- 
-#   47110
-# income_house_2017_third_fifth_maximum <- 
-#   77552
-# income_house_2017_fourth_fifth_maximum <- 
-#   126855
-# 
+
+# lowest  20599
+# second  39764
+# third   64582
+# fourth  104096
+
+# household income in the past 12 months (in 2012 inflation-adjusted dollars)
+# universe: households
+# B19001_001  total
+# B19001_002  less than $10,000
+# B19001_003  $10,000 to $14,999
+# B19001_004  $15,000 to $19,999
+# -- top of lowest quintile
+# B19001_005  $20,000 to $24,999
+# B19001_006  $25,000 to $29,999
+# B19001_007  $30,000 to $34,999
+# B19001_008  $35,000 to $39,999
+# -- top of second quintile
+# B19001_009  $40,000 to $44,999
+# B19001_010  $45,000 to $49,999
+# B19001_011  $50,000 to $59,999
+# -- top of third quintile
+# B19001_012  $60,000 to $74,999
+# B19001_013  $75,000 to $99,999
+# -- top of fourth quintile
+# B19001_014  $100,000 to $124,999
+# B19001_015  $125,000 to $149,999
+# B19001_016  $150,000 to $199,999
+# B19001_017  $200,000 or more
+
 # acs_geo_cats$income_house_2017_bottom_quintile_24638 <- 
 #   acs_geo_cats$B19001_002 +   # estimated as through $24999
 #   acs_geo_cats$B19001_003 +
@@ -3278,8 +3351,42 @@ demographic_constructed <-
 #      acs_geo_cats$income_house_2017_bottom_quintile_24638) /
 #   acs_geo_cats$income_house_total_count_B19001_001
 
+# make quintile counts, total count, and ice variable
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    ice_first_bottom_quintile_20599 =
+      b19001_002 +
+      b19001_003 +
+      b19001_004, 
+    ice_second_quintile_39764 = 
+      b19001_005 +
+      b19001_006 +
+      b19001_007 +
+      b19001_008, 
+    ice_third_quintile_64582 =
+      b19001_009 +
+      b19001_010 +
+      b19001_011, 
+    ice_fourth_quintile_104096 = 
+      b19001_012 +
+      b19001_013, 
+    ice_fifth_top_quintile = 
+      b19001_014 +
+      b19001_015 +
+      b19001_016 +
+      b19001_017,
+    ice_total_count_b19001_001 = 
+      b19001_001, 
+    ice_b19001 = 
+      (ice_fifth_top_quintile - 
+         ice_first_bottom_quintile_20599) /
+      ice_total_count_b19001_001
+  )
+
 # save constructed variables
 save(
+  demographic_constructed, 
   file = 
     file.path(
       "intermediate_data", 
@@ -3287,9 +3394,9 @@ save(
     )
 )
 
-# # cleanup
-# rm(demographic_constructed)
-# gc()
+# remove final file
+rm(demographic_constructed)
+gc()
 
 
 ```
@@ -3344,12 +3451,14 @@ carbon_tibble <-
            str_detect(parameter_name, "TC")
          )
 
+# make a tibble for just elemental carbon
 ec_tibble <- 
   carbon_tibble %>% 
   filter(
     str_detect(parameter_name, "EC")
   )
 
+# make tibble of ec monitor counts by code
 ec_parameter_codes_monitor_counts <- 
   ec_tibble %>% 
   select(monitor_id, poc, parameter_name, parameter_code) %>% 
@@ -3358,12 +3467,14 @@ ec_parameter_codes_monitor_counts <-
   tally() %>% 
   arrange(desc(n))
 
+# make organic carbon tibble
 oc_tibble <- 
   carbon_tibble %>% 
   filter(
     str_detect(parameter_name, "OC")
   )
 
+# make tibble of oc monitor counts by code
 oc_parameter_codes_monitor_counts <- 
   oc_tibble %>% 
   select(monitor_id, poc, parameter_name, parameter_code) %>% 
@@ -3413,7 +3524,7 @@ carbon_ec_monitor_id <-
             max_date = max(date_local)) %>% 
   arrange(min_date, max_date)
 
-# table of monitors
+# make table of monitors
 carbon_monitor_table <- 
   carbon_tibble %>% 
   select(monitor_id, poc, parameter_name, parameter_code, date_local) %>% 
@@ -3423,6 +3534,25 @@ carbon_monitor_table <-
             observations = n()) %>% 
   arrange(monitor_id, poc, parameter_code)
 
+# remove files from memory
+rm(
+  air_pollutant_tibble, 
+  parameter_names_codes_tibble, 
+  names_pollutant_tibble, 
+  pollutant_names, 
+  carbon_tibble, 
+  ec_tibble, 
+  ec_parameter_codes_monitor_counts, 
+  oc_tibble, 
+  oc_parameter_codes_monitor_counts, 
+  carbon_by_date, 
+  carbon_by_date_by_monitor, 
+  parameter_codes_monitor_counts, 
+  carbon_monitor_count, 
+  carbon_ec_monitor_id, 
+  carbon_monitor_table
+)
+gc()
 
 ```
 
@@ -3557,6 +3687,10 @@ ec_conversion_tibble <-
         ec_unconverted_codes)  # take out raw pre-conversion rows
   )
 
+# remove the air pollutant conversion tibble
+rm(air_pollutant_conversion_tibble)
+gc()
+
 # ec conversion tibble
 # summarize each by date and monitor
 ec_monitor_tibble <- 
@@ -3634,10 +3768,19 @@ save(ec_select_tibble,
      )
   
 
-rm(air_pollutant_conversion_tibble, 
-   parameter_names_codes_tibble, 
+rm(parameter_names_codes_tibble, 
    ec_converted_codes, 
-   ec_unconverted_codes)
+   ec_unconverted_codes, 
+   ec_names_and_codes, 
+   ec_codes,
+   ec_conversion_tibble, 
+   ec_monitor_tibble, 
+   ec_pocs_by_site, 
+   ec_monitor_ids, 
+   ec_priority_tibble,
+   ec_select_tibble, 
+   ec_conversion_date_check, 
+   ec_selected_date_check)
 gc()
 
   
@@ -3693,6 +3836,10 @@ oc_conversion_tibble <-
     !(parameter_code %in% 
         oc_unconverted_codes)  # take out raw pre-conversion rows
   )
+
+# remove the air pollutant conversion tibble
+rm(air_pollutant_conversion_tibble)
+gc()
 
 # oc conversion tibble
 # summarize each by date and monitor
@@ -3768,11 +3915,22 @@ save(oc_select_tibble,
          "oc_select_tibble.rdata"
        )
      )
-  
+
+# remove files used
 rm(air_pollutant_conversion_tibble, 
    parameter_names_codes_tibble, 
    oc_converted_codes, 
-   oc_unconverted_codes)
+   oc_unconverted_codes, 
+   oc_names_and_codes, 
+   oc_codes,
+   oc_conversion_tibble, 
+   oc_monitor_tibble, 
+   oc_pocs_by_site, 
+   oc_monitor_ids, 
+   oc_priority_tibble,
+   oc_select_tibble, 
+   oc_conversion_date_check, 
+   oc_selected_date_check)
 gc()
 
 ```
