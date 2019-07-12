@@ -4388,6 +4388,10 @@ load(
     )
   )
 
+# make buffer list
+buffers <- 
+  list()
+
 # list of distances in meters
 distances <- 
   c(
@@ -4408,8 +4412,9 @@ distances <-
 # buffer function
 bufferizer <- 
   function(distance, 
-           point_sf) {
-
+           point_sf,
+           buffer_list) {
+    
     item_name <- 
       str_c("buffer_", 
             as.character(distance), 
@@ -4424,13 +4429,15 @@ bufferizer <-
     
            }
 
-bufferizer(point_sf = projected_monitors,
+bufferizer(buffer_list = buffers, 
+           point_sf = projected_monitors,
            distance = 1000)
 
 buffers <- 
   map(distances, 
       bufferizer, 
-      point_sf = projected_monitors)
+      point_sf = projected_monitors,
+      buffer_list = buffers)
 
 save(
   buffers, 
@@ -4454,7 +4461,7 @@ gc()
 ```
 
 
-```{r simple join monitors to tracts}
+```{r simple join monitors to tracts, eval=FALSE, include=FALSE}
 
 # load projected tract sf
 load(
@@ -4484,8 +4491,7 @@ joiner <-
            tract_sf, 
            buffer_tract_list) {
     
-    buffer_tract_list <- 
-      list()
+    buffer_tract_list <-
     
     item_name <- 
       str_c(
