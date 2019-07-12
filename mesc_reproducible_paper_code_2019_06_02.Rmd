@@ -39,7 +39,7 @@ library(lubridate)
 
 ```{r rmarkdown options, include=FALSE}
 
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 
 ```
 
@@ -4377,7 +4377,7 @@ rm(
 ```
 
 
-```{r buffers, eval=FALSE, include=FALSE}
+```{r buffers}
 
 # load projected monitor sf
 load(
@@ -4388,57 +4388,36 @@ load(
     )
   )
 
-# make buffer list
-buffers <- 
-  list()
+# make list in which to store the projected monitor sf
+list_of_proj_mon_sf <- 
+  list(projected_monitors)
 
-# list of distances in meters
+# list of buffer distances desired in meters
 distances <- 
-  c(
-    1000, 
+  c(1000, 
     2000, 
     2500, 
     3000, 
     4000, 
     5000, 
-    6000, 
-    7000, 
     7500, 
-    8000, 
-    9000, 
-    10000
-    )
+    10000)
 
-# buffer function
-bufferizer <- 
-  function(distance, 
-           point_sf,
-           buffer_list) {
-    
-    item_name <- 
-      str_c("buffer_", 
-            as.character(distance), 
-            "_m",
-            sep = "")
-    
-    buffer_list[[item_name]] <- 
-      point_sf %>% 
-      st_buffer(dist = distance)
-    
-    return(buffer_list)
-    
-           }
+# make list of buffer names
+buffer_names <- 
+  str_c("buffer_", 
+        as.character(distances), 
+        "_m",
+        sep = "")
 
-bufferizer(buffer_list = buffers, 
-           point_sf = projected_monitors,
-           distance = 1000)
-
+# make the buffers
 buffers <- 
-  map(distances, 
-      bufferizer, 
-      point_sf = projected_monitors,
-      buffer_list = buffers)
+  map2(.f = st_buffer, 
+      .y = distances, 
+      .x = list_of_proj_mon_sf) %>% 
+  set_names(buffer_names)  # name the list elements
 
+# save the buffers
 save(
   buffers, 
   file = 
@@ -4448,20 +4427,20 @@ save(
     )
 )
 
-
 # remove unneeded files
 rm(
   projected_monitors,
-  buffers, 
+  list_of_proj_mon_sf, 
   distances, 
-  bufferizer
+  buffer_names, 
+  buffers
 )
 gc()
 
 ```
 
 
-```{r simple join monitors to tracts, eval=FALSE, include=FALSE}
+```{r join buffers to tracts, eval=FALSE, include=FALSE}
 
 # load projected tract sf
 load(
@@ -4481,52 +4460,118 @@ load(
     )
 )
 
-# make empty list for buffers and tracts
-buffers_tracts <- 
-  list()
-  
-# make join function
-joiner <- 
-  function(buffer_sf,
-           tract_sf, 
-           buffer_tract_list) {
-    
-    buffer_tract_list <-
-    
-    item_name <- 
-      str_c(
-        deparse(substitute(buffer_sf)), 
-        "_buffer_tract", 
-        sep = ""
-      )
-    
-    buffer_tract_list[[item_name]] <- 
-      st_join(
-        buffer_sf,
-        tract_sf,
-        left = TRUE
-        )
-    
-    return(buffer_tract_list)
-      
-  }
+# make one-element list wrapping the tract shapefile
+list_for_projected_tract_sf <- 
+  list(projected_tracts)
 
-joiner(
-  buffer_sf = buffers[["buffer_1000_m"]], 
-  tract_sf = projected_tracts, 
-  buffer_tract_list = buffers_tracts
-)
+# remove projected tracts from memory
+rm(projected_tracts)
+gc()
+
+# make list of names for new list
+buffer_tract_names <- 
+  names(buffers) %>% 
+  gsub(x = .,
+    pattern = "buffer_", 
+    replacement = "buffer_tract_"
+  )
 
 # use the function on the list!
 buffers_tracts <- 
-  map(buffers,
-      joiner, 
-      buffer_tract_list = buffers_tracts)
+  map2(.f = st_join,
+       .x = buffers, 
+       .y = list_for_projected_tract_sf, 
+       left = TRUE) %>% 
+  set_names(buffer_tract_names)
+
+# save data to drive
+save(
+  buffers_tracts,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers_tracts.rdata"
+    )
+)
+
+# remove files no longer needed
+# rm(buffers,
+#    list_for_projected_tract_sf, 
+#    buffer_tract_names, 
+#    buffers_tracts)
+# gc()
 
 ```
 
 
 ```{r tract monitor intersections}
+
+# load projected tract sf
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+  )
+
+# make one-element list wrapping the tract shapefile
+list_for_projected_tract_sf <- 
+  list(projected_tracts)
+
+# remove projected tracts to save memory
+rm(projected_tracts)
+gc()
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# make list of names for new list
+buffer_tract_area_names <- 
+  names(buffers) %>% 
+  gsub(x = .,
+    pattern = "buffer_", 
+    replacement = "buffer_tract_area_"
+  )
+
+# create function to both intersect and tibblize
+intertibblator <- 
+  function(tract, 
+           buffer) {
+    as_tibble(st_intersection(tract, buffer))
+  }
+
+# calculate intersection areas
+buffer_tract_intersections <- 
+  map2(
+    .f = intertibblator, 
+    .x = list_for_projected_tract_sf, 
+    .y = buffers
+  )  %>% 
+  set_names(buffer_tract_area_names)
+
+# save data to drive
+save(
+  buffer_tract_intersections,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_tract_intersections.rdata"
+    )
+)
+
+rm(list_for_projected_tract_sf, 
+   buffers,
+   buffer_tract_area_names, 
+   intertibblator,
+   buffer_tract_intersections)
+gc()
 
 ```
 
