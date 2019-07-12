@@ -1198,9 +1198,11 @@ if(!
 
 ```{r ruca data download, eval=FALSE, include=FALSE}
 
-# source https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0
-# downloaded 2017-06-27
-# last updated 2013-12-31 per https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
+# source 
+# https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010revised.xlsx?v=8632.5
+# downloaded 2019-07-12
+# last updated 2019-07-03 per 
+# https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes.aspx
 
 if(
   !file.exists(
@@ -1213,7 +1215,7 @@ if(
   file_downloader(
     desired_filename_as_string = "ruca_2010_raw.xlsx", 
     web_address_as_string = 
-      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010.xlsx?v=0", 
+      "https://www.ers.usda.gov/webdocs/DataFiles/53241/ruca2010revised.xlsx?v=8632.5", 
     folder_as_string = "raw_data"
     )
   
@@ -4330,7 +4332,11 @@ projected_tracts <-
     awater10, 
     intptlat10, 
     intptlon10
-    )
+    ) %>% 
+  mutate(  # calculate the total area of each census tract after projection (m2)
+    proj_tract_area = 
+      st_area(geometry)
+  )
   
 # project the monitors to the same
 projected_monitors <-
@@ -4598,6 +4604,23 @@ load(
       "buffer_tract_intersections.rdata"
     )
 )
+
+# make area function
+areator <- 
+  function(sf_of_some_kind) {
+    sf_of_some_kind %>% 
+      mutate(
+        intersect_area = 
+          st_area(geometry)
+      )
+  }
+
+# calculate areas
+buffer_tract_areas <- 
+  map(
+    .f = areator, 
+    .x = buffer_tract_intersections
+  )
 
 # remove unneeded files
 rm(buffer_tract_intersections)
