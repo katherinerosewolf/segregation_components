@@ -4388,6 +4388,74 @@ load(
     )
   )
 
+# list of distances in meters
+distances <- 
+  c(
+    1000, 
+    2000, 
+    2500, 
+    3000, 
+    4000, 
+    5000, 
+    6000, 
+    7000, 
+    7500, 
+    8000, 
+    9000, 
+    10000
+    )
+
+# buffer function
+bufferizer <- 
+  function(distance, 
+           point_sf) {
+
+    item_name <- 
+      str_c("buffer_", 
+            as.character(distance), 
+            "_m",
+            sep = "")
+    
+    buffer_list[[item_name]] <- 
+      point_sf %>% 
+      st_buffer(dist = distance)
+    
+    return(buffer_list)
+    
+           }
+
+bufferizer(point_sf = projected_monitors,
+           distance = 1000)
+
+buffers <- 
+  map(distances, 
+      bufferizer, 
+      point_sf = projected_monitors)
+
+save(
+  buffers, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+
+# remove unneeded files
+rm(
+  projected_monitors,
+  buffers, 
+  distances, 
+  bufferizer
+)
+gc()
+
+```
+
+
+```{r simple join monitors to tracts}
+
 # load projected tract sf
 load(
   file = 
@@ -4397,128 +4465,62 @@ load(
     )
   )
 
-# make one-kilometer buffer around the monitor
-buffer_monitors_one_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 1000)
-
-# two-kilometer
-buffer_monitors_two_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 2000)
-
-# two-point-five-kilometer
-buffer_monitors_two_point_five_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 2500)
-
-# three-kilometer
-buffer_monitors_three_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 3000)
-
-# four-kilometer
-buffer_monitors_four_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 4000)
-
-# five-kilometer
-buffer_monitors_five_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 5000)
-
-# six-kilometer
-buffer_monitors_six_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 6000)
-
-# seven-kilometer
-buffer_monitors_seven_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 7000)
-
-# seven-point_five_kilometer
-buffer_monitors_seven_point_five_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 7500)
-
-# eight-kilometer
-buffer_monitors_eight_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 8000)
-
-# nine-kilometer
-buffer_monitors_nine_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 9000)
-
-# ten-kilometer
-buffer_monitors_ten_km <- 
-  projected_monitors %>% 
-  st_buffer(dist = 10000)
-
-# join one-km buffers to tracts
-buffers_one_km_to_tracts <- 
-  st_join(
-    buffer_monitors_one_km, 
-    projected_tracts, 
-    left = TRUE
-  )
-
-# join two-km buffers to tracts
-buffers_two_km_to_tracts <- 
-  st_join(
-    buffer_monitors_two_km, 
-    projected_tracts, 
-    left = TRUE
-  )
-
-# join three-km buffers to tracts
-buffers_three_km_to_tracts <- 
-  st_join(
-    buffer_monitors_three_km, 
-    projected_tracts, 
-    left = TRUE
-  )
-
-# join four-km buffers to tracts
-buffers_four_km_to_tracts <- 
-  st_join(
-    buffer_monitors_four_km, 
-    projected_tracts, 
-    left = TRUE
-  )
-
-# join five-km buffers to tracts
-buffers_five_km_to_tracts <- 
-  st_join(
-    buffer_monitors_five_km, 
-    projected_tracts, 
-    left = TRUE
-  )
-
-
-# save buffers joined to tracts
-save(
-  buffers_one_km_to_tracts, 
+# load buffers
+load(
   file = 
     file.path(
       "intermediate_data", 
-      "buffers_one_km_to_tracts,rdata"
+      "buffers.rdata"
     )
 )
 
-# remove unneeded files
-rm(
-  monitors_sf, 
-  tigris_shapefiles_no_data, 
-  monitors_to_tracts, 
-  projected_monitors,
-  projected_tracts,
-  buffer_monitors_one_km, 
-  buffers_one_km_to_tracts
+# make empty list for buffers and tracts
+buffers_tracts <- 
+  list()
+  
+# make join function
+joiner <- 
+  function(buffer_sf,
+           tract_sf, 
+           buffer_tract_list) {
+    
+    buffer_tract_list <- 
+      list()
+    
+    item_name <- 
+      str_c(
+        deparse(substitute(buffer_sf)), 
+        "_buffer_tract", 
+        sep = ""
+      )
+    
+    buffer_tract_list[[item_name]] <- 
+      st_join(
+        buffer_sf,
+        tract_sf,
+        left = TRUE
+        )
+    
+    return(buffer_tract_list)
+      
+  }
+
+joiner(
+  buffer_sf = buffers[["buffer_1000_m"]], 
+  tract_sf = projected_tracts, 
+  buffer_tract_list = buffers_tracts
 )
-gc()
+
+# use the function on the list!
+buffers_tracts <- 
+  map(buffers,
+      joiner, 
+      buffer_tract_list = buffers_tracts)
+
+```
+
+
+```{r tract monitor intersections}
 
 ```
 
