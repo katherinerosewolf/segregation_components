@@ -4330,17 +4330,31 @@ projected_monitors <-
   monitors_sf %>% 
   st_transform(crs = 5070)
 
+# make simple monitor sf
+projected_simple_monitors <- 
+  projected_monitors %>% 
+  select(
+    monitor_id, 
+    monitor_type
+  )
+
+# make simple tract sf
+projected_simple_tracts <- 
+  projected_tracts %>% 
+  select(
+    geoid10, 
+    aland10, 
+    awater10, 
+    intptlat10, 
+    intptlon10
+    )
+
 # join tracts to monitors
 monitors_to_tracts <- 
   st_join(
-    projected_monitors, 
-    projected_tracts
+    projected_simple_monitors, 
+    projected_simple_tracts
   )
-
-# make simple tract dataset
-projected_simple_tracts <- 
-  projected_tracts %>% 
-  select(geoid10, aland10, awater10, intptlat10, intptlon10)
 
 # save files
 save(
@@ -4352,9 +4366,17 @@ save(
     )
 )
 
-# save files
 save(
   projected_simple_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_simple_tracts.rdata"
+    )
+)
+
+save(
+  projected_simple_monitors, 
   file = 
     file.path(
       "intermediate_data", 
@@ -4382,6 +4404,8 @@ save(
 
 # remove files
 rm(
+  projected_simple_monitors, 
+  projected_simple_tracts,
   monitors_sf, 
   tigris_shapefiles_no_data, 
   projected_monitors,
@@ -4399,13 +4423,13 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_monitors.rdata"
+      "projected_simple_monitors.rdata"
     )
   )
 
 # make list in which to store the projected monitor sf
 list_of_proj_mon_sf <- 
-  list(projected_monitors)
+  list(projected_simple_monitors)
 
 # list of buffer distances desired in meters
 distances <- 
@@ -4444,7 +4468,7 @@ save(
 
 # remove unneeded files
 rm(
-  projected_monitors,
+  projected_simple_monitors,
   list_of_proj_mon_sf, 
   distances, 
   buffer_names, 
@@ -4455,7 +4479,7 @@ gc()
 ```
 
 
-```{r join buffers to tracts, eval=FALSE, include=FALSE}
+```{r join buffers to tracts}
 
 # load projected tract sf
 load(
@@ -4510,11 +4534,11 @@ save(
 )
 
 # remove files no longer needed
-# rm(buffers,
-#    list_for_projected_tract_sf, 
-#    buffer_tract_names, 
-#    buffers_tracts)
-# gc()
+rm(buffers,
+   list_for_projected_tract_sf,
+   buffer_tract_names,
+   buffers_tracts)
+gc()
 
 ```
 
@@ -4602,6 +4626,8 @@ load(
       "buffer_tract_intersections.rdata"
     )
 )
+
+# 
 
 buffer_tract_intersections$buffer_tract_area_1000_m
 
