@@ -4323,37 +4323,29 @@ load(
 # project the tracts to the NAD 83 Conus Albers Equal Area projection, a flat one, to make distances comparable
 projected_tracts <- 
   tigris_shapefiles_no_data %>% 
-  st_transform(crs = 5070)
-
-# project the monitors to the same
-projected_monitors <-
-  monitors_sf %>% 
-  st_transform(crs = 5070)
-
-# make simple monitor sf
-projected_simple_monitors <- 
-  projected_monitors %>% 
-  select(
-    monitor_id, 
-    monitor_type
-  )
-
-# make simple tract sf
-projected_simple_tracts <- 
-  projected_tracts %>% 
-  select(
+  st_transform(crs = 5070) %>% 
+  select(  # simplify to only needed variables
     geoid10, 
     aland10, 
     awater10, 
     intptlat10, 
     intptlon10
     )
+  
+# project the monitors to the same
+projected_monitors <-
+  monitors_sf %>% 
+  st_transform(crs = 5070) %>% 
+  select(
+    monitor_id, 
+    monitor_type
+  )
 
 # join tracts to monitors
 monitors_to_tracts <- 
   st_join(
-    projected_simple_monitors, 
-    projected_simple_tracts
+    projected_monitors, 
+    projected_tracts
   )
 
 # save files
@@ -4367,20 +4359,11 @@ save(
 )
 
 save(
-  projected_simple_tracts, 
+  projected_monitors, 
   file = 
     file.path(
       "intermediate_data", 
-      "projected_simple_tracts.rdata"
-    )
-)
-
-save(
-  projected_simple_monitors, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_simple_tracts.rdata"
+      "projected_monitors.rdata"
     )
 )
 
@@ -4393,23 +4376,12 @@ save(
     )
 )
 
-save(
-  projected_monitors, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_monitors.rdata"
-    )
-)
-
 # remove files
 rm(
-  projected_simple_monitors, 
-  projected_simple_tracts,
-  monitors_sf, 
-  tigris_shapefiles_no_data, 
-  projected_monitors,
+  projected_monitors, 
   projected_tracts,
+  monitors_sf, 
+  tigris_shapefiles_no_data,
   monitors_to_tracts
 )
 
@@ -4423,13 +4395,13 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_simple_monitors.rdata"
+      "projected_monitors.rdata"
     )
   )
 
 # make list in which to store the projected monitor sf
 list_of_proj_mon_sf <- 
-  list(projected_simple_monitors)
+  list(projected_monitors)
 
 # list of buffer distances desired in meters
 distances <- 
@@ -4468,7 +4440,7 @@ save(
 
 # remove unneeded files
 rm(
-  projected_simple_monitors,
+  projected_monitors,
   list_of_proj_mon_sf, 
   distances, 
   buffer_names, 
@@ -4486,7 +4458,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_simple_tracts.rdata"
+      "projected_tracts.rdata"
     )
   )
 
@@ -4501,10 +4473,10 @@ load(
 
 # make one-element list wrapping the tract shapefile
 list_for_projected_tract_sf <- 
-  list(projected_simple_tracts)
+  list(projected_tracts)
 
 # remove projected tracts from memory
-rm(projected_simple_tracts)
+rm(projected_tracts)
 gc()
 
 # make list of names for new list
@@ -4550,16 +4522,16 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_simple_tracts.rdata"
+      "projected_tracts.rdata"
     )
   )
 
 # make one-element list wrapping the tract shapefile
 list_for_projected_tract_sf <- 
-  list(projected_simple_tracts)
+  list(projected_tracts)
 
 # remove projected tracts to save memory
-rm(projected_simple_tracts)
+rm(projected_tracts)
 gc()
 
 # load buffers
@@ -4627,10 +4599,9 @@ load(
     )
 )
 
-# 
-
-buffer_tract_intersections$buffer_tract_area_1000_m
-
+# remove unneeded files
+rm(buffer_tract_intersections)
+gc()
 
 ```
 
