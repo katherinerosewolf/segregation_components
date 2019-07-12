@@ -4591,6 +4591,10 @@ rm(list_for_projected_tract_sf,
    buffer_tract_intersections)
 gc()
 
+buffer_tract_intersections$buffer_tract_area_1000_m
+
+str(buffer_tract_intersections$buffer_tract_area_1000_m)
+
 ```
 
 
@@ -4622,9 +4626,21 @@ buffer_tract_areas <-
     .x = buffer_tract_intersections
   )
 
+# save areas to disk
+save(
+  buffer_tract_areas,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_tract_areas.rdata"
+    )
+)
+
 # remove unneeded files
-rm(buffer_tract_intersections)
+rm(buffer_tract_intersections, 
+   buffer_tract_areas)
 gc()
+
 
 ```
 
