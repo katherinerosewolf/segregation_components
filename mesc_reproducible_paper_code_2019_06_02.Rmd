@@ -4337,7 +4337,31 @@ monitors_to_tracts <-
     projected_tracts
   )
 
+# make simple tract dataset
+projected_simple_tracts <- 
+  projected_tracts %>% 
+  select(geoid10, aland10, awater10, intptlat10, intptlon10)
+
 # save files
+save(
+  projected_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# save files
+save(
+  projected_simple_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_simple_tracts.rdata"
+    )
+)
+
 save(
   monitors_to_tracts, 
   file = 
@@ -4353,15 +4377,6 @@ save(
     file.path(
       "intermediate_data", 
       "projected_monitors.rdata"
-    )
-)
-
-save(
-  projected_tracts, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_tracts.rdata"
     )
 )
 
@@ -4447,7 +4462,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts.rdata"
+      "projected_simple_tracts.rdata"
     )
   )
 
@@ -4462,10 +4477,10 @@ load(
 
 # make one-element list wrapping the tract shapefile
 list_for_projected_tract_sf <- 
-  list(projected_tracts)
+  list(projected_simple_tracts)
 
 # remove projected tracts from memory
-rm(projected_tracts)
+rm(projected_simple_tracts)
 gc()
 
 # make list of names for new list
@@ -4504,23 +4519,23 @@ save(
 ```
 
 
-```{r tract monitor intersections}
+```{r create tract monitor intersections}
 
 # load projected tract sf
 load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts.rdata"
+      "projected_simple_tracts.rdata"
     )
   )
 
 # make one-element list wrapping the tract shapefile
 list_for_projected_tract_sf <- 
-  list(projected_tracts)
+  list(projected_simple_tracts)
 
 # remove projected tracts to save memory
-rm(projected_tracts)
+rm(projected_simple_tracts)
 gc()
 
 # load buffers
@@ -4566,12 +4581,30 @@ save(
     )
 )
 
+# remove created variables
 rm(list_for_projected_tract_sf, 
    buffers,
    buffer_tract_area_names, 
    intertibblator,
    buffer_tract_intersections)
 gc()
+
+```
+
+
+```{r calculate weights}
+
+# load weights
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_tract_intersections.rdata"
+    )
+)
+
+buffer_tract_intersections$buffer_tract_area_1000_m
+
 
 ```
 
