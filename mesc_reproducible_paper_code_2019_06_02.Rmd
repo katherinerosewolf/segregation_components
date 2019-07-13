@@ -4644,8 +4644,6 @@ rm(list_for_projected_tract_sf,
    intertibblator)
 gc()
 
-View(buffer_tract_intersections$buffer_tract_area_1000_m)
-
 ```
 
 
@@ -4683,15 +4681,15 @@ buffer_intersections_with_the_tract <-
   one_buffer_size %>% 
   st_intersection(one_tract, .)
 
-# intersections of the intersections
-within_tract_intersections <- 
-  buffer_intersections_with_the_tract %>% 
-  st_intersection()
-
 # plot buffer intersections
 ggplot() +
   geom_sf(data = one_tract, colour = "light gray", fill = NA) +
   geom_sf(data = buffer_intersections_with_the_tract, colour = "dark gray", fill = NA) 
+
+# intersections of the intersections
+within_tract_intersections <- 
+  buffer_intersections_with_the_tract %>% 
+  st_intersection()
 
 # remove everything in memory (for travis!)
 rm(list = ls())
