@@ -37,13 +37,6 @@ library(lubridate)
 ```
 
 
-```{r rmarkdown options, include=FALSE}
-
-knitr::opts_chunk$set(echo = FALSE)
-
-```
-
-
 ```{r census api key and options for tidycensus}
 
 # install the census api key
@@ -4591,14 +4584,10 @@ rm(list_for_projected_tract_sf,
    buffer_tract_intersections)
 gc()
 
-buffer_tract_intersections$buffer_tract_area_1000_m
-
-str(buffer_tract_intersections$buffer_tract_area_1000_m)
-
 ```
 
 
-```{r calculate weights}
+```{r calculate areas}
 
 # load weights
 load(
@@ -4640,6 +4629,21 @@ save(
 rm(buffer_tract_intersections, 
    buffer_tract_areas)
 gc()
+
+
+```
+
+
+```{r calculate weights}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_tract_areas.rdata"
+    )
+)
+
 
 
 ```
