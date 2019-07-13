@@ -4628,21 +4628,20 @@ save(
     )
 )
 
-save(
-  buffer_tract_intersection_tibbles,
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffer_tract_intersection_tibbles.rdata"
-    )
-)
+# save(
+#   buffer_tract_intersection_tibbles,
+#   file = 
+#     file.path(
+#       "intermediate_data", 
+#       "buffer_tract_intersection_tibbles.rdata"
+#     )
+# )
 
 # remove created variables
 rm(list_for_projected_tract_sf, 
    buffers,
    buffer_tract_area_names, 
-   intertibblator,
-   buffer_tract_intersection_tibbles)
+   intertibblator)
 gc()
 
 View(buffer_tract_intersections$buffer_tract_area_1000_m)
