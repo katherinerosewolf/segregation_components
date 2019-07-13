@@ -4450,6 +4450,42 @@ gc()
 ```
 
 
+```{r unionize buffers}
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# unionize buffers
+unionized_buffers <- 
+  map(
+    .f = st_union,
+    .x = buffers
+  )
+
+# save result
+save(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "unionized_buffers.rdata"
+    )
+)
+
+# delete unneeded data
+rm(buffers, 
+   unionized_buffers)
+gc()
+
+```
+
+
+
 ```{r join buffers to tracts}
 
 # load projected tract sf
@@ -4542,6 +4578,13 @@ load(
     )
 )
 
+# unionize buffers
+unionized_buffers <- 
+  map(
+    .f = st_union,
+    .x = buffers
+  )
+
 # make list of names for new list
 buffer_tract_area_names <- 
   names(buffers) %>% 
@@ -4557,14 +4600,23 @@ intertibblator <-
     as_tibble(st_intersection(tract, buffer))
   }
 
-# calculate intersection areas
-buffer_tract_intersections <- 
+# calculate intersections without tibblation without unionizing monitors
+buffer_tract_intersections <-  
   map2(
-    .f = intertibblator, 
+    .f = st_intersection, 
     .x = list_for_projected_tract_sf, 
     .y = buffers
-  )  %>% 
+  ) %>% 
   set_names(buffer_tract_area_names)
+
+# # calculate intersections as tibbles
+# buffer_tract_intersection_tibbles <- 
+#   map2(
+#     .f = intertibblator, 
+#     .x = list_for_projected_tract_sf, 
+#     .y = buffers
+#   )  %>% 
+#   set_names(buffer_tract_area_names)
 
 # save data to drive
 save(
@@ -4576,15 +4628,78 @@ save(
     )
 )
 
+save(
+  buffer_tract_intersection_tibbles,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_tract_intersection_tibbles.rdata"
+    )
+)
+
 # remove created variables
 rm(list_for_projected_tract_sf, 
    buffers,
    buffer_tract_area_names, 
    intertibblator,
-   buffer_tract_intersections)
+   buffer_tract_intersection_tibbles)
+gc()
+
+View(buffer_tract_intersections$buffer_tract_area_1000_m)
+
+```
+
+
+```{r figuring out how to get intersections within a tract}
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# extract one buffer layer
+one_buffer_size <- 
+  buffers$buffer_10000_m
+
+# extract one tract
+one_tract <- 
+  projected_tracts %>% 
+  filter(geoid10 == "04005002300")
+
+# clip buffers to only the one tract
+buffer_intersections_with_the_tract <- 
+  one_buffer_size %>% 
+  st_intersection(one_tract, .)
+
+# intersections of the intersections
+within_tract_intersections <- 
+  buffer_intersections_with_the_tract %>% 
+  st_intersection()
+
+# plot buffer intersections
+ggplot() +
+  geom_sf(data = one_tract, colour = "light gray", fill = NA) +
+  geom_sf(data = buffer_intersections_with_the_tract, colour = "dark gray", fill = NA) 
+
+# remove everything in memory (for travis!)
+rm(list = ls())
 gc()
 
 ```
+
 
 
 ```{r calculate areas}
@@ -4594,7 +4709,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "buffer_tract_intersections.rdata"
+      "buffer_tract_intersection_tibbles.rdata"
     )
 )
 
@@ -4612,7 +4727,7 @@ areator <-
 buffer_tract_areas <- 
   map(
     .f = areator, 
-    .x = buffer_tract_intersections
+    .x = buffer_tract_intersection_tibbles
   )
 
 # save areas to disk
@@ -4626,7 +4741,7 @@ save(
 )
 
 # remove unneeded files
-rm(buffer_tract_intersections, 
+rm(buffer_tract_intersection_tibbles, 
    buffer_tract_areas)
 gc()
 
@@ -4636,6 +4751,15 @@ gc()
 
 ```{r calculate weights}
 
+# load intersections
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_tract_intersection_tibbles.rdata"
+    )
+)
+
 load(
   file = 
     file.path(
@@ -4644,7 +4768,17 @@ load(
     )
 )
 
-
+# sum weights
+monitor_weight_by_tract <- 
+  buffer_tract_areas$buffer_tract_area_1000_m %>% 
+  group_by(monitor_id)
+  summarize(
+    
+  )
+  
+# remove everything in memory
+rm(list = ls())
+gc()
 
 ```
 
