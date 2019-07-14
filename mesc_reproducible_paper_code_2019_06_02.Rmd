@@ -4647,7 +4647,7 @@ gc()
 ```
 
 
-```{r figuring out how to get intersections within a tract}
+```{r getting all buffer intersections for one tract}
 
 # load projected tracts data
 load(
@@ -4667,317 +4667,74 @@ load(
     )
 )
 
-# extract one buffer layer
+# extract one buffer layer and simplify it
 one_buffer_size <- 
-  buffers$buffer_10000_m
+  buffers$buffer_10000_m %>% 
+  select(monitor_id)
 
-# extract one tract
+# extract one tract and simplify it
 one_tract <- 
   projected_tracts %>% 
-  filter(geoid10 == "04005002300")
+  filter(geoid10 == "04005002300") %>% 
+  select(geoid10)
+
+
 
 # clip buffers to only the one tract
-buffer_intersections_with_the_tract <- 
+buffers_in_tract <- 
   one_buffer_size %>% 
   st_intersection(one_tract, .) %>% 
-  mutate(polygon_id = row_number())  # add row numbers for id in collowing step
+  rowid_to_column("polygon_id")  # add row numbers to id polygons in following step
 
-# plot buffer intersections
-ggplot() +
-  geom_sf(data = one_tract, colour = "light gray", fill = NA) +
-  geom_sf(data = buffer_intersections_with_the_tract, colour = "dark gray", fill = NA) 
-
-# intersections of the intersections
-within_tract_intersections <- 
-  buffer_intersections_with_the_tract %>% 
-  st_intersection()
-
-str(buffer_intersections_with_the_tract)
-
-# add areas to them
-within_tract_intersection_areas <- 
-  within_tract_intersections %>% 
-  mutate(area = st_area(geometry))
-
-row_3_within <- 
-  within_tract_intersection_areas[3,]
-
-row_4_within <- 
-    within_tract_intersection_areas[4,]
-
-str(within_tract_intersection_areas)
-
-ggplot() +
-  geom_sf(data = one_tract, colour = "light gray", fill = NA) +
-  geom_sf(data = row_3_within, colour = "dark gray", fill = NA) +
-  geom_sf(data = row_4_within, colour = "dark gray", fill = NA) 
-  
-plot(row_3_within)
-plot(row_4_within)
-
-# # remove everything in memory (for travis!)
-# rm(list = ls())
-# gc()
-
-```
-
-
-
-```{r calculate areas}
-
-# load weights
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffer_tract_intersections.rdata"
-    )
-)
-
-# make area function
-areator <- 
-  function(sf_of_some_kind) {
-    sf_of_some_kind %>% 
-      mutate(
-        intersect_area = 
-          st_area(geometry)
-      )
-  }
-
-# calculate areas
-buffer_tract_areas <- 
-  map(
-    .f = areator, 
-    .x = buffer_tract_intersections
+# make concordance vector to replace "origin" values (rows) with monitor ids
+concordance_vector <- 
+  setNames(
+    object = buffers_in_tract$monitor_id,  # object to named
+    nm = buffers_in_tract$polygon_id  # names (polygon #s)
   )
 
-# save areas to disk
+# find buffer intersections and areas by monitor
+buffer_intersections <- 
+  buffers_in_tract %>% 
+  st_intersection() %>% 
+  mutate(area = st_area(geometry),  # add areas
+         monitor_id_overlaps =  # add column of monitor ids
+           map(
+             .x = origins,  # go through the origin column (with polygon #s)
+             .f = function(a) concordance_vector[a]  # replace with monitor ids
+             )
+         ) %>% 
+  select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
+
 save(
-  buffer_tract_areas,
+  buffer_intersections, 
   file = 
     file.path(
       "intermediate_data", 
-      "buffer_tract_areas.rdata"
+      "buffer_intersections"
     )
 )
 
-# remove unneeded files
-rm(buffer_tract_intersections, 
-   buffer_tract_areas)
-gc()
-
-
-```
-
-
-```{r calculate weights}
-
-# load intersections
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffer_tract_intersections.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffer_tract_areas.rdata"
-    )
-)
-
-# sum weights
-monitor_weight_by_tract <- 
-  buffer_tract_areas$buffer_tract_area_1000_m %>% 
-  group_by(monitor_id)
-  summarize(
-    
-  )
-  
-# remove everything in memory
-rm(list = ls())
-gc()
-
-```
-
-
-### joining the above to air data
-
-```{r join tracts to air data, eval=FALSE, include=FALSE}
-
-# load needed files
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "monitors_to_tracts.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffers_one_km_to_tracts,rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "travis_cache", 
-      "air_pollutant_tibble.rdata"
-      )
-  )
-
-# make tibble with only monitor ids and geoids for buffer file
-little_monitors_to_tracts <- 
-  monitors_to_tracts %>% 
-  st_drop_geometry() %>% 
-  select(monitor_id, 
-         geoid10) %>% 
-  mutate(geoid_containing_tract = geoid10) %>% 
-  select(monitor_id, 
-         geoid_containing_tract)
-
-# make tibble with only monitor ids and geoids for buffer file
-little_buffers_one_km_to_tracts <- 
-  buffers_one_km_to_tracts %>% 
-  st_drop_geometry() %>% 
-  select(
-    monitor_id, 
-    geoid10
-    ) 
-
-# join air pollution data to tracts
-air_with_containing_tracts <- 
-  left_join(
-    air_pollutant_tibble, 
-    little_monitors_to_tracts, 
-    by = "monitor_id"
-  )
-
-# save air with containing tracts
-save(
-  air_with_containing_tracts, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "air_with_containing_tracts.rdata"
-      )
-  )
-
-rm(monitors_to_tracts, 
-   buffers_one_km_to_tracts, 
-   air_pollutant_tibble, 
-   little_monitors_to_tracts,
-   little_buffers_one_km_to_tracts, 
-   air_with_containing_tracts
+# remove variables
+rm(
+  projected_tracts, 
+  buffers,
+  one_tract, 
+  one_buffer_size, 
+  buffers_in_tract, 
+  concordance_vector, 
+  buffer_intersections
 )
 gc()
+```
+
+
+```{r function from the above single case}
+
+buffintersector <- 
+  function(buffers_of_one_size_sf, tract_geoid_as_character) {
+    }
 
 ```
 
 
-```{r monitor subset for date, eval=FALSE, include=FALSE}
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "air_with_containing_tracts.rdata"
-      )
-  )
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "sparse_monitors.rdata"
-      )
-  )
-
-extra_sparse_monitors <- 
-  sparse_monitors %>% 
-  select(monitor_id, 
-         monitor_type)
-
-air_tracts_types <- 
-  left_join(
-    air_with_containing_tracts, 
-    extra_sparse_monitors, 
-    by = "monitor_id"
-  )
-
-data_for_monitor_operations <- 
-  air_tracts_types %>% 
-  select(
-    monitor_id, 
-    monitor_type,
-    parameter_code, 
-    date_local)
-
-dates_by_monitor <- 
-  data_for_monitor_operations %>% 
-  group_by(monitor_id, monitor_type) %>% 
-  summarize(
-    first_date = min(date_local), 
-    last_date = max(date_local)
-  ) %>% 
-  ungroup() %>% 
-  distinct(monitor_id, .keep_all = TRUE)
-
-dates_by_monitor_pm_only <- 
-  dates_by_monitor %>% 
-  filter(
-    monitor_type == "pm25" | monitor_type == "both"
-  ) %>% 
-  arrange(first_date, last_date) %>% 
-  mutate(monitor_id = factor(monitor_id, unique(monitor_id)))
-
-dates_by_monitor_species_only <- 
-  dates_by_monitor %>% 
-  filter(
-    monitor_type == "species" | monitor_type == "both"
-  ) %>% 
-  arrange(first_date, last_date) %>% 
-  mutate(monitor_id = factor(monitor_id, unique(monitor_id)))
-
-# 1,715 monitors
-date_range_plot_pm <- 
-  ggplot(dates_by_monitor_pm_only, 
-         y = monitor_id) +
-  geom_segment(
-    aes(x = first_date, 
-        xend = last_date, 
-        y = monitor_id, 
-        yend = monitor_id)
-  ) +
-  theme(axis.title.x = element_text("monitor"), 
-        axis.title.y = element_text("date"), 
-        axis.text.y = element_blank())
-  
-date_range_plot_species <- 
-  ggplot(dates_by_monitor_species_only, 
-         y = monitor_id) +
-  geom_segment(
-    aes(x = first_date, 
-        xend = last_date, 
-        y = monitor_id, 
-        yend = monitor_id)
-  ) +
-  theme(axis.title.x = element_text("monitor"), 
-        axis.title.y = element_text("date"), 
-        axis.text.y = element_blank())
-
-ggsave("date_range_plot_pm.png",plot=date_range_plot,width=20,height=60,units="cm")
-ggsave("date_range_plot_species.png",plot=date_range_plot_species,width=20,height=60,units="cm")
-
-
-
-
-
-```
