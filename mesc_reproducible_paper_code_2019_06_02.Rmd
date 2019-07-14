@@ -4679,7 +4679,8 @@ one_tract <-
 # clip buffers to only the one tract
 buffer_intersections_with_the_tract <- 
   one_buffer_size %>% 
-  st_intersection(one_tract, .)
+  st_intersection(one_tract, .) %>% 
+  mutate(polygon_id = row_number())  # add row numbers for id in collowing step
 
 # plot buffer intersections
 ggplot() +
@@ -4691,9 +4692,32 @@ within_tract_intersections <-
   buffer_intersections_with_the_tract %>% 
   st_intersection()
 
-# remove everything in memory (for travis!)
-rm(list = ls())
-gc()
+str(buffer_intersections_with_the_tract)
+
+# add areas to them
+within_tract_intersection_areas <- 
+  within_tract_intersections %>% 
+  mutate(area = st_area(geometry))
+
+row_3_within <- 
+  within_tract_intersection_areas[3,]
+
+row_4_within <- 
+    within_tract_intersection_areas[4,]
+
+str(within_tract_intersection_areas)
+
+ggplot() +
+  geom_sf(data = one_tract, colour = "light gray", fill = NA) +
+  geom_sf(data = row_3_within, colour = "dark gray", fill = NA) +
+  geom_sf(data = row_4_within, colour = "dark gray", fill = NA) 
+  
+plot(row_3_within)
+plot(row_4_within)
+
+# # remove everything in memory (for travis!)
+# rm(list = ls())
+# gc()
 
 ```
 
@@ -4706,7 +4730,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "buffer_tract_intersection_tibbles.rdata"
+      "buffer_tract_intersections.rdata"
     )
 )
 
@@ -4724,7 +4748,7 @@ areator <-
 buffer_tract_areas <- 
   map(
     .f = areator, 
-    .x = buffer_tract_intersection_tibbles
+    .x = buffer_tract_intersections
   )
 
 # save areas to disk
@@ -4738,7 +4762,7 @@ save(
 )
 
 # remove unneeded files
-rm(buffer_tract_intersection_tibbles, 
+rm(buffer_tract_intersections, 
    buffer_tract_areas)
 gc()
 
@@ -4753,7 +4777,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "buffer_tract_intersection_tibbles.rdata"
+      "buffer_tract_intersections.rdata"
     )
 )
 
