@@ -4578,13 +4578,6 @@ load(
     )
 )
 
-# unionize buffers
-unionized_buffers <- 
-  map(
-    .f = st_union,
-    .x = buffers
-  )
-
 # make list of names for new list
 buffer_tract_area_names <- 
   names(buffers) %>% 
@@ -4641,7 +4634,8 @@ save(
 rm(list_for_projected_tract_sf, 
    buffers,
    buffer_tract_area_names, 
-   intertibblator)
+   intertibblator, 
+   buffer_tract_intersections)
 gc()
 
 ```
