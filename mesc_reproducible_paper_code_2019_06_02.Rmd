@@ -4683,8 +4683,8 @@ one_tract <-
 # clip buffers to only the one tract
 buffers_in_tract <- 
   one_buffer_size %>% 
-  st_intersection(one_tract, .) %>% 
-  rowid_to_column("polygon_id")  # add row numbers to id polygons in following step
+  st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+  rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
 
 # make concordance vector to replace "origin" values (rows) with monitor ids
 concordance_vector <- 
@@ -4732,7 +4732,9 @@ gc()
 ```{r function from the above single case}
 
 buffintersector <- 
-  function(buffers_of_one_size_sf, tract_geoid_as_character) {
+  function(
+    buffer_size_desired, 
+    tract_geoid_as_character) {
     }
 
 ```
