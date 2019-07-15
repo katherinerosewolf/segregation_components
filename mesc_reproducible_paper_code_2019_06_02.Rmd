@@ -9,7 +9,7 @@ output: html_document
 # CODE SETUP (run every time)
 
 ```{r rmarkdown setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
@@ -178,7 +178,7 @@ save(
 
 # remove it
 rm(state_abbreviation_character_vector)
-gc()
+invisible(gc())
 }
 
 ```
@@ -247,7 +247,7 @@ if(
     tigris_shapefiles_no_data, 
     state_abbreviation_character_vector
   )
-  gc()
+  invisible(gc())
 }
 
 ```
@@ -396,7 +396,7 @@ if(
     split_tracts,
     neighbor_tibble_long
   )
-  gc()
+  invisible(gc())
 }
 
 ```
@@ -651,7 +651,7 @@ if(!file.exists(file.path("pre_travis_intermediate_data",
     sf1_totalcensus_var_list, 
     sf1_totalcensus_var_vec
     )
-  gc()
+  invisible(gc())
 }
 
 ```
@@ -751,7 +751,7 @@ if(!
     state_abbreviation_character_vector, 
     sf1_totalcensus_raw_dataframe
     )
-  gc()
+  invisible(gc())
 }
 
 ```
@@ -1019,7 +1019,7 @@ if(!file.exists(file.path("pre_travis_intermediate_data",
     acs_totalcensus_var_list, 
     acs_totalcensus_var_vec
     )
-  gc()
+  invisible(gc())
 }
 
 ```
@@ -1115,7 +1115,7 @@ if(!
     state_abbreviation_character_vector, 
     acs_totalcensus_raw_dataframe
   )
-  gc()
+  invisible(gc())
 }
 
 
@@ -1184,7 +1184,7 @@ if(!
   # )
   
   rm(inc_hh_hist_raw)
-  gc()
+  invisible(gc())
 }
    
    
@@ -1237,7 +1237,7 @@ if(
     )
   
   rm(ruca_2010_raw)
-  gc()
+  invisible(gc())
 }
 
 ```
@@ -1386,7 +1386,7 @@ if(
      raw_pm_25_frm_tibble)
   
   # clear memory
-  gc()
+  invisible(gc())
 
 }
 
@@ -1503,7 +1503,7 @@ speciator <-
        rm(
          speciation_tibble
          )
-       gc()
+       invisible(gc())
      }
     
     # remove files
@@ -1511,7 +1511,7 @@ speciator <-
       speciation_zip_filename, 
       speciation_rdata_filename
     )
-    gc()
+    invisible(gc())
   }
 
 # make list of speciation web addresses
@@ -1534,7 +1534,7 @@ map(
 )
 
 rm(speciation_files)
-gc()
+invisible(gc())
 
 ```
 
@@ -1581,7 +1581,7 @@ if(
   rm(
     daily_SPEC_2005, 
     daily_SPEC_2006)
-  gc()
+  invisible(gc())
   
   # make a function to bind the rest of the speciation tibbles
   speciebinder <- 
@@ -1612,29 +1612,29 @@ if(
       # remove the speciation file and clear the memory
       rm(speciation_filename, 
          list = speciation_tibble_name)
-      gc()
+      invisible(gc())
       
     }
   
   # make the big speciation dataset
   speciebinder("daily_SPEC_2007.rdata")
-  gc()
+  invisible(gc())
   speciebinder("daily_SPEC_2008.rdata")
-  gc()
+  invisible(gc())
   speciebinder("daily_SPEC_2009.rdata")
-  gc()
+  invisible(gc())
   speciebinder("daily_SPEC_2010.rdata")
-  gc()
+  invisible(gc())
   speciebinder("daily_SPEC_2011.rdata")
-  gc()
+  invisible(gc())
   speciebinder("daily_SPEC_2012.rdata")
-  gc()
+  invisible(gc())
   speciebinder("daily_SPEC_2013.rdata")
-  gc()
+  invisible(gc())
   speciebinder("daily_SPEC_2014.rdata")
-  gc()
+  invisible(gc())
   speciebinder("daily_SPEC_2015.rdata")
-  gc()
+  invisible(gc())
   
   # save the big speciation dataset
   save(
@@ -1650,7 +1650,7 @@ if(
   rm(speciation_files, 
      speciation_filenames_except_2005_2006,
      raw_speciation_tibble)
-  gc()
+  invisible(gc())
   }
 
 ```
@@ -1694,7 +1694,7 @@ if(
   # remove extraneous files
   rm(raw_pm_25_frm_tibble,
      raw_speciation_tibble)
-  gc()
+  invisible(gc())
 
   # save the big tibble
   save(
@@ -1707,7 +1707,7 @@ if(
   
   # remove it from memory
   rm(raw_air_tibble)
-  gc()
+  invisible(gc())
 
 }
 
@@ -1735,7 +1735,7 @@ working_air_tibble <-
 
 # # remove the raw air tibble from memory
 # rm(raw_air_tibble)
-# gc()
+# invisible(gc())
 
 # # get variable names
 # names(working_air_tibble)
@@ -1841,7 +1841,7 @@ save(
 
 # remove the working air tibble
 rm(working_air_tibble)
-gc()
+invisible(gc())
 
 # drop observations not of interest
 us_filtered_air_tibble <- 
@@ -1855,7 +1855,7 @@ us_filtered_air_tibble <-
 
 # remove the us raw tibble
 rm(us_raw_air_tibble)
-gc()
+invisible(gc())
   
 # stuff from data two
 species_and_codes_from_data_two <- 
@@ -1893,7 +1893,7 @@ rm(non_us_state_codes,
    observations_counts_by_code, 
    remaining_drop_codes
    )
-gc()
+invisible(gc())
 
 ```
 
@@ -1939,7 +1939,7 @@ save(
 )
 
 rm(air_pollutant_tibble)
-gc()
+invisible(gc())
 
 
 # method_tibble
@@ -1962,7 +1962,7 @@ save(
 )
 
 rm(method_tibble)
-gc()
+invisible(gc())
 
 
 # parameter names and codes tibble
@@ -1983,7 +1983,7 @@ save(
 )
 
 rm(parameter_names_codes_tibble)
-gc()
+invisible(gc())
   
 
 # units of measure tibble
@@ -2005,7 +2005,7 @@ save(
 )
 
 rm(units_of_measure_tibble)
-gc()
+invisible(gc())
 
 
 # monitor tibble
@@ -2037,7 +2037,7 @@ save(
 )
 
 rm(air_monitor_tibble)
-gc()
+invisible(gc())
 
 
 # total pm25 88101 tibble with 88101-only variables (pollutant standard, aqi)
@@ -2073,7 +2073,7 @@ save(
 
 rm(total_88101_pollutant_standard_aqi_tibble, 
    us_filtered_air_tibble)
-gc()
+invisible(gc())
 
 ```
 
@@ -2103,7 +2103,7 @@ save(
 )
 
 rm(state_abbreviation_character_vector)
-gc()
+invisible(gc())
 
 
 # geography files
@@ -2125,7 +2125,7 @@ save(
 )
 
 rm(tigris_shapefiles_no_data)
-gc()
+invisible(gc())
 
 
 # neighbor file
@@ -2147,7 +2147,7 @@ save(
   )
 
 rm(neighbor_tibble_long)
-gc()  
+invisible(gc())  
 
 
 # sf1 census 2010 data
@@ -2169,7 +2169,7 @@ save(
   )
 
 rm(sf1_totalcensus_raw_dataframe)
-gc()
+invisible(gc())
 
 
 # acs 2012 data
@@ -2191,7 +2191,7 @@ save(
   )
 
 rm(acs_totalcensus_raw_dataframe)
-gc()
+invisible(gc())
 
 
 # historical income tibble
@@ -2213,7 +2213,7 @@ save(
 )
 
 rm(inc_hh_hist_raw)
-gc()
+invisible(gc())
 
 
 # ruca files
@@ -2235,7 +2235,7 @@ save(
   )
 
 rm(ruca_2010_raw)
-gc()
+invisible(gc())
 
 
 # air pollutant only tibble
@@ -2257,7 +2257,7 @@ save(
 )
 
 rm(air_pollutant_tibble)
-gc()
+invisible(gc())
 
 
 # air monitor only tibble
@@ -2279,7 +2279,7 @@ save(
 )
 
 rm(air_monitor_tibble)
-gc()
+invisible(gc())
 
 
 # method_tibble
@@ -2301,7 +2301,7 @@ save(
 )
 
 rm(method_tibble)
-gc()
+invisible(gc())
 
 
 # parameter names and codes tibble
@@ -2323,7 +2323,7 @@ save(
 )
 
 rm(parameter_names_codes_tibble)
-gc()
+invisible(gc())
   
 
 # units of measure tibble
@@ -2345,7 +2345,7 @@ save(
 )
 
 rm(units_of_measure_tibble)
-gc()
+invisible(gc())
 
 
 # total pm25 88101 tibble with 88101-only variables (pollutant standard, aqi)
@@ -2367,7 +2367,7 @@ save(
 )
 
 rm(total_88101_pollutant_standard_aqi_tibble)
-gc()
+invisible(gc())
 
 ```
 
@@ -2446,7 +2446,7 @@ save(
 rm(ruca_2010_raw, 
    ruca_simple,
    ruca_urban_only)
-gc()
+invisible(gc())
 
 ```
 
@@ -2499,7 +2499,7 @@ rm(
   sf1_totalcensus_raw_dataframe, 
   sf1_totalcensus_tibble
   )
-gc()
+invisible(gc())
 
 ```
 
@@ -2548,7 +2548,7 @@ save(
 
 rm(acs_totalcensus_raw_dataframe, 
    acs_totalcensus_tibble)
-gc()
+invisible(gc())
 
 ```
 
@@ -2590,7 +2590,7 @@ save(
 # remove variables from working memory
 rm(inc_hh_hist_raw, 
    inc_hh_2012_cutoffs)
-gc()
+invisible(gc())
 
 
 ```
@@ -2743,7 +2743,7 @@ rm(
   acs_concordance_geoids_not_in_sf1, 
   sf1_geoids_not_in_acs_concordance_geoids
 )
-gc()
+invisible(gc())
 ```
 
 
@@ -2905,7 +2905,7 @@ rm(
   acs_tibble_for_joining, 
   demographic_tibble
 )
-gc()
+invisible(gc())
 
 ```
 
@@ -2936,7 +2936,7 @@ area_tibble <-
 
 # remove shapefiles
 rm(tigris_shapefiles_no_data)
-gc()
+invisible(gc())
 
 # load demographic tibble
 load(
@@ -2967,7 +2967,7 @@ save(
 
 # remove unneeded files
 rm(area_tibble, demographic_tibble, demographic_area_tibble)
-gc()
+invisible(gc())
 
 ```
 
@@ -3000,7 +3000,7 @@ demographic_constructed <-
 
 # remove the raw tibble to save memory
 rm(demographic_area_tibble)
-gc()
+invisible(gc())
 
 #### census
 
@@ -3396,7 +3396,7 @@ save(
 
 # remove final file
 rm(demographic_constructed)
-gc()
+invisible(gc())
 
 
 ```
@@ -3552,7 +3552,7 @@ rm(
   carbon_ec_monitor_id, 
   carbon_monitor_table
 )
-gc()
+invisible(gc())
 
 ```
 
@@ -3631,7 +3631,7 @@ save(
 rm(air_pollutant_tibble,
    air_pollutant_conversion_tibble, 
    converted_tibbles)
-gc()
+invisible(gc())
   
 ```
 
@@ -3689,7 +3689,7 @@ ec_conversion_tibble <-
 
 # remove the air pollutant conversion tibble
 rm(air_pollutant_conversion_tibble)
-gc()
+invisible(gc())
 
 # ec conversion tibble
 # summarize each by date and monitor
@@ -3781,7 +3781,7 @@ rm(parameter_names_codes_tibble,
    ec_select_tibble, 
    ec_conversion_date_check, 
    ec_selected_date_check)
-gc()
+invisible(gc())
 
   
 ```
@@ -3839,7 +3839,7 @@ oc_conversion_tibble <-
 
 # remove the air pollutant conversion tibble
 rm(air_pollutant_conversion_tibble)
-gc()
+invisible(gc())
 
 # oc conversion tibble
 # summarize each by date and monitor
@@ -3930,7 +3930,7 @@ rm(parameter_names_codes_tibble,
    oc_select_tibble, 
    oc_conversion_date_check, 
    oc_selected_date_check)
-gc()
+invisible(gc())
 
 ```
 
@@ -3979,7 +3979,7 @@ monitor_id_and_code <-
 
 # remove the air pollutant tibble to save memory
 rm(air_pollutant_tibble)
-gc()
+invisible(gc())
 
 # load the air monitor tibble
 load(
@@ -4216,7 +4216,7 @@ rm(
   monitor_and_state, 
   state_monitor_counts
 )
-gc()
+invisible(gc())
 ```
 
 
@@ -4296,7 +4296,7 @@ rm(
   monitors_sf,
   tigris_shapefiles_no_data
   )
-gc()
+invisible(gc())
 ```
 
 
@@ -4450,7 +4450,7 @@ rm(
   buffer_names, 
   buffers
 )
-gc()
+invisible(gc())
 
 ```
 
@@ -4485,7 +4485,7 @@ save(
 # delete unneeded data
 rm(buffers, 
    unionized_buffers)
-gc()
+invisible(gc())
 
 ```
 
@@ -4516,7 +4516,7 @@ list_for_projected_tract_sf <-
 
 # remove projected tracts from memory
 rm(projected_tracts)
-gc()
+invisible(gc())
 
 # make list of names for new list
 buffer_tract_names <- 
@@ -4549,12 +4549,12 @@ rm(buffers,
    list_for_projected_tract_sf,
    buffer_tract_names,
    buffers_tracts)
-gc()
+invisible(gc())
 
 ```
 
 
-```{r create tract monitor intersections}
+```{r create tract monitor intersections, eval=FALSE, include=FALSE}
 
 # load projected tract sf
 load(
@@ -4571,7 +4571,7 @@ list_for_projected_tract_sf <-
 
 # remove projected tracts to save memory
 rm(projected_tracts)
-gc()
+invisible(gc())
 
 # load buffers
 load(
@@ -4590,13 +4590,6 @@ buffer_tract_area_names <-
     replacement = "buffer_tract_area_"
   )
 
-# create function to both intersect and tibblize
-intertibblator <- 
-  function(tract, 
-           buffer) {
-    as_tibble(st_intersection(tract, buffer))
-  }
-
 # calculate intersections without tibblation without unionizing monitors
 buffer_tract_intersections <-  
   map2(
@@ -4605,15 +4598,6 @@ buffer_tract_intersections <-
     .y = buffers
   ) %>% 
   set_names(buffer_tract_area_names)
-
-# # calculate intersections as tibbles
-# buffer_tract_intersection_tibbles <- 
-#   map2(
-#     .f = intertibblator, 
-#     .x = list_for_projected_tract_sf, 
-#     .y = buffers
-#   )  %>% 
-#   set_names(buffer_tract_area_names)
 
 # save data to drive
 save(
@@ -4625,22 +4609,12 @@ save(
     )
 )
 
-# save(
-#   buffer_tract_intersection_tibbles,
-#   file = 
-#     file.path(
-#       "intermediate_data", 
-#       "buffer_tract_intersection_tibbles.rdata"
-#     )
-# )
-
 # remove created variables
 rm(list_for_projected_tract_sf, 
    buffers,
-   buffer_tract_area_names, 
-   intertibblator, 
+   buffer_tract_area_names,
    buffer_tract_intersections)
-gc()
+invisible(gc())
 
 ```
 
@@ -4723,7 +4697,7 @@ rm(
   concordance_vector, 
   buffer_intersections
 )
-gc()
+invisible(gc())
 ```
 
 
@@ -4775,7 +4749,26 @@ buffintersector <-
 ```
 
 
-```{r apply buffer }
+```{r apply buffer function}
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
 
 ```
 
