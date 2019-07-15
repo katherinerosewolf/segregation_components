@@ -4485,7 +4485,6 @@ gc()
 ```
 
 
-
 ```{r join buffers to tracts}
 
 # load projected tract sf
