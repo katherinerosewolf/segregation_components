@@ -8,6 +8,11 @@ output: html_document
 
 # CODE SETUP (run every time)
 
+```{r rmarkdown setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+
 ```{r load packages}
 
 library(rmarkdown)
@@ -4722,14 +4727,55 @@ gc()
 ```
 
 
-```{r function from the above single case}
+```{r make buffer intersection function from the above single case}
 
 buffintersector <- 
-  function(
-    buffer_size_desired, 
-    tract_geoid_as_character) {
+  function(buffer_sf, 
+           tract_geoid_as_character, 
+           tract_sf) {
+    
+    # extract one buffer layer and simplify it
+    one_buffer_size <- 
+      buffer_sf %>% 
+      select(monitor_id)
+    
+    # extract one tract and simplify it
+    one_tract <- 
+      tract_sf %>% 
+      filter(geoid10 == tract_geoid_as_character) %>% 
+      select(geoid10)
+    
+    # clip buffers to only the one tract
+    buffers_in_tract <- 
+      one_buffer_size %>% 
+      st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+      rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
+    
+    # make concordance vector to replace "origin" values (rows) with monitor ids
+    concordance_vector <- 
+      setNames(
+        object = buffers_in_tract$monitor_id,  # object to named
+        nm = buffers_in_tract$polygon_id  # names (polygon #s)
+      )
+    
+    # find buffer intersections and areas by monitor
+    buffer_intersections <- 
+      buffers_in_tract %>% 
+      st_intersection() %>% 
+      mutate(area = st_area(geometry),  # add areas
+             monitor_id_overlaps =  # add column of monitor ids
+               map(
+                 .x = origins,  # go through the origin column (with polygon #s)
+                 .f = function(a) concordance_vector[a]  # replace with monitor ids
+                 )
+             ) %>% 
+      select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
     }
 
 ```
 
+
+```{r apply buffer }
+
+```
 
