@@ -4475,6 +4475,7 @@ unionized_buffers <-
 
 # save result
 save(
+  unionized_buffers,
   file = 
     file.path(
       "intermediate_data", 
@@ -4485,70 +4486,6 @@ save(
 # delete unneeded data
 rm(buffers, 
    unionized_buffers)
-invisible(gc())
-
-```
-
-
-```{r join buffers to tracts}
-
-# load projected tract sf
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_tracts.rdata"
-    )
-  )
-
-# load buffers
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffers.rdata"
-    )
-)
-
-# make one-element list wrapping the tract shapefile
-list_for_projected_tract_sf <- 
-  list(projected_tracts)
-
-# remove projected tracts from memory
-rm(projected_tracts)
-invisible(gc())
-
-# make list of names for new list
-buffer_tract_names <- 
-  names(buffers) %>% 
-  gsub(x = .,
-    pattern = "buffer_", 
-    replacement = "buffer_tract_"
-  )
-
-# use the function on the list!
-buffers_tracts <- 
-  map2(.f = st_join,
-       .x = buffers, 
-       .y = list_for_projected_tract_sf, 
-       left = TRUE) %>% 
-  set_names(buffer_tract_names)
-
-# save data to drive
-save(
-  buffers_tracts,
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffers_tracts.rdata"
-    )
-)
-
-# remove files no longer needed
-rm(buffers,
-   list_for_projected_tract_sf,
-   buffer_tract_names,
-   buffers_tracts)
 invisible(gc())
 
 ```
@@ -4703,7 +4640,6 @@ load(
       "buffers.rdata"
     )
 )
-
 
 ```
 
