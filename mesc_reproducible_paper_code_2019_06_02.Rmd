@@ -4519,10 +4519,8 @@ one_buffer_size <-
 # extract one tract and simplify it
 one_tract <- 
   projected_tracts %>% 
-  filter(geoid10 == "04005002300") %>% 
+  filter(geoid10 == "02016000200") %>% 
   select(geoid10)
-
-
 
 # clip buffers to only the one tract
 buffers_in_tract <- 
@@ -4576,8 +4574,8 @@ invisible(gc())
 ```{r make buffer intersection function from the above single case}
 
 buffintersector <- 
-  function(buffer_sf, 
-           tract_geoid_as_character, 
+  function(tract_geoid_as_character, 
+           buffer_sf, 
            tract_sf) {
     
     # extract one buffer layer and simplify it
@@ -4596,6 +4594,20 @@ buffintersector <-
       one_buffer_size %>% 
       st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
       rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
+    
+    # check if nrow from the above is zero, and if so, make a tibble and return it
+    if(nrow(buffers_in_tract) == 0) {
+      null_tibble <- 
+        tibble(geoid10 = tract_geoid_as_character, 
+               n.overlaps = as.integer(0), 
+               origins = as.integer(0), 
+               area = as.numeric(0), 
+               monitor_id_overlaps = "none", 
+               geometry = "none")
+
+      return(null_tibble)
+      
+    } else {
     
     # make concordance vector to replace "origin" values (rows) with monitor ids
     concordance_vector <- 
@@ -4616,12 +4628,29 @@ buffintersector <-
                  )
              ) %>% 
       select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
+    
+    return(buffer_intersections)
+    
     }
+  }
+ 
+# save the function to disk
+save(
+  buffintersector, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffintersector.rdata"
+    )
+)
+
+rm(buffintersector)
+invisible(gc())
 
 ```
 
 
-```{r apply buffer function}
+```{r apply buffer function to a single case}
 
 # load projected tracts data
 load(
@@ -4641,5 +4670,61 @@ load(
     )
 )
 
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffintersector.rdata"
+    )
+)
+
+# try the function on a single tract and buffer size
+try_the_first <- 
+  buffintersector(tract_geoid_as_character = "02013000100", 
+                  buffer_sf = buffers$buffer_1000_m, 
+                  tract_sf = projected_tracts)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# get buffer file of interest
+buffer_1000_m <- 
+  buffers$buffer_1000_m
+
+# apply buffer function for all tracts for one buffer size
+buffer_intersections_1000_m <- 
+  map(
+    .f = buffintersector, 
+    .x = tract_geoid_characters,
+    buffer_sf = buffer_1000_m,
+    tract_sf = projected_tracts
+  )
+
+# make map_buff_intersect function!
+mapbuffintersector <- 
+  function(input_buffer_sf) {
+    intersections_all_tracts_one_buffer_size <- 
+      map(
+        .f = buffintersector, 
+        .x = tract_geoid_characters,
+        buffer_sf = input_buffer_sf,
+        tract_sf = projected_tracts
+  )
+      
+  }
+  
+
+
+
+```
+
+
+```{r }
+
+
+ 
 ```
 
