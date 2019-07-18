@@ -42,82 +42,6 @@ library(lubridate)
 ```
 
 
-```{r census api key and options for tidycensus}
-
-# install the census api key
-census_api_key("eae31d12c8d9c2c9ee288e096e0c03830744aaef", 
-               install = TRUE, 
-               overwrite = TRUE)
-
-readRenviron("~/.Renviron")
-
-# have tidycensus store old shapefiles for future use
-options(tigris_use_cache = TRUE)
-
-```
-
-
-```{r functions for general later use}
-
-# function to convert column names to snake case
-column_name_fixer <-
-  function(tibble) {
-  new_names <-
-    tibble %>%
-    colnames() %>%  # gets the column names from the tibble
-    tolower() %>%  # converts the column names to lowercase
-    {gsub(" ", "_", .)}  # replaces spaces with "_"
-  colnames(tibble) <-
-    new_names  # rename the columns in the original tibble
-  return(tibble)
-  }
-
-
-
-# create function that downloads files
-file_downloader <-
-  function(desired_filename_as_string, 
-           web_address_as_string, 
-           folder_as_string) {
-    
-    path <-  # specify the file path
-      file.path(
-        folder_as_string,
-        desired_filename_as_string) 
-    
-    if(!file.exists(path))  # checks if file exists already
-      download.file(url = web_address_as_string,  # if not, downloads/saves file
-                    destfile = path, 
-                    mode = "wb")
-  }
-
-
-
-# function to download generated data without asking
-download_generated_data_auto <- 
-  function() {
-    cat(paste("Downloading data generated from decennial census 2010."))
-    total_files <- 426
-    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
-    url <- "https://s3.amazonaws.com/gl-shared-data/generated_census_data_v060.zip"
-    download.file(url, paste0(path_to_census, "/tmp.zip"))
-    unzip(paste0(path_to_census, "/tmp.zip"), exdir = paste0(path_to_census, 
-        "/generated_data"))
-    file.remove(paste0(path_to_census, "/tmp.zip"))
-    n_files <- length(list.files(paste0(path_to_census, "/generated_data"), 
-        recursive = TRUE))
-    if (n_files == total_files) {
-        cat("Extraction is successful!\n\n")
-    }
-    else {
-        cat("Last downloading or extraction has a problem. Download and extract again.")
-        download_generated_data_auto()
-    }
-  }
-
-```
-
-
 ```{r establish directory structure}
 
 if(!dir.exists("raw_data")) {
@@ -144,8 +68,120 @@ if(!dir.exists(file.path("intermediate_data", "plots"))) {
   dir.create(file.path("intermediate_data", "plots"))
 }
 
-# set path to census data
+if(!dir.exists(file.path("functions"))) {
+  dir.create(file.path("functions"))
+}
+
+```
+
+
+```{r census api key and options for tidycensus and totalcensus}
+
+# install the census api key for tidycensus
+census_api_key("eae31d12c8d9c2c9ee288e096e0c03830744aaef", 
+               install = TRUE, 
+               overwrite = TRUE)
+
+readRenviron("~/.Renviron")
+
+# have tidycensus store old shapefiles for future use
+options(tigris_use_cache = TRUE)
+
+# set path to census data for totalcensus
 Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
+
+```
+
+
+```{r functions for general later use}
+
+# function to convert column names to snake case
+column_name_fixer <-
+  function(tibble) {
+  new_names <-
+    tibble %>%
+    colnames() %>%  # gets the column names from the tibble
+    tolower() %>%  # converts the column names to lowercase
+    {gsub(" ", "_", .)}  # replaces spaces with "_"
+  colnames(tibble) <-
+    new_names  # rename the columns in the original tibble
+  return(tibble)
+  }
+
+# create function that downloads files
+file_downloader <-
+  function(desired_filename_as_string, 
+           web_address_as_string, 
+           folder_as_string) {
+    
+    path <-  # specify the file path
+      file.path(
+        folder_as_string,
+        desired_filename_as_string) 
+    
+    if(!file.exists(path))  # checks if file exists already
+      download.file(url = web_address_as_string,  # if not, downloads/saves file
+                    destfile = path, 
+                    mode = "wb")
+  }
+
+# function to download generated data without asking
+download_generated_data_auto <- 
+  function() {
+    cat(paste("Downloading data generated from decennial census 2010."))
+    total_files <- 426
+    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
+    url <- "https://s3.amazonaws.com/gl-shared-data/generated_census_data_v060.zip"
+    download.file(url, paste0(path_to_census, "/tmp.zip"))
+    unzip(paste0(path_to_census, "/tmp.zip"), exdir = paste0(path_to_census, 
+        "/generated_data"))
+    file.remove(paste0(path_to_census, "/tmp.zip"))
+    n_files <- length(list.files(paste0(path_to_census, "/generated_data"), 
+        recursive = TRUE))
+    if (n_files == total_files) {
+        cat("Extraction is successful!\n\n")
+    }
+    else {
+        cat("Last downloading or extraction has a problem. Download and extract again.")
+        download_generated_data_auto()
+    }
+  }
+
+# save functions for later use
+save(
+  column_name_fixer, 
+     file = 
+       file.path(
+         "functions", 
+         "column_name_fixer.rdata"
+       )
+)
+
+save(
+  file_downloader, 
+     file = 
+       file.path(
+         "functions", 
+         "file_downloader.rdata"
+       )
+)
+
+save(
+  download_generated_data_auto, 
+     file = 
+       file.path(
+         "functions", 
+         "download_generated_data_auto.rdata"
+       )
+)
+
+# remove the functions
+rm(
+  column_name_fixer, 
+  file_downloader, 
+  download_generated_data_auto
+)
+invisible(gc())
 
 ```
 
@@ -202,6 +238,15 @@ if(
     )
   ) {
   
+  # load the column name fixer function
+  load(
+    file = 
+      file.path(
+       "functions", 
+       "column_name_fixer.rdata"
+      )
+    )
+  
   # load vector of state abbreviations
   load(
     file = 
@@ -227,6 +272,12 @@ if(
       )
   )
   
+  # make into tibble
+  tigris_shapefiles_no_data <- 
+    tigris_shapefiles_no_data %>% 
+    as_tibble() %>% 
+    st_as_sf()
+  
   # fix column names
   tigris_shapefiles_no_data <- 
     tigris_shapefiles_no_data %>% 
@@ -242,10 +293,11 @@ if(
       )
   )
   
-  # remove the shapefile
+  # remove loaded and created objects from environment and clear memory
   rm(
-    tigris_shapefiles_no_data, 
-    state_abbreviation_character_vector
+    state_abbreviation_character_vector,
+    column_name_fixer,
+    tigris_shapefiles_no_data 
   )
   invisible(gc())
 }
@@ -1139,6 +1191,17 @@ if(!
      )
    )
   ) {
+  
+  # load file downloader function
+  load(
+    file = 
+      file.path(
+       "functions", 
+       "file_downloader.rdata"
+      )
+    )
+  
+  # download the historical income file from the internet
   file_downloader(
     desired_filename_as_string = "inc_hh_hist_raw.xls", 
     web_address_as_string = 
@@ -1175,15 +1238,11 @@ if(!
       )
     )
   
-  # load(
-  #   file = 
-  #     file.path(
-  #       "raw_data", 
-  #       "inc_hh_hist_raw.rdata"
-  #     )
-  # )
-  
-  rm(inc_hh_hist_raw)
+  # remove loaded and created objects from environment
+  rm(
+    file_downloader,
+    inc_hh_hist_raw
+    )
   invisible(gc())
 }
    
@@ -1210,6 +1269,17 @@ if(
       )
     )
   ) {
+  
+  # load file downloader function
+  load(
+    file = 
+      file.path(
+       "functions", 
+       "file_downloader.rdata"
+      )
+    )
+  
+  # download files
   file_downloader(
     desired_filename_as_string = "ruca_2010_raw.xlsx", 
     web_address_as_string = 
@@ -1236,7 +1306,11 @@ if(
       )
     )
   
-  rm(ruca_2010_raw)
+  # remove loaded and created objects from environment
+  rm(
+    file_downloader,
+    ruca_2010_raw
+    )
   invisible(gc())
 }
 
@@ -1261,6 +1335,24 @@ if(
       )
     )
   ) {
+  
+  # load file downloader function
+  load(
+    file = 
+      file.path(
+       "functions", 
+       "file_downloader.rdata"
+      )
+    )
+  
+  # load the column name fixer function
+  load(
+    file = 
+      file.path(
+       "functions", 
+       "column_name_fixer.rdata"
+      )
+    )
 
   # make list of files to download
   pm_25_frm_files <- 
@@ -1377,13 +1469,17 @@ if(
     file.remove
     )
   
-  # remove files from memory
-  rm(pm_25_frm_csv_filename_list, 
-     pm_25_frm_tibble_name_list, 
-     pm_25_frm_files,
-     pm_25_frm_zip_filename_list,
-     pm_25_frm_tibble_list, 
-     raw_pm_25_frm_tibble)
+  # remove loaded and created objects from environment
+  rm(
+    file_downloader,
+    column_name_fixer,
+    pm_25_frm_csv_filename_list, 
+    pm_25_frm_tibble_name_list, 
+    pm_25_frm_files,
+    pm_25_frm_zip_filename_list,
+    pm_25_frm_tibble_list, 
+    raw_pm_25_frm_tibble
+    )
   
   # clear memory
   invisible(gc())
@@ -1428,6 +1524,24 @@ speciator <-
           )
         )
       ) {
+       
+      # load file downloader function
+      load(
+        file = 
+          file.path(
+           "functions", 
+           "file_downloader.rdata"
+          )
+        )
+       
+       # load the column name fixer function
+       load(
+         file = 
+           file.path(
+             "functions", 
+             "column_name_fixer.rdata"
+             )
+         )
        
        # download the file
        file_downloader(
@@ -1499,8 +1613,10 @@ speciator <-
          file.remove
          )
       
-       # remove files
+       # remove loaded and created objects from environment
        rm(
+         file_downloader,
+         column_name_fixer,
          speciation_tibble
          )
        invisible(gc())
@@ -2378,6 +2494,15 @@ invisible(gc())
 
 ```{r ruca data format}
 
+# load column name fixer function
+load(
+  file = 
+    file.path(
+     "functions", 
+     "column_name_fixer.rdata"
+    )
+  )
+
 # read the data from the excel file
 load(
   file = 
@@ -2443,7 +2568,8 @@ save(
 )
 
 # remove the shapefile from memory
-rm(ruca_2010_raw, 
+rm(column_name_fixer, 
+   ruca_2010_raw, 
    ruca_simple,
    ruca_urban_only)
 invisible(gc())
@@ -2453,6 +2579,15 @@ invisible(gc())
 ## demographic file formatting
 
 ```{r census data format}
+
+# load the column name fixer function
+load(
+  file = 
+    file.path(
+     "functions", 
+     "column_name_fixer.rdata"
+    )
+  )
 
 # load raw sf1 census dataframe
 load(
@@ -2494,8 +2629,9 @@ save(
       )
   )
   
-# remove working files
+# remove loaded and created objects from environment
 rm(
+  column_name_fixer,
   sf1_totalcensus_raw_dataframe, 
   sf1_totalcensus_tibble
   )
@@ -2505,6 +2641,15 @@ invisible(gc())
 
 
 ```{r acs data format}
+
+# load the column name fixer function
+load(
+  file = 
+    file.path(
+     "functions", 
+     "column_name_fixer.rdata"
+    )
+  )
 
 # load raw dataframe
 load(
@@ -2546,8 +2691,10 @@ save(
     )
 )
 
-rm(acs_totalcensus_raw_dataframe, 
-   acs_totalcensus_tibble)
+rm(
+  column_name_fixer, 
+  acs_totalcensus_raw_dataframe, 
+  acs_totalcensus_tibble)
 invisible(gc())
 
 ```
@@ -4335,6 +4482,15 @@ projected_tracts <-
     proj_tract_area = 
       st_area(geometry)
   )
+
+# set attributes for variables in projected tracts
+st_agr(projected_tracts) <-  
+  c(geoid10 = "identity", 
+    aland10 = "aggregate", 
+    awater10 = "aggregate", 
+    intptlat10 = "aggregate", 
+    intptlon10 = "aggregate", 
+    proj_tract_area = "aggregate")
   
 # project the monitors to the same
 projected_monitors <-
@@ -4343,7 +4499,7 @@ projected_monitors <-
   select(
     monitor_id, 
     monitor_type
-  )
+  ) 
 
 # join tracts to monitors
 monitors_to_tracts <- 
@@ -4432,6 +4588,18 @@ buffers <-
       .x = list_of_proj_mon_sf) %>% 
   set_names(buffer_names)  # name the list elements
 
+# set relation_to_geometry ("agr") attribute to "constant"
+buffers <-
+  map(
+    .f = function(x) {
+      st_agr(x) = 
+        c(monitor_id = "identity", 
+          monitor_type = "constant")
+      return(x)
+      },
+    .x = buffers
+  )
+
 # save the buffers
 save(
   buffers, 
@@ -4519,13 +4687,13 @@ one_buffer_size <-
 # extract one tract and simplify it
 one_tract <- 
   projected_tracts %>% 
-  filter(geoid10 == "02016000200") %>% 
+  filter(geoid10 == "02013000100") %>% 
   select(geoid10)
 
 # clip buffers to only the one tract
 buffers_in_tract <- 
   one_buffer_size %>% 
-  st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+  st_intersection(one_tract, .) %>%  # this clips buffers (buffer sf is .)
   rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
 
 # make concordance vector to replace "origin" values (rows) with monitor ids
@@ -4568,6 +4736,7 @@ rm(
   buffer_intersections
 )
 invisible(gc())
+
 ```
 
 
@@ -4639,7 +4808,7 @@ save(
   buffintersector, 
   file = 
     file.path(
-      "intermediate_data", 
+      "functions", 
       "buffintersector.rdata"
     )
 )
@@ -4651,6 +4820,15 @@ invisible(gc())
 
 
 ```{r apply buffer function to a single case}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
 
 # load projected tracts data
 load(
@@ -4670,61 +4848,363 @@ load(
     )
 )
 
-# load buffintersector function
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffintersector.rdata"
-    )
-)
-
 # try the function on a single tract and buffer size
 try_the_first <- 
   buffintersector(tract_geoid_as_character = "02013000100", 
                   buffer_sf = buffers$buffer_1000_m, 
                   tract_sf = projected_tracts)
+```
+
+```{r intra-tract buffer intersections all tracts one distance}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
 
 # get list of tract geoids
 tract_geoid_characters <- 
   projected_tracts %>% 
   pull(geoid10)
 
-# get buffer file of interest
-buffer_1000_m <- 
-  buffers$buffer_1000_m
+# # get buffer file of interest
+# buffer_1000_m <- 
+#   buffers$buffer_1000_m
 
-# apply buffer function for all tracts for one buffer size
-buffer_intersections_1000_m <- 
+# # apply buffer function for all tracts for 1000-meter buffer (TIME SUCK)
+# buffer_intersections_1000_m <- 
+#   map(
+#     .f = buffintersector, 
+#     .x = tract_geoid_characters,
+#     buffer_sf = buffers$buffer_1000_m,
+#     tract_sf = projected_tracts
+#   )
+# 
+# # save the result
+# save(
+#   buffer_intersections_1000_m, 
+#   file = 
+#     file.path(
+#       "intermediate_data",
+#       "buffer_intersections_1000_m.rdata"
+#       )
+#   )
+# 
+# # remove object from memory
+# rm(buffer_intersections_1000_m)
+# gc()
+
+```
+
+```{r make ueber-function to do buffer intersections, eval=FALSE, include=FALSE}
+
+
+
+
+
+
+
+
+# apply buffer function for all tracts for 2000-meter buffer
+buffer_intersections_2000_m <- 
   map(
     .f = buffintersector, 
     .x = tract_geoid_characters,
-    buffer_sf = buffer_1000_m,
+    buffer_sf = buffers$buffer_2000_m,
     tract_sf = projected_tracts
   )
 
+# save the result
+save(
+  buffer_intersections_1000_m, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_intersections_1000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_intersections_1000_m)
+gc()
+
+# apply buffer function for all tracts for 2500-meter buffer
+buffer_intersections_2500_m <- 
+  map(
+    .f = buffintersector, 
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_2500_m,
+    tract_sf = projected_tracts
+  )
+
+# apply buffer function for all tracts for 3000-meter buffer
+buffer_intersections_3000_m <- 
+  map(
+    .f = buffintersector, 
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_3000_m,
+    tract_sf = projected_tracts
+  )
+
+# save the result
+save(
+  buffer_intersections_1000_m, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_intersections_1000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_intersections_1000_m)
+gc()
+
+# apply buffer function for all tracts for 4000-meter buffer
+buffer_intersections_4000_m <- 
+  map(
+    .f = buffintersector, 
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_4000_m,
+    tract_sf = projected_tracts
+  )
+
+# save the result
+save(
+  buffer_intersections_1000_m, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_intersections_1000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_intersections_1000_m)
+gc()
+
+
+
+# apply buffer function for all tracts for 5000-meter buffer
+buffer_intersections_5000_m <- 
+  map(
+    .f = buffintersector, 
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_5000_m,
+    tract_sf = projected_tracts
+  )
+
+# save the result
+save(
+  buffer_intersections_1000_m, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_intersections_1000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_intersections_1000_m)
+gc()
+
+
+
+# apply buffer function for all tracts for 7500-meter buffer
+buffer_intersections_7500_m <- 
+  map(
+    .f = buffintersector, 
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_7500_m,
+    tract_sf = projected_tracts
+  )
+
+# save the result
+save(
+  buffer_intersections_1000_m, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_intersections_1000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_intersections_1000_m)
+gc()
+
+
+
+# apply buffer function for all tracts for 10000-meter buffer
+buffer_intersections_10000_m <- 
+  map(
+    .f = buffintersector, 
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_10000_m,
+    tract_sf = projected_tracts
+  )
+
+# save the result
+save(
+  buffer_intersections_1000_m, 
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_intersections_1000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_intersections_1000_m)
+gc()
+
+
+  
+```
+
+
+```{r make function to do all at once}
+
 # make map_buff_intersect function!
 mapbuffintersector <- 
-  function(input_buffer_sf) {
-    intersections_all_tracts_one_buffer_size <- 
+  function(distance_character_vector) {
+    
+    # requires loaded objects 
+    #  "buffintersector"
+    #  "buffers"
+    #  "projected_tracts"
+    #  "tract_geoid_characters"
+    
+    object_name_string <- 
+      str_c("buffer_intersections_", distance_character_vector, "_m")
+    buffer_subfile_name_string <- 
+      str_c("buffer_", distance_character_vector, "_m")
+    save_file_name_string <- 
+      str_c("buffer_intersections_", distance_character_vector, "_m.rdata")
+    
+    buffer_subfile_sf <- 
+      buffers[[buffer_subfile_name_string]]
+      
+    # apply buffer intersection function
+    intersections <- 
       map(
         .f = buffintersector, 
         .x = tract_geoid_characters,
-        buffer_sf = input_buffer_sf,
+        buffer_sf = buffer_subfile_sf,
         tract_sf = projected_tracts
-  )
-      
+      )
+
+    assign(object_name_string, intersections)
+
+    # save the result
+    save(
+      object_name_string, 
+      file = 
+        file.path(
+          "intermediate_data",
+          save_file_name_string
+          )
+      )
   }
-  
 
+save(
+  mapbuffintersector, 
+  file = 
+    file.path(
+      "functions", 
+      "mapbuffintersector.rdata"
+    )
+)
 
-
-```
-
-
-```{r }
-
-
+rm(mapbuffintersector)
+invisible(gc())
  
 ```
 
+
+```{r try the function}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load mapbuffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "mapbuffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# list of buffer distances desired in meters
+distances <- 
+  c("1000", 
+    "2000", 
+    "2500", 
+    "3000", 
+    "4000", 
+    "5000", 
+    "7500", 
+    "10000")
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# mapbuffintersector("1000")
+
+# apply the mapbuffintersector en masse
+map(
+  .x = distances, 
+  .f = mapbuffintersector
+)
+
+
+```
