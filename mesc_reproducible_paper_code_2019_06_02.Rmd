@@ -220,7 +220,7 @@ invisible(gc())
 ```
 
 
-### census shapefile without data
+### census full shapefile without data
 
 ```{r census detailed shapefile without data, eval=FALSE, include=FALSE}
 
@@ -305,6 +305,105 @@ if(
 ```
 
 
+### census cartographic boundary file without data
+
+```{r census cartographic boundary file without data, eval=FALSE, include=FALSE}
+
+# source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
+# where %s is the state FIPS code
+# downloaded 27 June 2019
+# last modified 23 June 2011 (state 60, others earlier)
+
+if(
+  !file.exists(
+    file.path(
+      "raw_data", 
+      "tigris_cbfs_no_data.rdata"
+    )
+    )
+  ) {
+  
+  # load the column name fixer function
+  load(
+    file = 
+      file.path(
+       "functions", 
+       "column_name_fixer.rdata"
+      )
+    )
+  
+  # load vector of state abbreviations
+  load(
+    file = 
+      file.path(
+        "pre_travis_intermediate_data", 
+        "state_abbreviation_character_vector.rdata"
+      )
+  )
+  
+  # download the data
+  tigris_cbfs_no_data <- 
+    rbind_tigris(
+    map(
+      state_abbreviation_character_vector, 
+      function(x) {
+        tracts(
+          x, 
+          cb = TRUE, 
+          year = 2010, 
+          class = 'sf'
+          )
+        }
+      )
+  )
+  
+  # make into tibble
+  tigris_cbfs_no_data <- 
+    tigris_cbfs_no_data %>% 
+    as_tibble() %>% 
+    st_as_sf()
+  
+  # fix column names
+  tigris_cbfs_no_data <- 
+    tigris_cbfs_no_data %>% 
+    column_name_fixer()
+  
+  # create geoid10 to match full shapefiles
+  tigris_cbfs_no_data <- 
+    tigris_cbfs_no_data %>% 
+    mutate(
+      geoid10 = 
+        str_replace(
+        geo_id,
+        "1400000US", 
+        ""
+      )
+    )
+  
+  # save the result to disk
+  save(
+    tigris_cbfs_no_data, 
+    file = 
+      file.path(
+        "raw_data", 
+        "tigris_cbfs_no_data.rdata"
+      )
+  )
+  
+  # remove loaded and created objects from environment and clear memory
+  rm(
+    state_abbreviation_character_vector,
+    column_name_fixer,
+    tigris_cbfs_no_data 
+  )
+  invisible(gc())
+}
+
+```
+
+
+### neighbor lists
+
 ```{r make list of tract neighbors for later segregation, eval=FALSE, include=FALSE}
 
 if(
@@ -339,7 +438,8 @@ if(
     tibble(index = tract_order_character, 
            geoid = tigris_geoid_character)
     
-  if(!file.exists(file.path("pre_travis_intermediate_data", "tract_neighbor_nb.rdata"))){
+  if(!file.exists(file.path("pre_travis_intermediate_data", 
+                            "tract_neighbor_nb.rdata"))){
     
     # make a list of lists of neighbors to each tract (uses spdep package)
     tract_neighbor_nb <-  
@@ -348,6 +448,15 @@ if(
   
     # name the elements of the big list above with their tract indices
     names(tract_neighbor_nb) <- tract_order_character
+    
+    # save it to disk
+    save(
+      file = 
+        file.path(
+          "pre_travis_intermediate_data", 
+          "tract_neighbor_nb.rdata"
+        )
+    )
   
   } else {
     
@@ -452,6 +561,167 @@ if(
 }
 
 ```
+
+
+```{r make CBF-based list of tract neighbors, eval=FALSE, include=FALSE}
+
+if(
+  !file.exists(
+    file.path(
+      "pre_travis_intermediate_data", 
+      "cbf_neighbor_tibble_long.rdata"
+    )
+  )
+) {
+
+  # load the census tract shapefiles
+  load(
+    file =
+      file.path(
+        "raw_data",
+        "tigris_cbfs_no_data.rdata"
+      )
+    )
+  
+  # get character vector for numbers from 1 to the number of tracts
+  cbf_tract_order_character <- 
+    as.character(1:nrow(tigris_cbfs_no_data))
+  
+  # pull the geoids as a vector
+  cbf_tigris_geoid_character <- 
+    tigris_cbfs_no_data %>% 
+    pull(geoid10)
+  
+  # make tibble indexing tracts in order to match geoids with the spdep output
+  cbf_geoid_index_tibble <- 
+    tibble(index = cbf_tract_order_character, 
+           geoid = cbf_tigris_geoid_character)
+    
+  if(!file.exists(file.path("pre_travis_intermediate_data", 
+                            "cbf_tract_neighbor_nb.rdata"))){
+    
+    # make a list of lists of neighbors to each tract (uses spdep package)
+    cbf_tract_neighbor_nb <-  
+      poly2nb(pl = tigris_cbfs_no_data, 
+              queen = TRUE)
+  
+    # name the elements of the big list above with their tract indices
+    names(cbf_tract_neighbor_nb) <- cbf_tract_order_character
+    
+    # save the file to disk
+    save(
+      cbf_tract_neighbor_nb, 
+      file = 
+        file.path(
+          "pre_travis_intermediate_data", 
+          "cbf_tract_neighbor_nb.rdata"
+        )
+    )
+  
+  } else {
+    
+    # load the file
+    load(
+      file.path(
+        "pre_travis_intermediate_data", 
+        "cbf_tract_neighbor_nb.rdata"
+      )
+    )
+  }
+  
+  # check if the neighbors-as-one-string tibble already exists
+  if(!file.exists(file.path(
+    "pre_travis_intermediate_data", 
+    "cbf_neighbors_in_one_string_tibble.rdata"))){
+    
+  # if not, create it
+  cbf_neighbors_in_one_string_tibble <- 
+    map_df(  # makes a tibble from the output of poly2nb()
+      cbf_tract_neighbor_nb, 
+      paste,  # puts all the adjacent tracts into one string
+      collapse = ","  # separated by commas
+      ) %>%  # makes two columns from one row with column names
+    gather(key = "primary_tract",  
+           value = "adjacent_tracts") %>% 
+    mutate(  # adds column of the primary tract and its neighbors in one string
+      primary_and_adjacent_tracts = 
+        paste(primary_tract, 
+              adjacent_tracts, 
+              sep = ",")
+    )
+  
+    # save the result
+    save(cbf_neighbors_in_one_string_tibble,
+           file = file.path("pre_travis_intermediate_data", 
+                            "cbf_neighbors_in_one_string_tibble.rdata"))
+    
+  } else {  
+    
+    # otherwise load the relevant tibble
+    load(
+      file.path(
+        "pre_travis_intermediate_data", 
+        "cbf_neighbors_in_one_string_tibble.rdata"
+      )
+    )
+  }
+  
+  # make list of character vectors of neighbor tract indices
+  # ordered by primary tract index
+  cbf_split_tracts <- 
+    cbf_neighbors_in_one_string_tibble %>% 
+    pull(primary_and_adjacent_tracts) %>%  # pull the self and neighbor column
+    str_split(pattern = ",")  # split strings of neighbor indices
+  
+  # name each list element by its primary tract
+  names(cbf_split_tracts) <- 
+    cbf_neighbors_in_one_string_tibble$primary_tract
+  
+  # make long tibble repeating the primary tract for itself and every neighbor
+  cbf_neighbor_tibble_long <- 
+    as_tibble(  # makes it a tibble repeating the primary (index) for each neighbor
+      stack(cbf_split_tracts)[2:1]) %>%  # reorders them so that the primary tract comes first
+    rename(primary_tract = 1,  # renames the columns with meaningful names
+           neighbor_tract = 2) %>% 
+    mutate(  # coerce primary tract column (index) back to character
+      primary_tract = as.character(primary_tract)
+      ) %>% 
+    left_join(
+      cbf_geoid_index_tibble,  # join with the original geoids corresponding
+      by = c("primary_tract" = "index")  # to the primary tract
+      ) %>%  
+    rename(geoid_primary_tract = geoid) %>%  # rename geoid for primary tract
+    left_join(
+      cbf_geoid_index_tibble,  # join with the original geoids corresponding
+      by = c("neighbor_tract" = "index")  # to the neighbor tract
+      ) %>%  
+    rename(geoid_neighbor_tract = geoid) # rename geoid for neighbor tract
+  
+  save(
+    cbf_neighbor_tibble_long, 
+    file = 
+      file.path(
+        "pre_travis_intermediate_data", 
+        "cbf_neighbor_tibble_long.rdata"
+      )
+    )
+  
+  # remove all the files
+  rm(
+    tigris_cbfs_no_data, 
+    cbf_tract_neighbor_nb,
+    cbf_tract_order_character, 
+    cbf_tigris_geoid_character,
+    cbf_geoid_index_tibble,
+    cbf_neighbors_in_one_string_tibble,
+    cbf_split_tracts,
+    cbf_neighbor_tibble_long
+  )
+  invisible(gc())
+}
+
+```
+
 
 
 ## demographic and ses data
@@ -2222,7 +2492,7 @@ rm(state_abbreviation_character_vector)
 invisible(gc())
 
 
-# geography files
+# full shapefiles
 load(
   file = 
     file.path(
@@ -2244,7 +2514,29 @@ rm(tigris_shapefiles_no_data)
 invisible(gc())
 
 
-# neighbor file
+# cartographic boundary files
+load(
+  file = 
+    file.path(
+      "raw_data", 
+      "tigris_cbfs_no_data.rdata"
+    )
+)
+
+save(
+  tigris_cbfs_no_data, 
+  file = 
+    file.path(
+      "travis_cache", 
+      "tigris_cbfs_no_data.rdata"
+    )
+)
+
+rm(tigris_cbfs_no_data)
+invisible(gc())
+
+
+# shapefile-based neighbor files
 load(
   file = 
     file.path(
@@ -2263,6 +2555,28 @@ save(
   )
 
 rm(neighbor_tibble_long)
+invisible(gc())  
+
+
+# cbf-based neighbor files
+load(
+  file = 
+    file.path(
+      "pre_travis_intermediate_data", 
+      "cbf_neighbor_tibble_long.rdata"
+    )
+)
+
+save(
+  cbf_neighbor_tibble_long, 
+  file = 
+    file.path(
+      "travis_cache", 
+      "cbf_neighbor_tibble_long.rdata"
+    )
+  )
+
+rm(cbf_neighbor_tibble_long)
 invisible(gc())  
 
 
@@ -4548,6 +4862,55 @@ rm(
 ```
 
 
+```{r project cbf tracts}
+
+# load needed files
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "tigris_cbfs_no_data.rdata"
+    )
+  )
+
+# project the tracts to the NAD 83 Conus Albers Equal Area projection, a flat one, to make distances comparable
+cbf_projected_tracts <- 
+  tigris_cbfs_no_data %>% 
+  st_transform(crs = 5070) %>% 
+  select(  # simplify to only needed variables
+    geoid10, 
+    censusarea
+    ) %>% 
+  mutate(  # calculate the total area of each census tract after projection (m2)
+    cbf_proj_tract_area = 
+      st_area(geometry)
+  )
+
+# set attributes for variables in projected tracts
+st_agr(cbf_projected_tracts) <-  
+  c(geoid10 = "identity", 
+    censusarea = "aggregate", 
+    cbf_proj_tract_area = "aggregate")
+
+# save cbf projected tracts to disk
+save(
+  cbf_projected_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+      )
+)
+
+# remove objects in environment and clear memory
+rm(
+  tigris_cbfs_no_data, 
+  cbf_projected_tracts
+)
+invisible(gc())
+```
+
+
 ```{r buffers}
 
 # load projected monitor sf
@@ -4658,6 +5021,8 @@ invisible(gc())
 
 ```
 
+
+#### buffer work using full shapefiles
 
 ```{r getting all buffer intersections for one tract}
 
@@ -4855,6 +5220,7 @@ try_the_first <-
                   tract_sf = projected_tracts)
 ```
 
+
 ```{r intra-tract buffer intersections all tracts one distance}
 
 # load buffintersector function
@@ -4918,258 +5284,17 @@ tract_geoid_characters <-
 
 ```
 
-```{r make ueber-function to do buffer intersections, eval=FALSE, include=FALSE}
 
+#### buffer work using projected tracts only
 
-
-
-
-
-
-
-# apply buffer function for all tracts for 2000-meter buffer
-buffer_intersections_2000_m <- 
-  map(
-    .f = buffintersector, 
-    .x = tract_geoid_characters,
-    buffer_sf = buffers$buffer_2000_m,
-    tract_sf = projected_tracts
-  )
-
-# save the result
-save(
-  buffer_intersections_1000_m, 
-  file = 
-    file.path(
-      "intermediate_data",
-      "buffer_intersections_1000_m.rdata"
-      )
-  )
-
-# remove object from memory
-rm(buffer_intersections_1000_m)
-gc()
-
-# apply buffer function for all tracts for 2500-meter buffer
-buffer_intersections_2500_m <- 
-  map(
-    .f = buffintersector, 
-    .x = tract_geoid_characters,
-    buffer_sf = buffers$buffer_2500_m,
-    tract_sf = projected_tracts
-  )
-
-# apply buffer function for all tracts for 3000-meter buffer
-buffer_intersections_3000_m <- 
-  map(
-    .f = buffintersector, 
-    .x = tract_geoid_characters,
-    buffer_sf = buffers$buffer_3000_m,
-    tract_sf = projected_tracts
-  )
-
-# save the result
-save(
-  buffer_intersections_1000_m, 
-  file = 
-    file.path(
-      "intermediate_data",
-      "buffer_intersections_1000_m.rdata"
-      )
-  )
-
-# remove object from memory
-rm(buffer_intersections_1000_m)
-gc()
-
-# apply buffer function for all tracts for 4000-meter buffer
-buffer_intersections_4000_m <- 
-  map(
-    .f = buffintersector, 
-    .x = tract_geoid_characters,
-    buffer_sf = buffers$buffer_4000_m,
-    tract_sf = projected_tracts
-  )
-
-# save the result
-save(
-  buffer_intersections_1000_m, 
-  file = 
-    file.path(
-      "intermediate_data",
-      "buffer_intersections_1000_m.rdata"
-      )
-  )
-
-# remove object from memory
-rm(buffer_intersections_1000_m)
-gc()
-
-
-
-# apply buffer function for all tracts for 5000-meter buffer
-buffer_intersections_5000_m <- 
-  map(
-    .f = buffintersector, 
-    .x = tract_geoid_characters,
-    buffer_sf = buffers$buffer_5000_m,
-    tract_sf = projected_tracts
-  )
-
-# save the result
-save(
-  buffer_intersections_1000_m, 
-  file = 
-    file.path(
-      "intermediate_data",
-      "buffer_intersections_1000_m.rdata"
-      )
-  )
-
-# remove object from memory
-rm(buffer_intersections_1000_m)
-gc()
-
-
-
-# apply buffer function for all tracts for 7500-meter buffer
-buffer_intersections_7500_m <- 
-  map(
-    .f = buffintersector, 
-    .x = tract_geoid_characters,
-    buffer_sf = buffers$buffer_7500_m,
-    tract_sf = projected_tracts
-  )
-
-# save the result
-save(
-  buffer_intersections_1000_m, 
-  file = 
-    file.path(
-      "intermediate_data",
-      "buffer_intersections_1000_m.rdata"
-      )
-  )
-
-# remove object from memory
-rm(buffer_intersections_1000_m)
-gc()
-
-
-
-# apply buffer function for all tracts for 10000-meter buffer
-buffer_intersections_10000_m <- 
-  map(
-    .f = buffintersector, 
-    .x = tract_geoid_characters,
-    buffer_sf = buffers$buffer_10000_m,
-    tract_sf = projected_tracts
-  )
-
-# save the result
-save(
-  buffer_intersections_1000_m, 
-  file = 
-    file.path(
-      "intermediate_data",
-      "buffer_intersections_1000_m.rdata"
-      )
-  )
-
-# remove object from memory
-rm(buffer_intersections_1000_m)
-gc()
-
-
-  
-```
-
-
-```{r make function to do all at once}
-
-# make map_buff_intersect function!
-mapbuffintersector <- 
-  function(distance_character_vector) {
-    
-    # requires loaded objects 
-    #  "buffintersector"
-    #  "buffers"
-    #  "projected_tracts"
-    #  "tract_geoid_characters"
-    
-    object_name_string <- 
-      str_c("buffer_intersections_", distance_character_vector, "_m")
-    buffer_subfile_name_string <- 
-      str_c("buffer_", distance_character_vector, "_m")
-    save_file_name_string <- 
-      str_c("buffer_intersections_", distance_character_vector, "_m.rdata")
-    
-    buffer_subfile_sf <- 
-      buffers[[buffer_subfile_name_string]]
-      
-    # apply buffer intersection function
-    intersections <- 
-      map(
-        .f = buffintersector, 
-        .x = tract_geoid_characters,
-        buffer_sf = buffer_subfile_sf,
-        tract_sf = projected_tracts
-      )
-
-    assign(object_name_string, intersections)
-
-    # save the result
-    save(
-      object_name_string, 
-      file = 
-        file.path(
-          "intermediate_data",
-          save_file_name_string
-          )
-      )
-  }
-
-save(
-  mapbuffintersector, 
-  file = 
-    file.path(
-      "functions", 
-      "mapbuffintersector.rdata"
-    )
-)
-
-rm(mapbuffintersector)
-invisible(gc())
- 
-```
-
-
-```{r try the function}
-
-# load buffintersector function
-load(
-  file = 
-    file.path(
-      "functions", 
-      "buffintersector.rdata"
-    )
-)
-
-# load mapbuffintersector function
-load(
-  file = 
-    file.path(
-      "functions", 
-      "mapbuffintersector.rdata"
-    )
-)
+```{r getting all buffer intersections for one tract, eval=FALSE, include=FALSE}
 
 # load projected tracts data
 load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts.rdata"
+      "cbf_projected_tracts.rdata"
     )
 )
 
@@ -5182,29 +5307,62 @@ load(
     )
 )
 
-# list of buffer distances desired in meters
-distances <- 
-  c("1000", 
-    "2000", 
-    "2500", 
-    "3000", 
-    "4000", 
-    "5000", 
-    "7500", 
-    "10000")
+# extract one buffer layer and simplify it
+one_buffer_size <- 
+  buffers$buffer_10000_m %>% 
+  select(monitor_id)
 
-# get list of tract geoids
-tract_geoid_characters <- 
-  projected_tracts %>% 
-  pull(geoid10)
+# extract one tract and simplify it
+one_tract <- 
+  cbf_projected_tracts %>% 
+  filter(geoid10 == "02013000100") %>% 
+  select(geoid10)
 
-# mapbuffintersector("1000")
+# clip buffers to only the one tract
+buffers_in_tract <- 
+  one_buffer_size %>% 
+  st_intersection(one_tract, .) %>%  # this clips buffers (buffer sf is .)
+  rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
 
-# apply the mapbuffintersector en masse
-map(
-  .x = distances, 
-  .f = mapbuffintersector
+# make concordance vector to replace "origin" values (rows) with monitor ids
+concordance_vector <- 
+  setNames(
+    object = buffers_in_tract$monitor_id,  # object to named
+    nm = buffers_in_tract$polygon_id  # names (polygon #s)
+  )
+
+# find buffer intersections and areas by monitor
+cbf_buffer_intersections <- 
+  buffers_in_tract %>% 
+  st_intersection() %>% 
+  mutate(area = st_area(geometry),  # add areas
+         monitor_id_overlaps =  # add column of monitor ids
+           map(
+             .x = origins,  # go through the origin column (with polygon #s)
+             .f = function(a) concordance_vector[a]  # replace with monitor ids
+             )
+         ) %>% 
+  select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
+
+save(
+  cbf_buffer_intersections, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_buffer_intersections"
+    )
 )
 
+# remove variables
+rm(
+  projected_tracts, 
+  buffers,
+  one_tract, 
+  one_buffer_size, 
+  buffers_in_tract, 
+  concordance_vector, 
+  buffer_intersections
+)
+invisible(gc())
 
 ```
