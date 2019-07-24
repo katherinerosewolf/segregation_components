@@ -2476,7 +2476,7 @@ load(
     file.path(
       "pre_travis_intermediate_data", 
       "state_abbreviation_character_vector.rdata"
-    )
+    ) 
 )
 
 save(
@@ -5024,7 +5024,7 @@ invisible(gc())
 
 #### buffer work using full shapefiles
 
-```{r getting all buffer intersections for one tract}
+```{r getting all buffer intersections for one tract, eval=FALSE, include=FALSE}
 
 # load projected tracts data
 load(
@@ -5105,7 +5105,7 @@ invisible(gc())
 ```
 
 
-```{r make buffer intersection function from the above single case}
+```{r make buffer intersection function from the above single case, eval=FALSE, include=FALSE}
 
 buffintersector <- 
   function(tract_geoid_as_character, 
@@ -5184,7 +5184,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffer function to a single case}
+```{r apply buffer function to a single case, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5221,7 +5221,7 @@ try_the_first <-
 ```
 
 
-```{r intra-tract buffer intersections all tracts one distance}
+```{r intra-tract buffer intersections all tracts one distance, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5285,9 +5285,9 @@ tract_geoid_characters <-
 ```
 
 
-#### buffer work using projected tracts only
+#### buffer work using cartographic boundary shapefiles (cbfs) only
 
-```{r getting all buffer intersections for one tract, eval=FALSE, include=FALSE}
+```{r cbf all buffer intersections for one tract, eval=FALSE, include=FALSE}
 
 # load projected tracts data
 load(
@@ -5332,7 +5332,7 @@ concordance_vector <-
   )
 
 # find buffer intersections and areas by monitor
-cbf_buffer_intersections <- 
+cbf_buffer_intersections_one_tract <- 
   buffers_in_tract %>% 
   st_intersection() %>% 
   mutate(area = st_area(geometry),  # add areas
@@ -5345,7 +5345,7 @@ cbf_buffer_intersections <-
   select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
 
 save(
-  cbf_buffer_intersections, 
+  cbf_buffer_intersections_one_tract, 
   file = 
     file.path(
       "intermediate_data", 
@@ -5355,14 +5355,540 @@ save(
 
 # remove variables
 rm(
-  projected_tracts, 
+  cbf_projected_tracts, 
   buffers,
   one_tract, 
   one_buffer_size, 
   buffers_in_tract, 
   concordance_vector, 
-  buffer_intersections
+  cbf_buffer_intersections_one_tract
 )
 invisible(gc())
+
+```
+
+
+```{r cbf apply buffer function to a single case, eval=FALSE, include=FALSE}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# try the function on a single tract and buffer size
+try_the_first <- 
+  buffintersector(tract_geoid_as_character = "02013000100", 
+                  buffer_sf = buffers$buffer_1000_m, 
+                  tract_sf = cbf_projected_tracts)
+
+# remove objects from environment
+rm(buffintersector, cbf_projected_tracts, buffers, try_the_first)
+invisible(gc())
+
+```
+
+
+```{r cbf intra-tract 1000-meter buffer intersections}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  cbf_projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 1000-meter buffer (TIME SUCK)
+cbf_buffer_intersections_1000_m <-
+  map(
+    .f = buffintersector,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_1000_m,
+    tract_sf = cbf_projected_tracts
+  )
+
+# save the result
+save(
+  cbf_buffer_intersections_1000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "cbf_buffer_intersections_1000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffintersector, 
+   cbf_projected_tracts,
+   buffers,
+   tract_geoid_characters,
+   cbf_buffer_intersections_1000_m)
+gc()
+
+```
+
+
+```{r cbf intra-tract 2000-meter buffer intersections}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  cbf_projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 2000-meter buffer (TIME SUCK)
+cbf_buffer_intersections_2000_m <-
+  map(
+    .f = buffintersector,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_2000_m,
+    tract_sf = cbf_projected_tracts
+  )
+
+# save the result
+save(
+  cbf_buffer_intersections_2000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "cbf_buffer_intersections_2000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(cbf_buffer_intersections_2000_m)
+gc()
+
+```
+
+
+```{r cbf intra-tract 2500-meter buffer intersections}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  cbf_projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 2500-meter buffer (TIME SUCK)
+cbf_buffer_intersections_2500_m <-
+  map(
+    .f = buffintersector,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_2500_m,
+    tract_sf = cbf_projected_tracts
+  )
+
+# save the result
+save(
+  cbf_buffer_intersections_2500_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "cbf_buffer_intersections_2500_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(cbf_buffer_intersections_2500_m)
+gc()
+
+```
+
+
+```{r cbf intra-tract 3000-meter buffer intersections}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  cbf_projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 3000-meter buffer (TIME SUCK)
+cbf_buffer_intersections_3000_m <-
+  map(
+    .f = buffintersector,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_3000_m,
+    tract_sf = cbf_projected_tracts
+  )
+
+# save the result
+save(
+  cbf_buffer_intersections_3000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "cbf_buffer_intersections_3000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(cbf_buffer_intersections_3000_m)
+gc()
+
+```
+
+
+```{r cbf intra-tract 4000-meter buffer intersections}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  cbf_projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 4000-meter buffer (TIME SUCK)
+cbf_buffer_intersections_4000_m <-
+  map(
+    .f = buffintersector,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_4000_m,
+    tract_sf = cbf_projected_tracts
+  )
+
+# save the result
+save(
+  cbf_buffer_intersections_4000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "cbf_buffer_intersections_4000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(cbf_buffer_intersections_4000_m)
+gc()
+
+```
+
+
+```{r cbf intra-tract 5000-meter buffer intersections}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  cbf_projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 5000-meter buffer (TIME SUCK)
+cbf_buffer_intersections_5000_m <-
+  map(
+    .f = buffintersector,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_5000_m,
+    tract_sf = cbf_projected_tracts
+  )
+
+# save the result
+save(
+  cbf_buffer_intersections_5000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "cbf_buffer_intersections_5000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(cbf_buffer_intersections_5000_m)
+gc()
+
+```
+
+
+```{r cbf intra-tract 7500-meter buffer intersections}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  cbf_projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 7500-meter buffer (TIME SUCK)
+cbf_buffer_intersections_7500_m <-
+  map(
+    .f = buffintersector,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_7500_m,
+    tract_sf = cbf_projected_tracts
+  )
+
+# save the result
+save(
+  cbf_buffer_intersections_7500_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "cbf_buffer_intersections_7500_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(cbf_buffer_intersections_7500_m)
+gc()
+
+```
+
+
+```{r cbf intra-tract 10000-meter buffer intersections}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "cbf_projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  cbf_projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 10000-meter buffer (TIME SUCK)
+cbf_buffer_intersections_10000_m <-
+  map(
+    .f = buffintersector,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_10000_m,
+    tract_sf = cbf_projected_tracts
+  )
+
+# save the result
+save(
+  cbf_buffer_intersections_10000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "cbf_buffer_intersections_10000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(cbf_buffer_intersections_10000_m)
+gc()
 
 ```
