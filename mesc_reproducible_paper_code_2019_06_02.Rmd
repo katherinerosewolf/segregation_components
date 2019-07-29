@@ -38,6 +38,7 @@ library(tidyverse)
 library(totalcensus)
 library(spdep)
 library(lubridate)
+library(lwgeom)
 
 ```
 
@@ -222,7 +223,7 @@ invisible(gc())
 
 ### census full shapefile without data
 
-```{r census detailed shapefile without data, eval=FALSE, include=FALSE}
+```{r census detailed shapefile without data raw, eval=FALSE, include=FALSE}
 
 # source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
 # where %s is the state FIPS code
@@ -233,19 +234,10 @@ if(
   !file.exists(
     file.path(
       "raw_data", 
-      "tigris_shapefiles_no_data.rdata"
+      "tract_shapefiles_raw.rdata"
     )
     )
   ) {
-  
-  # load the column name fixer function
-  load(
-    file = 
-      file.path(
-       "functions", 
-       "column_name_fixer.rdata"
-      )
-    )
   
   # load vector of state abbreviations
   load(
@@ -257,7 +249,7 @@ if(
   )
   
   # download the data
-  tigris_shapefiles_no_data <- 
+  tract_shapefiles_raw <- 
     rbind_tigris(
     map(
       state_abbreviation_character_vector, 
@@ -272,32 +264,78 @@ if(
       )
   )
   
-  # make into tibble
-  tigris_shapefiles_no_data <- 
-    tigris_shapefiles_no_data %>% 
-    as_tibble() %>% 
-    st_as_sf()
-  
-  # fix column names
-  tigris_shapefiles_no_data <- 
-    tigris_shapefiles_no_data %>% 
-    column_name_fixer()
-  
-  # save the result to disk
   save(
-    tigris_shapefiles_no_data, 
+    tract_shapefiles_raw, 
     file = 
       file.path(
         "raw_data", 
-        "tigris_shapefiles_no_data.rdata"
+        "tract_shapefiles_raw.rdata"
       )
   )
   
   # remove loaded and created objects from environment and clear memory
   rm(
     state_abbreviation_character_vector,
+    tract_shapefiles_raw
+  )
+  invisible(gc())
+}
+  
+
+```
+
+```{r fix tract shapefiles to be pretty, eval=FALSE, include=FALSE}
+
+if(
+  !file.exists(
+    file.path(
+      "pre_travis_intermediate_data", 
+      "tract_shapefiles.rdata"
+    )
+    )
+  ) {
+
+  # load the raw data
+  load(
+    file = 
+      file.path(
+       "raw_data", 
+       "tract_shapefiles_raw.rdata"
+      )
+    )
+  
+  # load the column name fixer function
+  load(
+    file = 
+      file.path(
+       "functions", 
+       "column_name_fixer.rdata"
+      )
+    )
+  
+  # make the fixes
+  tract_shapefiles <- 
+    tract_shapefiles_raw %>% 
+    as_tibble() %>%  # convert to a tibble
+    st_as_sf() %>%  # convert back to an sf
+    column_name_fixer # %>%   # fix column names
+    # st_set_precision(precision = 100)  # set the precision to 100
+  
+  # save the result to disk
+  save(
+    tract_shapefiles, 
+    file = 
+      file.path(
+        "pre_travis_intermediate_data", 
+        "tract_shapefiles.rdata"
+      )
+  )
+  
+  # remove loaded and created objects from environment and clear memory
+  rm(
     column_name_fixer,
-    tigris_shapefiles_no_data 
+    tract_shapefiles_raw,
+    tract_shapefiles
   )
   invisible(gc())
 }
@@ -307,7 +345,7 @@ if(
 
 ### census cartographic boundary file without data
 
-```{r census cartographic boundary file without data, eval=FALSE, include=FALSE}
+```{r census cartographic boundary file without data raw, eval=FALSE, include=FALSE}
 
 # source https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_%s_tract10.zip
 # where %s is the state FIPS code
@@ -318,19 +356,10 @@ if(
   !file.exists(
     file.path(
       "raw_data", 
-      "tigris_cbfs_no_data.rdata"
+      "tract_cbfs_raw.rdata"
     )
     )
   ) {
-  
-  # load the column name fixer function
-  load(
-    file = 
-      file.path(
-       "functions", 
-       "column_name_fixer.rdata"
-      )
-    )
   
   # load vector of state abbreviations
   load(
@@ -342,7 +371,7 @@ if(
   )
   
   # download the data
-  tigris_cbfs_no_data <- 
+  tract_cbfs_raw <- 
     rbind_tigris(
     map(
       state_abbreviation_character_vector, 
@@ -357,21 +386,62 @@ if(
       )
   )
   
-  # make into tibble
-  tigris_cbfs_no_data <- 
-    tigris_cbfs_no_data %>% 
-    as_tibble() %>% 
-    st_as_sf()
+  save(
+    tract_cbfs_raw, 
+    file = 
+      file.path(
+        "raw_data", 
+        "tract_cbfs_raw.rdata"
+      )
+  )
   
-  # fix column names
-  tigris_cbfs_no_data <- 
-    tigris_cbfs_no_data %>% 
-    column_name_fixer()
+  # remove loaded and created objects from environment and clear memory
+  rm(
+    state_abbreviation_character_vector,
+    tract_cbfs_raw
+  )
+  invisible(gc())
+}
+```
+
+
+```{r fix census cartographic boundary files to be pretty, eval=FALSE, include=FALSE}
+
+if(
+  !file.exists(
+    file.path(
+      "pre_travis_intermediate_data", 
+      "tract_cbfs.rdata"
+    )
+    )
+  ) {
+
+  # load the raw data
+  load(
+    file = 
+      file.path(
+       "raw_data", 
+       "tract_cbfs_raw.rdata"
+      )
+    )
   
-  # create geoid10 to match full shapefiles
-  tigris_cbfs_no_data <- 
-    tigris_cbfs_no_data %>% 
-    mutate(
+  # load the column name fixer function
+  load(
+    file = 
+      file.path(
+       "functions", 
+       "column_name_fixer.rdata"
+      )
+    )
+  
+  # make the fixes
+  tract_cbfs <- 
+    tract_cbfs_raw %>% 
+    as_tibble() %>%  # convert to a tibble
+    st_as_sf() %>%  # convert back to an sf
+    column_name_fixer %>%   # fix column names
+    # st_set_precision(precision = 100) %>%  # set the precision to 100 (messes up geometries)
+    mutate(  # create geoid10 to match full shapefiles
       geoid10 = 
         str_replace(
         geo_id,
@@ -382,23 +452,27 @@ if(
   
   # save the result to disk
   save(
-    tigris_cbfs_no_data, 
+    tract_cbfs, 
     file = 
       file.path(
-        "raw_data", 
-        "tigris_cbfs_no_data.rdata"
+        "pre_travis_intermediate_data", 
+        "tract_cbfs.rdata"
       )
   )
   
-  # remove loaded and created objects from environment and clear memory
+  # remove loaded and created objects from environment
   rm(
-    state_abbreviation_character_vector,
     column_name_fixer,
-    tigris_cbfs_no_data 
+    tract_cbfs_raw,
+    tract_cbfs
   )
+  
+  # clear memory
   invisible(gc())
+  
+  
 }
-
+  
 ```
 
 
@@ -419,18 +493,18 @@ if(
   load(
     file =
       file.path(
-        "raw_data",
-        "tigris_shapefiles_no_data.rdata"
+        "pre_travis_intermediate_data",
+        "tract_shapefiles.rdata"
       )
     )
   
   # get character vector for numbers from 1 to the number of tracts
   tract_order_character <- 
-    as.character(1:nrow(tigris_shapefiles_no_data))
+    as.character(1:nrow(tract_shapefiles))
   
   # pull the geoids as a vector
   tigris_geoid_character <- 
-    tigris_shapefiles_no_data %>% 
+    tract_shapefiles %>% 
     pull(geoid10)
   
   # make tibble indexing tracts in order to match geoids with the spdep output
@@ -443,7 +517,7 @@ if(
     
     # make a list of lists of neighbors to each tract (uses spdep package)
     tract_neighbor_nb <-  
-      poly2nb(pl = tigris_shapefiles_no_data, 
+      poly2nb(pl = tract_shapefiles, 
               queen = TRUE)
   
     # name the elements of the big list above with their tract indices
@@ -451,6 +525,7 @@ if(
     
     # save it to disk
     save(
+      tract_neighbor_nb,
       file = 
         file.path(
           "pre_travis_intermediate_data", 
@@ -548,7 +623,7 @@ if(
   
   # remove all the files
   rm(
-    tigris_shapefiles_no_data, 
+    tract_shapefiles, 
     tract_neighbor_nb,
     tract_order_character, 
     tigris_geoid_character,
@@ -578,18 +653,18 @@ if(
   load(
     file =
       file.path(
-        "raw_data",
-        "tigris_cbfs_no_data.rdata"
+        "pre_travis_intermediate_data",
+        "tract_cbfs.rdata"
       )
     )
   
   # get character vector for numbers from 1 to the number of tracts
   cbf_tract_order_character <- 
-    as.character(1:nrow(tigris_cbfs_no_data))
+    as.character(1:nrow(tract_cbfs))
   
   # pull the geoids as a vector
   cbf_tigris_geoid_character <- 
-    tigris_cbfs_no_data %>% 
+    tract_cbfs %>% 
     pull(geoid10)
   
   # make tibble indexing tracts in order to match geoids with the spdep output
@@ -602,7 +677,7 @@ if(
     
     # make a list of lists of neighbors to each tract (uses spdep package)
     cbf_tract_neighbor_nb <-  
-      poly2nb(pl = tigris_cbfs_no_data, 
+      poly2nb(pl = tract_cbfs, 
               queen = TRUE)
   
     # name the elements of the big list above with their tract indices
@@ -708,7 +783,7 @@ if(
   
   # remove all the files
   rm(
-    tigris_cbfs_no_data, 
+    tract_cbfs, 
     cbf_tract_neighbor_nb,
     cbf_tract_order_character, 
     cbf_tigris_geoid_character,
@@ -2496,21 +2571,21 @@ invisible(gc())
 load(
   file = 
     file.path(
-      "raw_data", 
-      "tigris_shapefiles_no_data.rdata"
+      "pre_travis_intermediate_data", 
+      "tract_shapefiles.rdata"
     )
 )
 
 save(
-  tigris_shapefiles_no_data, 
+  tract_shapefiles, 
   file = 
     file.path(
       "travis_cache", 
-      "tigris_shapefiles_no_data.rdata"
+      "tract_shapefiles.rdata"
     )
 )
 
-rm(tigris_shapefiles_no_data)
+rm(tract_shapefiles)
 invisible(gc())
 
 
@@ -2518,21 +2593,21 @@ invisible(gc())
 load(
   file = 
     file.path(
-      "raw_data", 
-      "tigris_cbfs_no_data.rdata"
+      "pre_travis_intermediate_data", 
+      "tract_cbfs.rdata"
     )
 )
 
 save(
-  tigris_cbfs_no_data, 
+  tract_cbfs, 
   file = 
     file.path(
       "travis_cache", 
-      "tigris_cbfs_no_data.rdata"
+      "tract_cbfs.rdata"
     )
 )
 
-rm(tigris_cbfs_no_data)
+rm(tract_cbfs)
 invisible(gc())
 
 
@@ -2889,6 +2964,8 @@ rm(column_name_fixer,
 invisible(gc())
 
 ```
+
+
 
 ## demographic file formatting
 
@@ -3380,13 +3457,13 @@ load(
   file = 
     file.path(
       "travis_cache", 
-      "tigris_shapefiles_no_data.rdata"
+      "tract_shapefiles.rdata"
     )
 )
 
 # pull the geoid, land area, water area, drop geography
 area_tibble <- 
-  tigris_shapefiles_no_data %>% 
+  tract_shapefiles %>% 
   st_drop_geometry() %>%  # drop the geometry
   as_tibble() %>%  # make result into a tibble
   select(
@@ -3396,7 +3473,7 @@ area_tibble <-
   )
 
 # remove shapefiles
-rm(tigris_shapefiles_no_data)
+rm(tract_shapefiles)
 invisible(gc())
 
 # load demographic tibble
@@ -4704,7 +4781,7 @@ load(
   file = 
     file.path(
       "travis_cache", 
-      "tigris_shapefiles_no_data.rdata"
+      "tract_shapefiles.rdata"
     )
 )
 
@@ -4715,7 +4792,7 @@ sparse_monitors_nad83_sf <-
     coords = 
       c("longitude",
         "latitude"),
-    crs = st_crs(tigris_shapefiles_no_data) 
+    crs = st_crs(tract_shapefiles) 
   ) 
 
 sparse_monitors_wgs84_sf <- 
@@ -4731,7 +4808,7 @@ sparse_monitors_wgs84_sf <-
 sparse_monitors_wgs84_to_nad_83_sf <- 
   st_transform(
     sparse_monitors_wgs84_sf, 
-    crs = st_crs(tigris_shapefiles_no_data))
+    crs = st_crs(tract_shapefiles))
 
 monitors_sf <- 
   rbind(
@@ -4755,7 +4832,7 @@ rm(
   sparse_monitors_nad83_sf,
   sparse_monitors_wgs84_sf,
   monitors_sf,
-  tigris_shapefiles_no_data
+  tract_shapefiles
   )
 invisible(gc())
 ```
@@ -4768,7 +4845,7 @@ load(
   file = 
     file.path(
       "travis_cache", 
-      "tigris_shapefiles_no_data.rdata"
+      "tract_shapefiles.rdata"
     )
   )
 
@@ -4783,7 +4860,7 @@ load(
 
 # project the tracts to the NAD 83 Conus Albers Equal Area projection, a flat one, to make distances comparable
 projected_tracts <- 
-  tigris_shapefiles_no_data %>% 
+  tract_shapefiles %>% 
   st_transform(crs = 5070) %>% 
   select(  # simplify to only needed variables
     geoid10, 
@@ -4855,7 +4932,7 @@ rm(
   projected_monitors, 
   projected_tracts,
   monitors_sf, 
-  tigris_shapefiles_no_data,
+  tract_shapefiles,
   monitors_to_tracts
 )
 
@@ -4869,13 +4946,13 @@ load(
   file = 
     file.path(
       "travis_cache", 
-      "tigris_cbfs_no_data.rdata"
+      "tract_cbfs.rdata"
     )
   )
 
 # project the tracts to the NAD 83 Conus Albers Equal Area projection, a flat one, to make distances comparable
 cbf_projected_tracts <- 
-  tigris_cbfs_no_data %>% 
+  tract_cbfs %>% 
   st_transform(crs = 5070) %>% 
   select(  # simplify to only needed variables
     geoid10, 
@@ -4904,7 +4981,7 @@ save(
 
 # remove objects in environment and clear memory
 rm(
-  tigris_cbfs_no_data, 
+  tract_cbfs, 
   cbf_projected_tracts
 )
 invisible(gc())
@@ -5128,7 +5205,8 @@ buffintersector <-
     buffers_in_tract <- 
       one_buffer_size %>% 
       st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
-      rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
+      rowid_to_column("polygon_id") %>%   # add row numbers to id polygons in next step
+      lwgeom::st_make_valid()
     
     # check if nrow from the above is zero, and if so, make a tibble and return it
     if(nrow(buffers_in_tract) == 0) {
@@ -5222,7 +5300,7 @@ try_the_first <-
 ```
 
 
-```{r all tract intra-tract 1000-meter buffer intersections}
+```{r all tract intra-tract 1000-meter buffer intersections, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5282,7 +5360,7 @@ gc()
 ```
 
 
-```{r all tract intra-tract 2000-meter buffer intersections}
+```{r all tract intra-tract 2000-meter buffer intersections, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5342,7 +5420,7 @@ gc()
 ```
 
 
-```{r all tract intra-tract 2500-meter buffer intersections}
+```{r all tract intra-tract 2500-meter buffer intersections, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5402,7 +5480,7 @@ gc()
 ```
 
 
-```{r all tract intra-tract 3000-meter buffer intersections}
+```{r all tract intra-tract 3000-meter buffer intersections, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5462,7 +5540,7 @@ gc()
 ```
 
 
-```{r all tract intra-tract 4000-meter buffer intersections}
+```{r all tract intra-tract 4000-meter buffer intersections, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5522,7 +5600,7 @@ gc()
 ```
 
 
-```{r all tract intra-tract 5000-meter buffer intersections}
+```{r all tract intra-tract 5000-meter buffer intersections, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5582,7 +5660,7 @@ gc()
 ```
 
 
-```{r all tract intra-tract 7500-meter buffer intersections}
+```{r all tract intra-tract 7500-meter buffer intersections, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6310,3 +6388,129 @@ rm(cbf_buffer_intersections_10000_m)
 gc()
 
 ```
+
+
+
+
+#### debugging section
+
+```{r debugging section, eval=FALSE, include=FALSE}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# load tract shapefiles
+load(
+  file = 
+    file.path(
+      "raw_data", 
+      "tract_shapefiles_raw.rdata"
+    )
+)
+
+# load monitors to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "monitors_to_tracts.rdata"
+    )
+)
+
+# load column name function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "column_name_fixer.rdata"
+    )
+)
+
+# make tibble of monitors and geoids
+monitors_and_geoids <- 
+  monitors_to_tracts %>% 
+  st_drop_geometry() %>% 
+  select(monitor_id, geoid10)
+
+# use raw tract shapefiles to get the state ids
+state_ids_and_tract_geoids <- 
+  tract_shapefiles_raw %>% 
+  as_tibble %>% 
+  column_name_fixer %>% 
+  select(geoid10, statefp10)
+
+# add states to monitors
+monitors_and_states <- 
+  monitors_and_geoids %>% 
+  left_join(state_ids_and_tract_geoids, 
+            by = "geoid10")
+
+# add states to tract shapefiles
+projected_tracts_and_states <- 
+  projected_tracts %>% 
+  left_join(state_ids_and_tract_geoids, 
+            by = "geoid10")
+
+# filter to state 4
+projected_tracts_state_04 <- 
+  projected_tracts_and_states %>% 
+  filter(statefp10 == "04")
+
+# # apply buffer function for all tracts for 10000-meter buffer (TIME SUCK)
+# buffer_intersections_10000_m <-
+#   map(
+#     .f = buffintersector,
+#     .x = tract_geoid_characters,
+#     buffer_sf = buffers$buffer_10000_m,
+#     tract_sf = projected_tracts_and_states
+#   )
+
+ggplot() +
+  geom_sf(data = projected_tracts_state_04) +
+  geom_sf(data = buffers$buffer_10000_m) +
+  coord_sf(xlim = c(-1488010, -1488000), 
+           ylim = c(1284600, 1284610), 
+           expand = FALSE)
+
+mapview::mapView(list(buffers$buffer_10000_m, projected_tracts_state_04), native.crs = TRUE)
+
+# save the result
+save(
+  buffer_intersections_10000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_intersections_10000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_intersections_10000_m)
+gc()
+
+```
+
