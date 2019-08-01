@@ -5035,7 +5035,7 @@ buffers <-
       st_agr(x) = 
         c(monitor_id = "identity", 
           monitor_type = "constant")
-      st_set_precision(x, precision = 100)
+      # st_set_precision(x, precision = 100)
       return(x)
       },
     .x = buffers
@@ -5199,14 +5199,16 @@ buffintersector <-
     one_tract <- 
       tract_sf %>% 
       filter(geoid10 == tract_geoid_as_character) %>% 
-      select(geoid10)
+      select(geoid10) %>% 
+      st_buffer(dist = 0.0)
     
     # clip buffers to only the one tract
     buffers_in_tract <- 
       one_buffer_size %>% 
       st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
       rowid_to_column("polygon_id") %>%   # add row numbers to id polygons in next step
-      lwgeom::st_make_valid()
+      lwgeom::st_make_valid() %>% 
+      st_buffer(dist = 0.0)
     
     # check if nrow from the above is zero, and if so, make a tibble and return it
     if(nrow(buffers_in_tract) == 0) {
@@ -5258,6 +5260,68 @@ save(
 )
 
 rm(buffintersector)
+invisible(gc())
+
+```
+
+
+```{r simple buffclipper for debugging}
+
+buffclipper <- 
+  function(tract_geoid_as_character, 
+           buffer_sf, 
+           tract_sf) {
+    
+    # extract one buffer layer and simplify it
+    one_buffer_size <- 
+      buffer_sf %>% 
+      select(monitor_id)
+    
+    # extract one tract and simplify it
+    one_tract <- 
+      tract_sf %>% 
+      filter(geoid10 == tract_geoid_as_character) %>% 
+      select(geoid10) # %>% 
+      # st_buffer(dist = 0.0)
+    
+    # clip buffers to only the one tract
+    buffers_in_tract <- 
+      one_buffer_size %>% 
+      st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+      rowid_to_column("polygon_id") # %>%   # add row numbers to id polygons in next step
+      # lwgeom::st_make_valid() %>% 
+      # st_buffer(dist = 0.0)
+    
+    # check if nrow from the above is zero, and if so, make a tibble and return it
+    if(nrow(buffers_in_tract) == 0) {
+      null_tibble <- 
+        tibble(geoid10 = tract_geoid_as_character, 
+               n.overlaps = as.integer(0), 
+               origins = as.integer(0), 
+               area = as.numeric(0), 
+               monitor_id_overlaps = "none", 
+               geometry = "none")
+
+      return(null_tibble)
+      
+    } else {
+      
+      return(buffers_in_tract)
+    
+    }
+  }
+ 
+# save the function to disk
+save(
+  buffclipper, 
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+rm(buffclipper)
 invisible(gc())
 
 ```
@@ -5720,7 +5784,7 @@ gc()
 ```
 
 
-```{r all tract intra-tract 10000-meter buffer intersections}
+```{r all tract intra-tract 10000-meter buffer intersections, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6511,6 +6575,796 @@ save(
 # remove object from memory
 rm(buffer_intersections_10000_m)
 gc()
+
+```
+
+
+#### 
+
+```{r clippeed 1000-meter buffers for all tracts}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 1000-meter buffer (TIME SUCK)
+buffer_clips_1000_m <-
+  map(
+    .f = buffclipper,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_1000_m,
+    tract_sf = projected_tracts
+  )
+
+# name the sfs
+names(buffer_clips_1000_m) <- 
+  tract_geoid_characters
+
+# save the result
+save(
+  buffer_clips_1000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_clips_1000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_clips_1000_m)
+invisible(gc())
+
+```
+
+
+```{r clippeed 2000-meter buffers for all tracts}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 2000-meter buffer (TIME SUCK)
+buffer_clips_2000_m <-
+  map(
+    .f = buffclipper,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_2000_m,
+    tract_sf = projected_tracts
+  )
+
+# name the sfs
+names(buffer_clips_2000_m) <- 
+  tract_geoid_characters
+
+# save the result
+save(
+  buffer_clips_2000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_clips_2000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_clips_2000_m)
+invisible(gc())
+
+```
+
+
+```{r clippeed 2500-meter buffers for all tracts}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 2500-meter buffer (TIME SUCK)
+buffer_clips_2500_m <-
+  map(
+    .f = buffclipper,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_2500_m,
+    tract_sf = projected_tracts
+  )
+
+# name the sfs
+names(buffer_clips_2500_m) <- 
+  tract_geoid_characters
+
+# save the result
+save(
+  buffer_clips_2500_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_clips_2500_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_clips_2500_m)
+invisible(gc())
+
+```
+
+
+```{r clippeed 3000-meter buffers for all tracts}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 3000-meter buffer (TIME SUCK)
+buffer_clips_3000_m <-
+  map(
+    .f = buffclipper,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_3000_m,
+    tract_sf = projected_tracts
+  )
+
+# name the sfs
+names(buffer_clips_3000_m) <- 
+  tract_geoid_characters
+
+# save the result
+save(
+  buffer_clips_3000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_clips_3000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_clips_3000_m)
+invisible(gc())
+
+```
+
+
+```{r clippeed 4000-meter buffers for all tracts}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 4000-meter buffer (TIME SUCK)
+buffer_clips_4000_m <-
+  map(
+    .f = buffclipper,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_4000_m,
+    tract_sf = projected_tracts
+  )
+
+# name the sfs
+names(buffer_clips_4000_m) <- 
+  tract_geoid_characters
+
+# save the result
+save(
+  buffer_clips_4000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_clips_4000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_clips_4000_m)
+invisible(gc())
+
+```
+
+
+```{r clippeed 5000-meter buffers for all tracts}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 5000-meter buffer (TIME SUCK)
+buffer_clips_5000_m <-
+  map(
+    .f = buffclipper,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_5000_m,
+    tract_sf = projected_tracts
+  )
+
+# name the sfs
+names(buffer_clips_5000_m) <- 
+  tract_geoid_characters
+
+# save the result
+save(
+  buffer_clips_5000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_clips_5000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_clips_5000_m)
+invisible(gc())
+
+```
+
+
+```{r clippeed 7500-meter buffers for all tracts}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 7500-meter buffer (TIME SUCK)
+buffer_clips_7500_m <-
+  map(
+    .f = buffclipper,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_7500_m,
+    tract_sf = projected_tracts
+  )
+
+# name the sfs
+names(buffer_clips_7500_m) <- 
+  tract_geoid_characters
+
+# save the result
+save(
+  buffer_clips_7500_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_clips_7500_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_clips_7500_m)
+invisible(gc())
+
+```
+
+
+```{r clippeed 10000-meter buffers for all tracts}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+# load projected tracts data
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+# load buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# apply buffer function for all tracts for 10000-meter buffer (TIME SUCK)
+buffer_clips_10000_m <-
+  map(
+    .f = buffclipper,
+    .x = tract_geoid_characters,
+    buffer_sf = buffers$buffer_10000_m,
+    tract_sf = projected_tracts
+  )
+
+# name the sfs
+names(buffer_clips_10000_m) <- 
+  tract_geoid_characters
+
+# save the result
+save(
+  buffer_clips_10000_m,
+  file =
+    file.path(
+      "intermediate_data",
+      "buffer_clips_10000_m.rdata"
+      )
+  )
+
+# remove object from memory
+rm(buffer_clips_10000_m)
+invisible(gc())
+
+```
+
+#### make buff tract intersector function for debugging
+
+```{r make buffer intersection function from the above single case}
+
+buffintersectintractor <- 
+  function(buffers_in_tract_sf) {
+    # make concordance vector to replace "origin" values (rows) with monitor ids
+    
+    if("monitor_id" %in% colnames(buffers_in_tract_sf)){
+      
+      concordance_vector <- 
+        setNames(
+          object = buffers_in_tract_sf$monitor_id,  # object to named
+          nm = buffers_in_tract_sf$polygon_id  # names (polygon #s)
+        )
+      
+      # find buffer intersections and areas by monitor
+      buffer_intersections <- 
+        buffers_in_tract_sf %>% 
+        st_intersection() %>% 
+        mutate(area = st_area(geometry),  # add areas
+               monitor_id_overlaps =  # add column of monitor ids
+                 map(
+                   .x = origins,  # go through the origin column (with polygon #s)
+                   .f = function(a) concordance_vector[a]  # replace with monitor ids
+                   )
+               ) %>% 
+        select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
+      
+      return(buffer_intersections)
+      
+    } else {
+      return(buffers_in_tract_sf)
+    }
+  }
+ 
+# save the function to disk
+save(
+  buffintersectintractor, 
+  file = 
+    file.path(
+      "functions", 
+      "buffintersectintractor.rdata"
+    )
+)
+
+rm(buffintersectintractor)
+invisible(gc())
+
+```
+
+
+```{r load buffer clip files}
+
+
+# get list of tract geoids
+tract_geoid_characters <- 
+  projected_tracts %>% 
+  pull(geoid10)
+
+# name them all
+names(buffer_clips_1000_m) <- 
+  tract_geoid_characters
+
+
+
+
+
+```
+
+
+
+```{r apply buffintersectintractor}
+
+# load buffintersectintractor function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersectintractor.rdata"
+      )
+  )
+
+# list all the relevant file names
+clip_file_names <- 
+  list.files(
+    pattern = "buffer_clips_.*", 
+    recursive = TRUE, 
+    include.dirs = FALSE
+  )
+
+# load them all into the environment
+lapply(
+  clip_file_names, 
+  load, 
+  .GlobalEnv
+)
+
+
+
+# do 1000-m file
+safe_intersects_1000_m <- 
+  map(
+  .f = safely(buffintersectintractor), 
+  .x = buffer_clips_1000_m
+)
+
+save(
+  safe_intersects_1000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safe_intersects_1000_m.rdata"
+    )
+)
+
+rm(buffer_clips_1000_m, 
+   safe_intersects_1000_m)
+invisible(gc())
+
+
+
+# do 2000-m file
+safe_intersects_2000_m <- 
+  map(
+  .f = safely(buffintersectintractor), 
+  .x = buffer_clips_2000_m
+)
+
+save(
+  safe_intersects_2000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safe_intersects_2000_m.rdata"
+    )
+)
+
+rm(buffer_clips_2000_m, 
+   safe_intersects_2000_m)
+invisible(gc())
+
+
+
+# do 2500-m file
+safe_intersects_2500_m <- 
+  map(
+  .f = safely(buffintersectintractor), 
+  .x = buffer_clips_2500_m
+)
+
+save(
+  safe_intersects_2500_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safe_intersects_2500_m.rdata"
+    )
+)
+
+rm(buffer_clips_2500_m, 
+   safe_intersects_2500_m)
+invisible(gc())
+
+
+
+# do 3000-m file
+safe_intersects_3000_m <- 
+  map(
+  .f = safely(buffintersectintractor), 
+  .x = buffer_clips_3000_m
+)
+
+save(
+  safe_intersects_3000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safe_intersects_3000_m.rdata"
+    )
+)
+
+rm(buffer_clips_3000_m, 
+   safe_intersects_3000_m)
+invisible(gc())
+
+
+
+# do 4000-m file
+safe_intersects_4000_m <- 
+  map(
+  .f = safely(buffintersectintractor), 
+  .x = buffer_clips_4000_m
+)
+
+save(
+  safe_intersects_4000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safe_intersects_4000_m.rdata"
+    )
+)
+
+rm(buffer_clips_4000_m, 
+   safe_intersects_4000_m)
+invisible(gc())
+
+
+
+# do 5000-m file
+safe_intersects_5000_m <- 
+  map(
+  .f = safely(buffintersectintractor), 
+  .x = buffer_clips_5000_m
+)
+
+save(
+  safe_intersects_5000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safe_intersects_5000_m.rdata"
+    )
+)
+
+rm(buffer_clips_5000_m, 
+   safe_intersects_5000_m)
+invisible(gc())
+
+
+
+# do 7500-m file
+safe_intersects_7500_m <- 
+  map(
+  .f = safely(buffintersectintractor), 
+  .x = buffer_clips_7500_m
+)
+
+save(
+  safe_intersects_7500_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safe_intersects_7500_m.rdata"
+    )
+)
+
+rm(buffer_clips_7500_m, 
+   safe_intersects_7500_m)
+invisible(gc())
+
+
+
+# do 10000-m file
+safe_intersects_10000_m <- 
+  map(
+  .f = safely(buffintersectintractor), 
+  .x = buffer_clips_10000_m
+)
+
+save(
+  safe_intersects_10000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safe_intersects_10000_m.rdata"
+    )
+)
+
+rm(buffer_clips_10000_m, 
+   safe_intersects_10000_m)
+invisible(gc())
 
 ```
 
