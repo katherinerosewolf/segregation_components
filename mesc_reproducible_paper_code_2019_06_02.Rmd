@@ -3940,7 +3940,6 @@ invisible(gc())
 
 
 
-
 ## air data
 
 ### carbon disasters
@@ -4490,6 +4489,7 @@ invisible(gc())
 # thingie
 
 ```
+
 
 
 ## monitor assignments
@@ -5050,9 +5050,10 @@ invisible(gc())
 ```
 
 
-#### buffer work using full shapefiles
 
-#### debugging section
+## buffer work
+
+### make buffer functions
 
 ```{r simple buffclipper for debugging}
 
@@ -5165,7 +5166,7 @@ invisible(gc())
 ```
 
 
-#### clip imprecise buffers
+### clip imprecise buffers
 
 ```{r clipped 1000-meter buffers for all tracts}
 
@@ -5679,354 +5680,7 @@ invisible(gc())
 ```
 
 
-
-```{r precise (10000) buffers}
-
-# load projected monitor sf
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_monitors.rdata"
-    )
-  )
-
-# make list in which to store the projected monitor sf
-list_of_proj_mon_sf <- 
-  list(projected_monitors)
-
-# list of buffer distances desired in meters
-distances <- 
-  c(1000, 
-    2000, 
-    2500, 
-    3000, 
-    4000, 
-    5000, 
-    7500, 
-    10000)
-
-# make list of buffer names
-buffer_names <- 
-  str_c("buffer_", 
-        as.character(distances), 
-        "_m",
-        sep = "")
-
-# make the buffers
-projected_buffers <- 
-  map2(.f = st_buffer, 
-      .y = distances, 
-      .x = list_of_proj_mon_sf) %>% 
-  set_names(buffer_names)  # name the list elements
-
-# set relation_to_geometry ("agr") attribute to "constant" 
-agr_buffers <-
-  map(
-    .f = function(x) {
-      st_agr(x) = 
-        c(monitor_id = "identity", 
-          monitor_type = "constant")
-      return(x)
-      },
-    .x = projected_buffers
-  )
-
-# set precision to 1 mm
-precise_1000_buffers <-
-  map(
-    .f = function(x) {
-      st_precision(x) <- 1000
-      return(x)
-      },
-    .x = agr_buffers
-  )
-
-
-# save the buffers
-save(
-  precise_1000_buffers, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "precise_1000_buffers.rdata"
-    )
-)
-
-# remove unneeded files
-rm(
-  projected_monitors,
-  projected_buffers,
-  list_of_proj_mon_sf, 
-  distances,  
-  buffer_names, 
-  agr_buffers,
-  precise_1000_buffers
-)
-invisible(gc())
-
-```
-
-
-```{r clipped 10000-meter precise_1000_buffers for all tracts}
-
-# load buffclipper function
-load(
-  file = 
-    file.path(
-      "functions", 
-      "buffclipper.rdata"
-    )
-)
-
-# load projected tracts data
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_tracts.rdata"
-    )
-)
-
-# load precise_1000_buffers
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "precise_1000_buffers.rdata"
-    )
-)
-
-# get list of tract geoids
-tract_geoid_characters <- 
-  projected_tracts %>% 
-  pull(geoid10)
-
-# apply buffer function for all tracts for 10000-meter buffer (TIME SUCK)
-precise_1000_buffer_clips_10000_m <-
-  map(
-    .f = buffclipper,
-    .x = tract_geoid_characters,
-    buffer_sf = precise_1000_buffers$buffer_10000_m,
-    tract_sf = projected_tracts
-  )
-
-# name the sfs
-names(precise_1000_buffer_clips_10000_m) <- 
-  tract_geoid_characters
-
-# save the result
-save(
-  precise_1000_buffer_clips_10000_m,
-  file =
-    file.path(
-      "intermediate_data",
-      "precise_1000_buffer_clips_10000_m.rdata"
-      )
-  )
-
-# remove object from memory
-rm(precise_1000_buffer_clips_10000_m)
-invisible(gc())
-
-```
-
-
-
-
-
-
-```{r apply buffintersectintractor_simple to precise 10000-meter buffers using safely}
-
-# load buffintersectintractor_simple function
-load(
-  file = 
-    file.path(
-      "functions", 
-      "buffintersectintractor_simple.rdata"
-      )
-  )
-
-# load 10000-meter file
-load(
-  file = 
-    file.path(
-      "intermediate_data",
-      "precise_1000_buffer_clips_10000_m.rdata"
-    )
-)
-
-# do 10000-meter file
-safely_intersects_simple_10000_m_precise_1000_m_buffers <- 
-  map(
-  .f = safely(buffintersectintractor_simple), 
-  .x = precise_1000_buffer_clips_10000_m
-) %>% 
-  transpose()
-
-save(
-  safely_intersects_simple_10000_m_precise_1000_m_buffers,
-  file = 
-    file.path(
-      "intermediate_data", 
-      "safely_intersects_simple_10000_m_precise_1000_m_buffers.rdata"
-    )
-)
-
-rm(precise_1000_buffer_clips_10000_m, 
-   safely_intersects_simple_10000_m_precise_1000_m_buffers)
-invisible(gc())
-
-```
-
-
-```{r apply buffintersectintractor_simple to precise 10000-meter buffers using possibly}
-
-# load buffintersectintractor_simple function
-load(
-  file = 
-    file.path(
-      "functions", 
-      "buffintersectintractor_simple.rdata"
-      )
-  )
-
-# load 10000-meter file
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "precise_1000_buffer_clips_10000_m.rdata"
-    )
-)
-
-# do 10000-m file
-possibly_intersects_simple_10000_m_precise_1000_m_buffers <- 
-  map(
-  .f = possibly(buffintersectintractor_simple, 
-                otherwise = "error"), 
-  .x = precise_1000_buffer_clips_10000_m
-)
-
-save(
-  possibly_intersects_simple_10000_m_precise_1000_m_buffers,
-  file = 
-    file.path(
-      "intermediate_data", 
-      "possibly_intersects_simple_10000_m_precise_1000_m_buffers.rdata"
-    )
-)
-
-rm(precise_1000_buffer_clips_10000_m, 
-   possibly_intersects_simple_10000_m_precise_1000_m_buffers)
-invisible(gc())
-
-```
-
-
-```{r isolate the erroring tracts buffintersectintractor_simple 10000-meter}
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "possibly_intersects_simple_10000_m_precise_1000_m_buffers.rdata"
-    )
-)
-
-# make true/false vector for tracts throwing errors
-errors_simple_10000_m_true_false_precise_1000_m_buffers <- 
-  possibly_intersects_simple_10000_m_precise_1000_m_buffers %>% 
-  str_detect(pattern = "error")
-
-# make list of just those tracts
-errors_simple_10000_m_precise_1000_m_buffers <- 
-  possibly_intersects_simple_10000_m_precise_1000_m_buffers %>% 
-  subset(errors_simple_10000_m_true_false_precise_1000_m_buffers)
-
-# save the errors
-save(
-  errors_simple_10000_m_precise_1000_m_buffers, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "errors_simple_10000_m_precise_1000_m_buffers.rdata"
-    )
-)
-
-```
-
-
-```{r isolate error cases buffintersectintractor_simple 10000-meter}
-
-# load the 10000-meter buffers clipped to tracts
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "precise_1000_buffer_clips_10000_m.rdata"
-    )
-)
-
-# load the error cases
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "errors_simple_10000_m_precise_1000_m_buffers.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "safely_intersects_simple_10000_m_precise_1000_m_buffers.rdata"
-    )
-)
-
-# get the numbers of the tracts with errors
-tracts_simple_10000_m_errors_precise_1000_m_buffers <- 
-  names(errors_simple_10000_m_precise_1000_m_buffers)
-
-# select the actual tracts with errors
-buffers_clips_simple_10000_m_throwing_errors_precise_1000_m_buffers <- 
-  precise_1000_buffer_clips_10000_m[tracts_simple_10000_m_errors_precise_1000_m_buffers]
-
-# select the error messages
-error_messages_simple_10000_m_precise_1000_m_buffers <- 
-  safely_intersects_simple_10000_m_precise_1000_m_buffers$error[tracts_simple_10000_m_errors_precise_1000_m_buffers]
-
-
-
-# # isolate one error message
-# check_one_case_error_message <- 
-#   error_messages_10000_m$`04013109801`
-# 
-# # isolate one tract with errors
-# check_one_case <- 
-#   buffers_clips_10000_m_throwing_errors$`04013109801`
-# 
-# buffer_fix <- 
-#   st_buffer(check_one_case, 0)
-# 
-# precision_fix <- 
-#   st_set_precision(check_one_case, 1000)
-# 
-# # map the case
-# mapview::mapView(check_one_case, native.crs = TRUE)
-# 
-# buffer_thing <- 
-#   buffintersectintractor(precision_fix)
-
-```
-
-
-
-
-
-
-##### simple bufferintersectintractor
+### within-tract intersections for the buffers
 
 ```{r apply buffintersectintractor_simple to 10000-meter buffers using safely}
 
