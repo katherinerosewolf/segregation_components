@@ -13125,3 +13125,972 @@ error_messages_simple_10000_m_precise_1000_m_buffers <-  # still 183 tracts
 
 
 
+```{r simple buffclipper for debugging}
+
+buffclipper <- 
+  function(tract_geoid_as_character, 
+           buffer_sf, 
+           tract_sf) {
+    
+    # extract one buffer layer and simplify it
+    one_buffer_size <- 
+      buffer_sf %>% 
+      select(monitor_id)
+    
+    # extract one tract and simplify it
+    one_tract <- 
+      tract_sf %>% 
+      filter(geoid10 == tract_geoid_as_character) %>% 
+      select(geoid10) # %>% 
+      # st_buffer(dist = 0.0)
+    
+    # clip buffers to only the one tract
+    buffers_in_tract <- 
+      one_buffer_size %>% 
+      st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+      rowid_to_column("polygon_id") # %>%   # add row numbers to id polygons in next step
+      # lwgeom::st_make_valid() %>% 
+      # st_buffer(dist = 0.0)
+    
+    # check if nrow from the above is zero, and if so, make a tibble and return it
+    if(nrow(buffers_in_tract) == 0) {
+      null_tibble <- 
+        tibble(geoid10 = tract_geoid_as_character, 
+               n.overlaps = as.integer(0), 
+               origins = as.integer(0), 
+               area = as.numeric(0), 
+               monitor_id_overlaps = "none", 
+               geometry = "none")
+
+      return(null_tibble)
+      
+    } else {
+      
+      return(buffers_in_tract)
+    
+    }
+  }
+ 
+# save the function to disk
+save(
+  buffclipper, 
+  file = 
+    file.path(
+      "functions", 
+      "buffclipper.rdata"
+    )
+)
+
+rm(buffclipper)
+invisible(gc())
+
+```
+
+
+```{r buffer intersection function without precision or buffer fixes for debugging}
+
+buffintersector <- 
+  function(buffers_in_tract_sf) {
+    # make concordance vector to replace "origin" values (rows) with monitor ids
+    
+    if("monitor_id" %in% colnames(buffers_in_tract_sf)){
+      
+      concordance_vector <- 
+        setNames(
+          object = buffers_in_tract_sf$monitor_id,  # object to named
+          nm = buffers_in_tract_sf$polygon_id  # names (polygon #s)
+        )
+      
+      # find buffer intersections and areas by monitor
+      buffer_intersections <- 
+        buffers_in_tract_sf %>% 
+        st_intersection() %>% 
+        mutate(area = st_area(geometry),  # add areas
+               monitor_id_overlaps =  # add column of monitor ids
+                 map(
+                   .x = origins,  # go through the origin column (with polygon #s)
+                   .f = function(a) concordance_vector[a]  # replace with monitor ids
+                   )
+               ) %>% 
+        select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
+      return(buffer_intersections)
+      
+    } else {
+      return(buffers_in_tract_sf)
+    }
+  }
+ 
+# save the function to disk
+save(
+  buffintersector, 
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+    )
+)
+
+rm(buffintersector)
+invisible(gc())
+
+```
+
+
+
+
+
+
+
+
+```{r apply buffintersector using safely, eval=FALSE, include=FALSE}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# list all the relevant file names
+clip_file_names <- 
+  list.files(
+    pattern = "buffer_clips_.*", 
+    recursive = TRUE, 
+    include.dirs = FALSE
+  )
+
+# load them all into the environment
+lapply(
+  clip_file_names, 
+  load, 
+  .GlobalEnv
+)
+
+# do 1000-m file
+safely_intersects_1000_m <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_1000_m
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_1000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_1000_m.rdata"
+    )
+)
+
+rm(buffer_clips_1000_m, 
+   safely_intersects_1000_m)
+invisible(gc())
+
+
+
+# do 2000-m file
+safely_intersects_2000_m <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_2000_m
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_2000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_2000_m.rdata"
+    )
+)
+
+rm(buffer_clips_2000_m, 
+   safely_intersects_2000_m)
+invisible(gc())
+
+
+
+# do 2500-m file
+safely_intersects_2500_m <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_2500_m
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_2500_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_2500_m.rdata"
+    )
+)
+
+rm(buffer_clips_2500_m, 
+   safely_intersects_2500_m)
+invisible(gc())
+
+
+
+# do 3000-m file
+safely_intersects_3000_m <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_3000_m
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_3000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_3000_m.rdata"
+    )
+)
+
+rm(buffer_clips_3000_m, 
+   safely_intersects_3000_m)
+invisible(gc())
+
+
+
+# do 4000-m file
+safely_intersects_4000_m <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_4000_m
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_4000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_4000_m.rdata"
+    )
+)
+
+rm(buffer_clips_4000_m, 
+   safely_intersects_4000_m)
+invisible(gc())
+
+
+
+# do 5000-m file
+safely_intersects_5000_m <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_5000_m
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_5000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_5000_m.rdata"
+    )
+)
+
+rm(buffer_clips_5000_m, 
+   safely_intersects_5000_m)
+invisible(gc())
+
+
+
+# do 7500-m file
+safely_intersects_7500_m <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_7500_m
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_7500_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_7500_m.rdata"
+    )
+)
+
+rm(buffer_clips_7500_m, 
+   safely_intersects_7500_m)
+invisible(gc())
+
+
+
+# do 10000-m file
+safely_intersects_10000_m <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_10000_m
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_10000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_10000_m.rdata"
+    )
+)
+
+rm(buffer_clips_10000_m, 
+   safely_intersects_10000_m)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector using possibly, eval=FALSE, include=FALSE}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# list all the relevant file names
+clip_file_names <- 
+  list.files(
+    pattern = "buffer_clips_.*", 
+    recursive = TRUE, 
+    include.dirs = FALSE
+  )
+
+# load them all into the environment
+lapply(
+  clip_file_names, 
+  load, 
+  .GlobalEnv
+)
+
+
+
+# do 1000-m file
+possibly_intersects_1000_m <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_1000_m
+)
+
+save(
+  possibly_intersects_1000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_1000_m.rdata"
+    )
+)
+
+rm(buffer_clips_1000_m, 
+   possibly_intersects_1000_m)
+invisible(gc())
+
+
+
+# do 2000-m file
+possibly_intersects_2000_m <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_2000_m
+)
+
+save(
+  possibly_intersects_2000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_2000_m.rdata"
+    )
+)
+
+rm(buffer_clips_2000_m, 
+   possibly_intersects_2000_m)
+invisible(gc())
+
+
+
+# do 2500-m file
+possibly_intersects_2500_m <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_2500_m
+)
+
+save(
+  possibly_intersects_2500_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_2500_m.rdata"
+    )
+)
+
+rm(buffer_clips_2500_m, 
+   possibly_intersects_2500_m)
+invisible(gc())
+
+
+
+# do 3000-m file
+possibly_intersects_3000_m <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_3000_m
+)
+
+save(
+  possibly_intersects_3000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_3000_m.rdata"
+    )
+)
+
+rm(buffer_clips_3000_m, 
+   possibly_intersects_3000_m)
+invisible(gc())
+
+
+
+# do 4000-m file
+possibly_intersects_4000_m <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_4000_m
+)
+
+save(
+  possibly_intersects_4000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_4000_m.rdata"
+    )
+)
+
+rm(buffer_clips_4000_m, 
+   possibly_intersects_4000_m)
+invisible(gc())
+
+
+
+# do 5000-m file
+possibly_intersects_5000_m <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_5000_m
+)
+
+save(
+  possibly_intersects_5000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_5000_m.rdata"
+    )
+)
+
+rm(buffer_clips_5000_m, 
+   possibly_intersects_5000_m)
+invisible(gc())
+
+
+
+# do 7500-m file
+possibly_intersects_7500_m <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_7500_m
+)
+
+save(
+  possibly_intersects_7500_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_7500_m.rdata"
+    )
+)
+
+rm(buffer_clips_7500_m, 
+   possibly_intersects_7500_m)
+invisible(gc())
+
+
+
+# do 10000-m file
+possibly_intersects_10000_m <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_10000_m
+)
+
+save(
+  possibly_intersects_10000_m,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_10000_m.rdata"
+    )
+)
+
+rm(buffer_clips_10000_m, 
+   possibly_intersects_10000_m)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts, eval=FALSE, message=FALSE, include=FALSE}
+
+# list all the relevant file names
+possibly_intersect_file_names <- 
+  list.files(
+    pattern = "possibly_intersects_.*", 
+    recursive = TRUE, 
+    include.dirs = FALSE
+  )
+
+# load them all into the environment
+lapply(
+  possibly_intersect_file_names, 
+  load, 
+  .GlobalEnv
+)
+
+# make true/false vector for tracts throwing errors
+errors_1000_m_true_false <- 
+  possibly_intersects_1000_m %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_1000_m <- 
+  possibly_intersects_1000_m %>% 
+  subset(errors_1000_m_true_false)
+
+errors_2000_m_true_false <- 
+  possibly_intersects_2000_m %>% 
+  str_detect(pattern = "error")
+
+errors_2000_m <- 
+  possibly_intersects_2000_m %>% 
+  subset(errors_2000_m_true_false)
+
+errors_2500_m_true_false <- 
+  possibly_intersects_2500_m %>% 
+  str_detect(pattern = "error")
+
+errors_2500_m <- 
+  possibly_intersects_2500_m %>% 
+  subset(errors_2000_m_true_false)
+
+errors_3000_m_true_false <- 
+  possibly_intersects_3000_m %>% 
+  str_detect(pattern = "error")
+
+errors_3000_m <- 
+  possibly_intersects_3000_m %>% 
+  subset(errors_3000_m_true_false)
+
+errors_4000_m_true_false <- 
+  possibly_intersects_4000_m %>% 
+  str_detect(pattern = "error")
+
+errors_4000_m <- 
+  possibly_intersects_4000_m %>% 
+  subset(errors_4000_m_true_false)
+
+errors_5000_m_true_false <- 
+  possibly_intersects_5000_m %>% 
+  str_detect(pattern = "error")
+
+errors_5000_m <- 
+  possibly_intersects_5000_m %>% 
+  subset(errors_5000_m_true_false)
+  
+errors_7500_m_true_false <- 
+  possibly_intersects_7500_m %>% 
+  str_detect(pattern = "error")
+
+errors_7500_m <- 
+  possibly_intersects_7500_m %>% 
+  subset(errors_7500_m_true_false)
+
+length(errors_7500_m)
+
+errors_10000_m_true_false <- 
+  possibly_intersects_10000_m %>% 
+  str_detect(pattern = "error")
+
+errors_10000_m <- 
+  possibly_intersects_10000_m %>% 
+  subset(errors_10000_m_true_false)
+
+
+
+# save the errors
+save(
+  errors_1000_m, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_1000_m.rdata"
+    )
+)
+
+save(
+  errors_2000_m, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_2000_m.rdata"
+    )
+)
+
+save(
+  errors_2500_m, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_2500_m.rdata"
+    )
+)
+
+save(
+  errors_3000_m, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_3000_m.rdata"
+    )
+)
+
+save(
+  errors_4000_m, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_4000_m.rdata"
+    )
+)
+
+save(
+  errors_5000_m, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_5000_m.rdata"
+    )
+)
+
+save(
+  errors_7500_m, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_7500_m.rdata"
+    )
+)
+
+save(
+  errors_10000_m, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_10000_m.rdata"
+    )
+)
+  
+```
+
+
+```{r isolate error cases, eval=FALSE, include=FALSE}
+
+# load the 10000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_10000_m.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_10000_m.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tracts_10000_m_errors <- 
+  names(errors_10000_m)
+
+# select the actual tracts with errors
+buffers_clips_10000_m_throwing_errors <- 
+  buffer_clips_10000_m[tracts_10000_m_errors]
+
+# select the error messages
+error_messages_10000_m <- 
+  safely_intersects_10000_m$error[tracts_10000_m_errors]
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_10000_m$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffers_clips_10000_m_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+```
+
+
+
+
+
+
+```{r figure out which tracts are in common between the three error types}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_precise_1_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_precise_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_precise_1000_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_buff_precise_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_precise_1_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_precise_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_precise_1000_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_10000_m.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_buff_precise_10000_m.rdata"
+    )
+)
+ 
+tracts_precise_1000_10000_m_errors <- # 239
+  names(errors_precise_1000_10000_m)
+
+tracts_precise_10000_m_errors <- # (100) 222 
+  names(errors_precise_10000_m)
+
+tracts_precise_1_10000_m_errors <- # 311
+  names(errors_precise_1_10000_m)
+
+tracts_buff_precise_10000_m_errors <- # 221
+  names(errors_buff_precise_10000_m)
+
+tracts_simple_10000_m_errors <- # 183
+  names(errors_10000_m)
+
+
+tracts_precise_1000_10000_m_errors # 239
+
+tracts_precise_10000_m_errors (100) # 222 
+
+tracts_precise_1_10000_m_errors # 311
+
+tracts_buff_precise_10000_m_errors # 221
+
+tracts_simple_10000_m_errors # 183
+
+
+safely_intersects_10000_m$error$`17119404100`
+safely_intersects_buff_precise_10000_m$error$`17119404100`
+safely_intersects_precise_1_10000_m$error$`17119404100`
+safely_intersects_precise_10000_m$error$`17119404100`
+safely_intersects_precise_1000_10000_m$error$`17119404100`
+
+
+intersect(
+    tracts_simple_10000_m_errors,
+    tracts_precise_1_10000_m_errors
+    ) # 61
+
+intersect(
+    tracts_simple_10000_m_errors,
+    tracts_precise_1000_10000_m_errors
+    ) # 71
+
+intersect(  # 100
+    tracts_simple_10000_m_errors,
+    tracts_precise_10000_m_errors
+    ) # 72
+
+intersect(
+intersect(
+intersect(
+  intersect(
+    tracts_simple_10000_m_errors,
+    tracts_precise_10000_m_errors),
+  tracts_buff_precise_10000_m_errors
+  ), 
+tracts_precise_1_10000_m_errors), 
+tracts_precise_1000_10000_m_errors) # 28
+
+
+
+tracts_precise_1000_10000_m_errors <- # 239
+  names(errors_precise_1000_10000_m)
+
+tracts_precise_10000_m_errors <- # (100) 222 
+  names(errors_precise_10000_m)
+
+tracts_precise_1_10000_m_errors <- # 311
+  names(errors_precise_1_10000_m)
+
+tracts_buff_precise_10000_m_errors <- # 221
+  names(errors_buff_precise_10000_m)
+
+tracts_simple_10000_m_errors <- # 183
+  names(errors_10000_m)
+
+
+errors_precise_1000_10000_m$`17119404100`
+
+errors_precise_10000_m
+
+
+
+
+
+# 72
+
+
+intersect(
+  intersect(
+    tracts_simple_10000_m_errors,
+    tracts_precise_10000_m_errors),
+  tracts_buff_precise_10000_m_errors
+  ) # 72
+
+
+
+intersect(
+  tracts_simple_10000_m_errors, 
+  tracts_buff_precise_10000_m_errors
+) # 72
+
+intersect(
+  tracts_precise_10000_m_errors, 
+  tracts_buff_precise_10000_m_errors
+) # 221
+
+# buff appears not to help
+
+
+
+```
+
+
+
