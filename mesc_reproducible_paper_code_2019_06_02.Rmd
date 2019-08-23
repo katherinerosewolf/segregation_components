@@ -2880,7 +2880,7 @@ invisible(gc())
 
 ## geography 
 
-```{r ruca data format}
+```{r ruca data format, eval=FALSE, include=FALSE}
 
 # load column name fixer function
 load(
@@ -2968,7 +2968,7 @@ invisible(gc())
 
 ## demographic file formatting
 
-```{r census data format}
+```{r census data format, eval=FALSE, include=FALSE}
 
 # load the column name fixer function
 load(
@@ -3030,7 +3030,7 @@ invisible(gc())
 ```
 
 
-```{r acs data format}
+```{r acs data format, eval=FALSE, include=FALSE}
 
 # load the column name fixer function
 load(
@@ -3090,7 +3090,7 @@ invisible(gc())
 ```
 
 
-```{r 2012 household income quantiles data format}
+```{r 2012 household income quantiles data format, eval=FALSE, include=FALSE}
 
 # load raw historical data
 load(
@@ -3137,7 +3137,7 @@ invisible(gc())
 
 ### making census 2010 geography match acs 2012 geography
 
-```{r geography changes from 2010 to 2011}
+```{r geography changes from 2010 to 2011, eval=FALSE, include=FALSE}
 
 # https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2011/geography-changes.html
 
@@ -3286,7 +3286,7 @@ invisible(gc())
 
 ### segregation
 
-```{r calculate segregation index}
+```{r calculate segregation index, eval=FALSE, include=FALSE}
 
 # load census dataset
 load(
@@ -3368,7 +3368,7 @@ rm(
 
 ### merge sf1, acs, and segregation files
 
-```{r merge sf1, acs, and segregation}
+```{r merge sf1, eval=FALSE, include=FALSE}
 
 # load sf1 tibble
 load(
@@ -3449,7 +3449,7 @@ invisible(gc())
 
 ### add land area
 
-```{r land area to demographic tibble}
+```{r land area to demographic tibble, eval=FALSE, include=FALSE}
 
 # load tigris shapefiles
 load(
@@ -3511,7 +3511,7 @@ invisible(gc())
 
 ### construct derived variables
 
-```{r deriving demographic variables}
+```{r deriving demographic variables, eval=FALSE, include=FALSE}
 
 # load demographic area tibble
 load(
@@ -3944,7 +3944,7 @@ invisible(gc())
 
 ### carbon disasters
 
-```{r investigating carbon}
+```{r investigating carbon, eval=FALSE, include=FALSE}
 
 # load air data file
 load(
@@ -4093,7 +4093,7 @@ invisible(gc())
 ```
 
 
-```{r carbon conversions}
+```{r carbon conversions, eval=FALSE, include=FALSE}
 
 ### load files
 
@@ -4172,7 +4172,7 @@ invisible(gc())
 ```
 
 
-```{r elemental carbon variable selection}
+```{r elemental carbon variable selection, eval=FALSE, include=FALSE}
 
 # load air pollution with conversions
 load(
@@ -4323,7 +4323,7 @@ invisible(gc())
 ```
 
 
-```{r organic carbon variable selection}
+```{r organic carbon variable selection, eval=FALSE, include=FALSE}
 
 # load air pollution with conversions
 load(
@@ -4496,7 +4496,7 @@ invisible(gc())
 
 ### assign monitors
 
-```{r count and type monitor locations}
+```{r count and type monitor locations, eval=FALSE, include=FALSE}
 
 # load air pollutant tibble for monitor counts
 load(
@@ -4698,7 +4698,7 @@ rm(air_monitor_tibble,
 ```
 
 
-```{r count monitors by state}
+```{r count monitors by state, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -4757,7 +4757,7 @@ invisible(gc())
 ```
 
 
-```{r make spatial files from monitor locations}
+```{r make spatial files from monitor locations, eval=FALSE, include=FALSE}
 
 # load needed files
 load(
@@ -4837,7 +4837,7 @@ invisible(gc())
 ```
 
 
-```{r assign tracts to monitors}
+```{r assign tracts to monitors, eval=FALSE, include=FALSE}
 
 # load needed files
 load(
@@ -4938,7 +4938,7 @@ rm(
 ```
 
 
-```{r buffers}
+```{r buffers, eval=FALSE, include=FALSE}
 
 # load projected monitor sf
 load(
@@ -5014,7 +5014,7 @@ invisible(gc())
 ```
 
 
-```{r unionize buffers}
+```{r unionize buffers, eval=FALSE, include=FALSE}
 
 # load buffers
 load(
@@ -5055,7 +5055,7 @@ invisible(gc())
 
 ### make buffer functions
 
-```{r simple buffclipper for debugging}
+```{r simple buffclipper for debugging, eval=FALSE, include=FALSE}
 
 buffclipper <- 
   function(tract_geoid_as_character, 
@@ -5114,7 +5114,7 @@ invisible(gc())
 ```
 
 
-```{r buffer intersection function without precision or buffer fixes for debugging}
+```{r buffer intersection function without precision or buffer fixes for debugging, eval=FALSE, include=FALSE}
 
 buffintersector <- 
   function(buffers_in_tract_sf) {
@@ -5684,7 +5684,7 @@ invisible(gc())
 
 ##### 1000 meters
 
-```{r apply buffintersector to 1000-meter buffers using safely}
+```{r apply buffintersector to 1000-meter buffers using safely, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5728,7 +5728,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 1000-meter buffers using possibly}
+```{r apply buffintersector to 1000-meter buffers using possibly, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5772,7 +5772,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 1000-meter}
+```{r isolate the erroring tracts buffintersector 1000-meter, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -5805,7 +5805,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 1000-meter}
+```{r isolate error cases buffintersector 1000-meter, eval=FALSE, include=FALSE}
 
 # load the 1000-meter buffers clipped to tracts
 load(
@@ -5903,7 +5903,7 @@ gc()
 
 ##### 2000 meters
 
-```{r apply buffintersector to 2000-meter buffers using safely}
+```{r apply buffintersector to 2000-meter buffers using safely, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5947,7 +5947,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 2000-meter buffers using possibly}
+```{r apply buffintersector to 2000-meter buffers using possibly, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -5991,7 +5991,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 2000-meter}
+```{r isolate the erroring tracts buffintersector 2000-meter, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -6024,7 +6024,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 2000-meter}
+```{r isolate error cases buffintersector 2000-meter, eval=FALSE, include=FALSE}
 
 # load the 2000-meter buffers clipped to tracts
 load(
@@ -6122,7 +6122,7 @@ gc()
 
 ##### 2500 meters
 
-```{r apply buffintersector to 2500-meter buffers using safely}
+```{r apply buffintersector to 2500-meter buffers using safely, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6166,7 +6166,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 2500-meter buffers using possibly}
+```{r apply buffintersector to 2500-meter buffers using possibly, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6210,7 +6210,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 2500-meter}
+```{r isolate the erroring tracts buffintersector 2500-meter, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -6249,7 +6249,7 @@ invisible(gc())
 ```
 
 
-```{r isolate error cases buffintersector 2500-meter}
+```{r isolate error cases buffintersector 2500-meter, eval=FALSE, include=FALSE}
 
 # load the 2500-meter buffers clipped to tracts
 load(
@@ -6347,7 +6347,7 @@ gc()
 
 ##### 3000 meters
 
-```{r apply buffintersector to 3000-meter buffers using safely}
+```{r apply buffintersector to 3000-meter buffers using safely, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6391,7 +6391,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 3000-meter buffers using possibly}
+```{r apply buffintersector to 3000-meter buffers using possibly, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6435,7 +6435,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 3000-meter}
+```{r isolate the erroring tracts buffintersector 3000-meter, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -6468,7 +6468,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 3000-meter}
+```{r isolate error cases buffintersector 3000-meter, eval=FALSE, include=FALSE}
 
 # load the 3000-meter buffers clipped to tracts
 load(
@@ -6566,7 +6566,7 @@ gc()
 
 ##### 4000 meters
 
-```{r apply buffintersector to 4000-meter buffers using safely}
+```{r apply buffintersector to 4000-meter buffers using safely, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6610,7 +6610,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 4000-meter buffers using possibly}
+```{r apply buffintersector to 4000-meter buffers using possibly, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6654,7 +6654,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 4000-meter}
+```{r isolate the erroring tracts buffintersector 4000-meter, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -6687,7 +6687,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 4000-meter}
+```{r isolate error cases buffintersector 4000-meter, eval=FALSE, include=FALSE}
 
 # load the 4000-meter buffers clipped to tracts
 load(
@@ -6785,7 +6785,7 @@ gc()
 
 ##### 5000 meters
 
-```{r apply buffintersector to 5000-meter buffers using safely}
+```{r apply buffintersector to 5000-meter buffers using safely, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6829,7 +6829,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 5000-meter buffers using possibly}
+```{r apply buffintersector to 5000-meter buffers using possibly, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -6873,7 +6873,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 5000-meter}
+```{r isolate the erroring tracts buffintersector 5000-meter, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -6906,7 +6906,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 5000-meter}
+```{r isolate error cases buffintersector 5000-meter, eval=FALSE, include=FALSE}
 
 # load the 5000-meter buffers clipped to tracts
 load(
@@ -7004,7 +7004,7 @@ gc()
 
 ##### 7500 meters
 
-```{r apply buffintersector to 7500-meter buffers using safely}
+```{r apply buffintersector to 7500-meter buffers using safely, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -7048,7 +7048,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 7500-meter buffers using possibly}
+```{r apply buffintersector to 7500-meter buffers using possibly, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -7092,7 +7092,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 7500-meter}
+```{r isolate the erroring tracts buffintersector 7500-meter, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -7125,7 +7125,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 7500-meter}
+```{r isolate error cases buffintersector 7500-meter, eval=FALSE, include=FALSE}
 
 # load the 7500-meter buffers clipped to tracts
 load(
@@ -7223,7 +7223,7 @@ gc()
 
 ##### 10000 meters
 
-```{r apply buffintersector to 10000-meter buffers using safely}
+```{r apply buffintersector to 10000-meter buffers using safely, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -7267,7 +7267,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 10000-meter buffers using possibly}
+```{r apply buffintersector to 10000-meter buffers using possibly, eval=FALSE, include=FALSE}
 
 # load buffintersector function
 load(
@@ -7311,7 +7311,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 10000-meter}
+```{r isolate the erroring tracts buffintersector 10000-meter, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -7344,7 +7344,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 10000-meter}
+```{r isolate error cases buffintersector 10000-meter, eval=FALSE, include=FALSE}
 
 # load the 10000-meter buffers clipped to tracts
 load(
@@ -7442,7 +7442,7 @@ gc()
 
 #### fixing errors via precision = 1000
 
-```{r 2000 meters}
+```{r 2000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -7578,7 +7578,7 @@ invisible(gc())
 ```
 
 
-```{r 2500 meters}
+```{r 2500 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -7611,7 +7611,7 @@ buffer_clips_2500_m_throwing_errors_precise_1000 <-
   map(
     .f = function(x) {
       st_set_precision(x, precision = 1000)
-    }, 
+      }, 
     .x = buffer_clips_2500_m_throwing_errors
   )
 
@@ -7714,7 +7714,7 @@ invisible(gc())
 ```
 
 
-```{r 3000 meters}
+```{r 3000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -7850,7 +7850,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters}
+```{r 4000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -7986,7 +7986,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters}
+```{r 5000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -8122,7 +8122,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters}
+```{r 7500 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -8258,7 +8258,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters}
+```{r 10000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -8396,7 +8396,7 @@ invisible(gc())
 
 #### fixing remaining errors via precision = 1
 
-```{r 2000 meters}
+```{r 2000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -8533,7 +8533,7 @@ invisible(gc())
 ```
 
 
-```{r 2500 meters}
+```{r 2500 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -8670,7 +8670,7 @@ invisible(gc())
 ```
 
 
-```{r 3000 meters}
+```{r 3000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -8807,7 +8807,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters}
+```{r 4000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -8944,7 +8944,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters}
+```{r 5000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -9081,7 +9081,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters}
+```{r 7500 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -9218,7 +9218,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters}
+```{r 10000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -9355,7 +9355,7 @@ invisible(gc())
 ```
 
 
-```{r load remaining errors}
+```{r load remaining errors, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -9418,7 +9418,7 @@ load(
 
 ##### fix remaining tracts with st_make_valid
 
-```{r 3000 meters}
+```{r 3000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -9555,7 +9555,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters}
+```{r 4000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -9692,7 +9692,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters}
+```{r 5000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -9829,7 +9829,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters}
+```{r 7500 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -9966,7 +9966,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters}
+```{r 10000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -10104,7 +10104,7 @@ invisible(gc())
 
 
 
-```{r load remaining errors}
+```{r load remaining errors, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -10151,7 +10151,7 @@ load(
 
 #### fix remaining tracts using st_buffer
 
-```{r 3000 meters}
+```{r 3000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -10286,7 +10286,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters}
+```{r 4000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -10421,7 +10421,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters}
+```{r 5000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -10556,7 +10556,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters}
+```{r 7500 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -10691,7 +10691,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters}
+```{r 10000 meters, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
@@ -10826,7 +10826,7 @@ invisible(gc())
 ```
 
 
-```{r load remaining errors}
+```{r load remaining errors, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -10873,7 +10873,7 @@ load(
 
 ##### try precision post-everything
 
-```{r 3000 meters}
+```{r 3000 meters, eval=FALSE, include=FALSE}
 
 # load the tracts with clipped buffers throwing errors
 load(
@@ -11009,7 +11009,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters}
+```{r 4000 meters, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -11145,7 +11145,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters}
+```{r 5000 meters, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -11281,7 +11281,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters}
+```{r 7500 meters, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -11417,7 +11417,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters}
+```{r 10000 meters, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -11553,7 +11553,7 @@ invisible(gc())
 ```
 
 
-```{r load remaining errors}
+```{r load remaining errors, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -11617,7 +11617,7 @@ mapview::mapView(one_case, native.crs = TRUE)
 ```
 
 
-```{r try fixing the intersector function}
+```{r try fixing the intersector function, eval=FALSE, include=FALSE}
 
 buffintersector_prec_100000_valid <- 
   function(buffers_in_tract_sf) {
@@ -11666,7 +11666,7 @@ save(
 
 #### buffintersector precision then validate sequence
 
-```{r use buffintersector_prec_100000_valid for 3-km buffers}
+```{r use buffintersector_prec_100000_valid for 3-km buffers, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -11803,7 +11803,7 @@ invisible(gc())
 ```
 
 
-```{r use buffintersector_prec_100000_valid for 4-km buffers}
+```{r use buffintersector_prec_100000_valid for 4-km buffers, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -11940,7 +11940,7 @@ invisible(gc())
 ```
 
 
-```{r use buffintersector_prec_100000_valid for 5-km buffers}
+```{r use buffintersector_prec_100000_valid for 5-km buffers, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -12077,7 +12077,7 @@ invisible(gc())
 ```
 
 
-```{r use buffintersector_prec_100000_valid for 7.5-km buffers}
+```{r use buffintersector_prec_100000_valid for 7.5-km buffers, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -12214,7 +12214,7 @@ invisible(gc())
 ```
 
 
-```{r use buffintersector_prec_100000_valid for 10-km buffers}
+```{r use buffintersector_prec_100000_valid for 10-km buffers, eval=FALSE, include=FALSE}
 
 # save the tracts with clipped buffers throwing errors
 load(
@@ -12353,7 +12353,7 @@ invisible(gc())
 
 ##### load remaining errors WHY WON'T THEY FIX THEMSELVES
 
-```{r load remaining errors}
+```{r load remaining errors, eval=FALSE, include=FALSE}
 
 load(
   file = 
@@ -12485,7 +12485,7 @@ invisible(gc())
 
 ```{r revised buffclipper making buffers and tracts precise and valid for debugging}
 
-buffclipper_precvaltractbuff <- 
+buffclipper_precvaltractbuff_timestwo <- 
   function(tract_geoid_as_character, 
            buffer_sf, 
            tract_sf) {
@@ -12532,15 +12532,15 @@ buffclipper_precvaltractbuff <-
  
 # save the function to disk
 save(
-  buffclipper_precvaltractbuff, 
+  buffclipper_precvaltractbuff_timestwo, 
   file = 
     file.path(
       "functions", 
-      "buffclipper_precvaltractbuff.rdata"
+      "buffclipper_precvaltractbuff_timestwo.rdata"
     )
 )
 
-rm(buffclipper_precvaltractbuff)
+rm(buffclipper_precvaltractbuff_timestwo)
 invisible(gc())
 
 ```
@@ -12548,7 +12548,7 @@ invisible(gc())
 
 ```{r revised buffclipper making buffers and tracts precise and valid for debugging twice}
 
-buffclipper_precvaltractbuff_timestwo <- 
+buffclipper_precvaltractbuff_timestwo_timestwo <- 
   function(tract_geoid_as_character, 
            buffer_sf, 
            tract_sf) {
@@ -12597,15 +12597,15 @@ buffclipper_precvaltractbuff_timestwo <-
  
 # save the function to disk
 save(
-  buffclipper_precvaltractbuff_timestwo, 
+  buffclipper_precvaltractbuff_timestwo_timestwo, 
   file = 
     file.path(
       "functions", 
-      "buffclipper_precvaltractbuff_timestwo.rdata"
+      "buffclipper_precvaltractbuff_timestwo_timestwo.rdata"
     )
 )
 
-rm(buffclipper_precvaltractbuff_timestwo)
+rm(buffclipper_precvaltractbuff_timestwo_timestwo)
 invisible(gc())
 
 ```
@@ -13641,9 +13641,11 @@ invisible(gc())
 
 
 
-##### run new buffers with buffintersector
+##### run new buffers with buffintersector 
 
-###### 3000 meters
+###### using precvalbuffonly buffers
+
+####### 3000 meters
 
 ```{r apply buffintersector to 3000-meter buffers using safely}
 
@@ -13806,6 +13808,16 @@ buffer_clips_3000_m_precvalbuffonly_throwing_errors <-
 error_messages_3000_m_precvalbuffonly <- 
   safely_intersects_3000_m_precvalbuffonly$error[tract_ids_3000_m_precvalbuffonly_errors]
 
+# save ids of tracts throwing errors
+save(
+  tract_ids_3000_m_precvalbuffonly_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tract_ids_3000_m_precvalbuffonly_errors.rdata"
+    )
+)
+
 # save the tracts with clipped buffers throwing errors
 save(
   buffer_clips_3000_m_precvalbuffonly_throwing_errors, 
@@ -13863,7 +13875,7 @@ gc()
 
 
 
-###### 4000 meters
+####### 4000 meters
 
 ```{r apply buffintersector to 4000-meter buffers using safely}
 
@@ -14026,6 +14038,16 @@ buffer_clips_4000_m_precvalbuffonly_throwing_errors <-
 error_messages_4000_m_precvalbuffonly <- 
   safely_intersects_4000_m_precvalbuffonly$error[tract_ids_4000_m_precvalbuffonly_errors]
 
+# save ids of tracts throwing errors
+save(
+  tract_ids_4000_m_precvalbuffonly_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tract_ids_4000_m_precvalbuffonly_errors.rdata"
+    )
+)
+
 # save the tracts with clipped buffers throwing errors
 save(
   buffer_clips_4000_m_precvalbuffonly_throwing_errors, 
@@ -14083,7 +14105,7 @@ gc()
 
 
 
-###### 5000 meters
+####### 5000 meters
 
 ```{r apply buffintersector to 5000-meter buffers using safely}
 
@@ -14246,6 +14268,16 @@ buffer_clips_5000_m_precvalbuffonly_throwing_errors <-
 error_messages_5000_m_precvalbuffonly <- 
   safely_intersects_5000_m_precvalbuffonly$error[tract_ids_5000_m_precvalbuffonly_errors]
 
+# save ids of tracts throwing errors
+save(
+  tract_ids_5000_m_precvalbuffonly_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tract_ids_5000_m_precvalbuffonly_errors.rdata"
+    )
+)
+
 # save the tracts with clipped buffers throwing errors
 save(
   buffer_clips_5000_m_precvalbuffonly_throwing_errors, 
@@ -14303,7 +14335,7 @@ gc()
 
 
 
-###### 7500 meters
+####### 7500 meters
 
 ```{r apply buffintersector to 7500-meter buffers using safely}
 
@@ -14466,6 +14498,16 @@ buffer_clips_7500_m_precvalbuffonly_throwing_errors <-
 error_messages_7500_m_precvalbuffonly <- 
   safely_intersects_7500_m_precvalbuffonly$error[tract_ids_7500_m_precvalbuffonly_errors]
 
+# save ids of tracts throwing errors
+save(
+  tract_ids_7500_m_precvalbuffonly_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tract_ids_7500_m_precvalbuffonly_errors.rdata"
+    )
+)
+
 # save the tracts with clipped buffers throwing errors
 save(
   buffer_clips_7500_m_precvalbuffonly_throwing_errors, 
@@ -14523,7 +14565,7 @@ gc()
 
 
 
-###### 10000 meters
+####### 10000 meters
 
 ```{r apply buffintersector to 10000-meter buffers using safely}
 
@@ -14686,6 +14728,16 @@ buffer_clips_10000_m_precvalbuffonly_throwing_errors <-
 error_messages_10000_m_precvalbuffonly <- 
   safely_intersects_10000_m_precvalbuffonly$error[tract_ids_10000_m_precvalbuffonly_errors]
 
+# save ids of tracts throwing errors
+save(
+  tract_ids_10000_m_precvalbuffonly_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tract_ids_10000_m_precvalbuffonly_errors.rdata"
+    )
+)
+
 # save the tracts with clipped buffers throwing errors
 save(
   buffer_clips_10000_m_precvalbuffonly_throwing_errors, 
@@ -14743,10 +14795,2378 @@ gc()
 
 
 
+###### using precvaltractbuff
+
+####### 3000 meters
+
+```{r apply buffintersector to 3000-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 3000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_3000_m_precvaltractbuff.rdata"
+    )
+)
+
+# load tract ids erroring in precvalbuffonly
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tract_ids_3000_m_precvalbuffonly_errors.rdata"
+    )
+)
+
+# isolate those still erroring
+buffer_clips_3000_m_for_precvaltractbuff <- 
+  buffer_clips_3000_m_precvaltractbuff[tract_ids_3000_m_precvalbuffonly_errors]
+
+save(
+  buffer_clips_3000_m_for_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_3000_m_for_precvaltractbuff.rdata"
+    )
+)
+
+# do 3000-meter file
+safely_intersects_3000_m_precvaltractbuff <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_3000_m_for_precvaltractbuff
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_3000_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_3000_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffintersector, 
+   buffer_clips_3000_m_precvaltractbuff, 
+   tract_ids_3000_m_precvalbuffonly_errors, 
+   buffer_clips_3000_m_for_precvaltractbuff,
+   safely_intersects_3000_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 3000-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 3000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_3000_m_for_precvaltractbuff.rdata"
+    )
+)
+
+# do 3000-m file
+possibly_intersects_3000_m_precvaltractbuff <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_3000_m_for_precvaltractbuff
+)
+
+save(
+  possibly_intersects_3000_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_3000_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffintersector,
+   buffer_clips_3000_m_for_precvaltractbuff, 
+   possibly_intersects_3000_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 3000-meter}
+
+# load the 3000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_3000_m_for_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_3000_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_3000_m_precvaltractbuff.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_3000_m_precvaltractbuff_true_false <- 
+  possibly_intersects_3000_m_precvaltractbuff %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_3000_m_precvaltractbuff <- 
+  possibly_intersects_3000_m_precvaltractbuff %>% 
+  subset(errors_3000_m_precvaltractbuff_true_false)
+
+# save the errors
+save(
+  errors_3000_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_3000_m_precvaltractbuff.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_3000_m_precvaltractbuff_errors <- 
+  names(errors_3000_m_precvaltractbuff)
+
+# select the actual tracts with errors
+buffer_clips_3000_m_precvaltractbuff_throwing_errors <- 
+  buffer_clips_3000_m_for_precvaltractbuff[tract_ids_3000_m_precvaltractbuff_errors]
+
+# select the error messages
+error_messages_3000_m_precvaltractbuff <- 
+  safely_intersects_3000_m_precvaltractbuff$error[tract_ids_3000_m_precvaltractbuff_errors]
+
+# save the ids of tracts still throwing errors
+save(
+  tract_ids_3000_m_precvaltractbuff_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tract_ids_3000_m_precvaltractbuff_errors.rdata"
+    )
+)
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_3000_m_precvaltractbuff_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_3000_m_precvaltractbuff_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_3000_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_3000_m_precvaltractbuff.rdata"
+    )
+)
+
+# remove files from memory
+rm(
+  buffer_clips_3000_m_for_precvaltractbuff,
+  errors_3000_m_precvaltractbuff_true_false,
+  errors_3000_m_precvaltractbuff,
+  safely_intersects_3000_m_precvaltractbuff,
+  possibly_intersects_3000_m_precvaltractbuff,
+  tract_ids_3000_m_precvaltractbuff_errors,
+  buffer_clips_3000_m_precvaltractbuff_throwing_errors, 
+  error_messages_3000_m_precvaltractbuff
+)
+
+# clear working memory
+invisible(gc())
+
+```
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####### 4000 meters
+
+```{r apply buffintersector to 4000-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 4000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+# do 4000-meter file
+safely_intersects_4000_m_precvaltractbuff <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_4000_m_precvaltractbuff
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_4000_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffer_clips_4000_m_precvaltractbuff, 
+   safely_intersects_4000_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 4000-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 4000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+# do 4000-m file
+possibly_intersects_4000_m_precvaltractbuff <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_4000_m_precvaltractbuff
+)
+
+save(
+  possibly_intersects_4000_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffer_clips_4000_m_precvaltractbuff, 
+   possibly_intersects_4000_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 4000-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_4000_m_precvaltractbuff_true_false <- 
+  possibly_intersects_4000_m_precvaltractbuff %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_4000_m_precvaltractbuff <- 
+  possibly_intersects_4000_m_precvaltractbuff %>% 
+  subset(errors_4000_m_precvaltractbuff_true_false)
+
+# save the errors
+save(
+  errors_4000_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 4000-meter}
+
+# load the 4000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_4000_m_precvaltractbuff_errors <- 
+  names(errors_4000_m_precvaltractbuff)
+
+# select the actual tracts with errors
+buffer_clips_4000_m_precvaltractbuff_throwing_errors <- 
+  buffer_clips_4000_m_precvaltractbuff[tract_ids_4000_m_precvaltractbuff_errors]
+
+# select the error messages
+error_messages_4000_m_precvaltractbuff <- 
+  safely_intersects_4000_m_precvaltractbuff$error[tract_ids_4000_m_precvaltractbuff_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_4000_m_precvaltractbuff_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_4000_m_precvaltractbuff_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_4000_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_4000_m_precvaltractbuff$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_4000_m_precvaltractbuff_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_4000_m_precvaltractbuff,
+  errors_4000_m_precvaltractbuff,
+  safely_intersects_4000_m_precvaltractbuff,
+  tract_ids_4000_m_precvaltractbuff_errors,
+  buffer_clips_4000_m_precvaltractbuff_throwing_errors, 
+  error_messages_4000_m_precvaltractbuff
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+####### 5000 meters
+
+```{r apply buffintersector to 5000-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 5000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+# do 5000-meter file
+safely_intersects_5000_m_precvaltractbuff <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_5000_m_precvaltractbuff
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_5000_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffer_clips_5000_m_precvaltractbuff, 
+   safely_intersects_5000_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 5000-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 5000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+# do 5000-m file
+possibly_intersects_5000_m_precvaltractbuff <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_5000_m_precvaltractbuff
+)
+
+save(
+  possibly_intersects_5000_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffer_clips_5000_m_precvaltractbuff, 
+   possibly_intersects_5000_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 5000-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_5000_m_precvaltractbuff_true_false <- 
+  possibly_intersects_5000_m_precvaltractbuff %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_5000_m_precvaltractbuff <- 
+  possibly_intersects_5000_m_precvaltractbuff %>% 
+  subset(errors_5000_m_precvaltractbuff_true_false)
+
+# save the errors
+save(
+  errors_5000_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 5000-meter}
+
+# load the 5000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_5000_m_precvaltractbuff_errors <- 
+  names(errors_5000_m_precvaltractbuff)
+
+# select the actual tracts with errors
+buffer_clips_5000_m_precvaltractbuff_throwing_errors <- 
+  buffer_clips_5000_m_precvaltractbuff[tract_ids_5000_m_precvaltractbuff_errors]
+
+# select the error messages
+error_messages_5000_m_precvaltractbuff <- 
+  safely_intersects_5000_m_precvaltractbuff$error[tract_ids_5000_m_precvaltractbuff_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_5000_m_precvaltractbuff_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_5000_m_precvaltractbuff_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_5000_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_5000_m_precvaltractbuff$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_5000_m_precvaltractbuff_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_5000_m_precvaltractbuff,
+  errors_5000_m_precvaltractbuff,
+  safely_intersects_5000_m_precvaltractbuff,
+  tract_ids_5000_m_precvaltractbuff_errors,
+  buffer_clips_5000_m_precvaltractbuff_throwing_errors, 
+  error_messages_5000_m_precvaltractbuff
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+####### 7500 meters
+
+```{r apply buffintersector to 7500-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 7500-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+# do 7500-meter file
+safely_intersects_7500_m_precvaltractbuff <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_7500_m_precvaltractbuff
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_7500_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffer_clips_7500_m_precvaltractbuff, 
+   safely_intersects_7500_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 7500-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 7500-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+# do 7500-m file
+possibly_intersects_7500_m_precvaltractbuff <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_7500_m_precvaltractbuff
+)
+
+save(
+  possibly_intersects_7500_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffer_clips_7500_m_precvaltractbuff, 
+   possibly_intersects_7500_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 7500-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_7500_m_precvaltractbuff_true_false <- 
+  possibly_intersects_7500_m_precvaltractbuff %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_7500_m_precvaltractbuff <- 
+  possibly_intersects_7500_m_precvaltractbuff %>% 
+  subset(errors_7500_m_precvaltractbuff_true_false)
+
+# save the errors
+save(
+  errors_7500_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 7500-meter}
+
+# load the 7500-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_7500_m_precvaltractbuff_errors <- 
+  names(errors_7500_m_precvaltractbuff)
+
+# select the actual tracts with errors
+buffer_clips_7500_m_precvaltractbuff_throwing_errors <- 
+  buffer_clips_7500_m_precvaltractbuff[tract_ids_7500_m_precvaltractbuff_errors]
+
+# select the error messages
+error_messages_7500_m_precvaltractbuff <- 
+  safely_intersects_7500_m_precvaltractbuff$error[tract_ids_7500_m_precvaltractbuff_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_7500_m_precvaltractbuff_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_7500_m_precvaltractbuff_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_7500_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_7500_m_precvaltractbuff$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_7500_m_precvaltractbuff_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_7500_m_precvaltractbuff,
+  errors_7500_m_precvaltractbuff,
+  safely_intersects_7500_m_precvaltractbuff,
+  tract_ids_7500_m_precvaltractbuff_errors,
+  buffer_clips_7500_m_precvaltractbuff_throwing_errors, 
+  error_messages_7500_m_precvaltractbuff
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+####### 10000 meters
+
+```{r apply buffintersector to 10000-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 10000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+# do 10000-meter file
+safely_intersects_10000_m_precvaltractbuff <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_10000_m_precvaltractbuff
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_10000_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffer_clips_10000_m_precvaltractbuff, 
+   safely_intersects_10000_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 10000-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 10000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+# do 10000-m file
+possibly_intersects_10000_m_precvaltractbuff <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_10000_m_precvaltractbuff
+)
+
+save(
+  possibly_intersects_10000_m_precvaltractbuff,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+rm(buffer_clips_10000_m_precvaltractbuff, 
+   possibly_intersects_10000_m_precvaltractbuff)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 10000-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_10000_m_precvaltractbuff_true_false <- 
+  possibly_intersects_10000_m_precvaltractbuff %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_10000_m_precvaltractbuff <- 
+  possibly_intersects_10000_m_precvaltractbuff %>% 
+  subset(errors_10000_m_precvaltractbuff_true_false)
+
+# save the errors
+save(
+  errors_10000_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 10000-meter}
+
+# load the 10000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_10000_m_precvaltractbuff_errors <- 
+  names(errors_10000_m_precvaltractbuff)
+
+# select the actual tracts with errors
+buffer_clips_10000_m_precvaltractbuff_throwing_errors <- 
+  buffer_clips_10000_m_precvaltractbuff[tract_ids_10000_m_precvaltractbuff_errors]
+
+# select the error messages
+error_messages_10000_m_precvaltractbuff <- 
+  safely_intersects_10000_m_precvaltractbuff$error[tract_ids_10000_m_precvaltractbuff_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_10000_m_precvaltractbuff_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_10000_m_precvaltractbuff_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_10000_m_precvaltractbuff, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_10000_m_precvaltractbuff$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_10000_m_precvaltractbuff_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_10000_m_precvaltractbuff,
+  errors_10000_m_precvaltractbuff,
+  safely_intersects_10000_m_precvaltractbuff,
+  tract_ids_10000_m_precvaltractbuff_errors,
+  buffer_clips_10000_m_precvaltractbuff_throwing_errors, 
+  error_messages_10000_m_precvaltractbuff
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+###### using precvaltractbuff_timestwo
+
+####### 3000 meters
+
+```{r apply buffintersector to 3000-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 3000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 3000-meter file
+safely_intersects_3000_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_3000_m_precvaltractbuff_timestwo
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_3000_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_3000_m_precvaltractbuff_timestwo, 
+   safely_intersects_3000_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 3000-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 3000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 3000-m file
+possibly_intersects_3000_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_3000_m_precvaltractbuff_timestwo
+)
+
+save(
+  possibly_intersects_3000_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_3000_m_precvaltractbuff_timestwo, 
+   possibly_intersects_3000_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 3000-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_3000_m_precvaltractbuff_timestwo_true_false <- 
+  possibly_intersects_3000_m_precvaltractbuff_timestwo %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_3000_m_precvaltractbuff_timestwo <- 
+  possibly_intersects_3000_m_precvaltractbuff_timestwo %>% 
+  subset(errors_3000_m_precvaltractbuff_timestwo_true_false)
+
+# save the errors
+save(
+  errors_3000_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 3000-meter}
+
+# load the 3000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_3000_m_precvaltractbuff_timestwo_errors <- 
+  names(errors_3000_m_precvaltractbuff_timestwo)
+
+# select the actual tracts with errors
+buffer_clips_3000_m_precvaltractbuff_timestwo_throwing_errors <- 
+  buffer_clips_3000_m_precvaltractbuff_timestwo[tract_ids_3000_m_precvaltractbuff_timestwo_errors]
+
+# select the error messages
+error_messages_3000_m_precvaltractbuff_timestwo <- 
+  safely_intersects_3000_m_precvaltractbuff_timestwo$error[tract_ids_3000_m_precvaltractbuff_timestwo_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_3000_m_precvaltractbuff_timestwo_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_3000_m_precvaltractbuff_timestwo_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_3000_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_3000_m_precvaltractbuff_timestwo$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_3000_m_precvaltractbuff_timestwo_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_3000_m_precvaltractbuff_timestwo,
+  errors_3000_m_precvaltractbuff_timestwo,
+  safely_intersects_3000_m_precvaltractbuff_timestwo,
+  tract_ids_3000_m_precvaltractbuff_timestwo_errors,
+  buffer_clips_3000_m_precvaltractbuff_timestwo_throwing_errors, 
+  error_messages_3000_m_precvaltractbuff_timestwo
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+####### 4000 meters
+
+```{r apply buffintersector to 4000-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 4000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 4000-meter file
+safely_intersects_4000_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_4000_m_precvaltractbuff_timestwo
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_4000_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_4000_m_precvaltractbuff_timestwo, 
+   safely_intersects_4000_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 4000-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 4000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 4000-m file
+possibly_intersects_4000_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_4000_m_precvaltractbuff_timestwo
+)
+
+save(
+  possibly_intersects_4000_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_4000_m_precvaltractbuff_timestwo, 
+   possibly_intersects_4000_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 4000-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_4000_m_precvaltractbuff_timestwo_true_false <- 
+  possibly_intersects_4000_m_precvaltractbuff_timestwo %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_4000_m_precvaltractbuff_timestwo <- 
+  possibly_intersects_4000_m_precvaltractbuff_timestwo %>% 
+  subset(errors_4000_m_precvaltractbuff_timestwo_true_false)
+
+# save the errors
+save(
+  errors_4000_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 4000-meter}
+
+# load the 4000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_4000_m_precvaltractbuff_timestwo_errors <- 
+  names(errors_4000_m_precvaltractbuff_timestwo)
+
+# select the actual tracts with errors
+buffer_clips_4000_m_precvaltractbuff_timestwo_throwing_errors <- 
+  buffer_clips_4000_m_precvaltractbuff_timestwo[tract_ids_4000_m_precvaltractbuff_timestwo_errors]
+
+# select the error messages
+error_messages_4000_m_precvaltractbuff_timestwo <- 
+  safely_intersects_4000_m_precvaltractbuff_timestwo$error[tract_ids_4000_m_precvaltractbuff_timestwo_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_4000_m_precvaltractbuff_timestwo_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_4000_m_precvaltractbuff_timestwo_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_4000_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_4000_m_precvaltractbuff_timestwo$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_4000_m_precvaltractbuff_timestwo_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_4000_m_precvaltractbuff_timestwo,
+  errors_4000_m_precvaltractbuff_timestwo,
+  safely_intersects_4000_m_precvaltractbuff_timestwo,
+  tract_ids_4000_m_precvaltractbuff_timestwo_errors,
+  buffer_clips_4000_m_precvaltractbuff_timestwo_throwing_errors, 
+  error_messages_4000_m_precvaltractbuff_timestwo
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+####### 5000 meters
+
+```{r apply buffintersector to 5000-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 5000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 5000-meter file
+safely_intersects_5000_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_5000_m_precvaltractbuff_timestwo
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_5000_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_5000_m_precvaltractbuff_timestwo, 
+   safely_intersects_5000_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 5000-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 5000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 5000-m file
+possibly_intersects_5000_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_5000_m_precvaltractbuff_timestwo
+)
+
+save(
+  possibly_intersects_5000_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_5000_m_precvaltractbuff_timestwo, 
+   possibly_intersects_5000_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 5000-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_5000_m_precvaltractbuff_timestwo_true_false <- 
+  possibly_intersects_5000_m_precvaltractbuff_timestwo %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_5000_m_precvaltractbuff_timestwo <- 
+  possibly_intersects_5000_m_precvaltractbuff_timestwo %>% 
+  subset(errors_5000_m_precvaltractbuff_timestwo_true_false)
+
+# save the errors
+save(
+  errors_5000_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 5000-meter}
+
+# load the 5000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_5000_m_precvaltractbuff_timestwo_errors <- 
+  names(errors_5000_m_precvaltractbuff_timestwo)
+
+# select the actual tracts with errors
+buffer_clips_5000_m_precvaltractbuff_timestwo_throwing_errors <- 
+  buffer_clips_5000_m_precvaltractbuff_timestwo[tract_ids_5000_m_precvaltractbuff_timestwo_errors]
+
+# select the error messages
+error_messages_5000_m_precvaltractbuff_timestwo <- 
+  safely_intersects_5000_m_precvaltractbuff_timestwo$error[tract_ids_5000_m_precvaltractbuff_timestwo_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_5000_m_precvaltractbuff_timestwo_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_5000_m_precvaltractbuff_timestwo_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_5000_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_5000_m_precvaltractbuff_timestwo$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_5000_m_precvaltractbuff_timestwo_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_5000_m_precvaltractbuff_timestwo,
+  errors_5000_m_precvaltractbuff_timestwo,
+  safely_intersects_5000_m_precvaltractbuff_timestwo,
+  tract_ids_5000_m_precvaltractbuff_timestwo_errors,
+  buffer_clips_5000_m_precvaltractbuff_timestwo_throwing_errors, 
+  error_messages_5000_m_precvaltractbuff_timestwo
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+####### 7500 meters
+
+```{r apply buffintersector to 7500-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 7500-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 7500-meter file
+safely_intersects_7500_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_7500_m_precvaltractbuff_timestwo
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_7500_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_7500_m_precvaltractbuff_timestwo, 
+   safely_intersects_7500_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 7500-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 7500-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 7500-m file
+possibly_intersects_7500_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_7500_m_precvaltractbuff_timestwo
+)
+
+save(
+  possibly_intersects_7500_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_7500_m_precvaltractbuff_timestwo, 
+   possibly_intersects_7500_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 7500-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_7500_m_precvaltractbuff_timestwo_true_false <- 
+  possibly_intersects_7500_m_precvaltractbuff_timestwo %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_7500_m_precvaltractbuff_timestwo <- 
+  possibly_intersects_7500_m_precvaltractbuff_timestwo %>% 
+  subset(errors_7500_m_precvaltractbuff_timestwo_true_false)
+
+# save the errors
+save(
+  errors_7500_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 7500-meter}
+
+# load the 7500-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_7500_m_precvaltractbuff_timestwo_errors <- 
+  names(errors_7500_m_precvaltractbuff_timestwo)
+
+# select the actual tracts with errors
+buffer_clips_7500_m_precvaltractbuff_timestwo_throwing_errors <- 
+  buffer_clips_7500_m_precvaltractbuff_timestwo[tract_ids_7500_m_precvaltractbuff_timestwo_errors]
+
+# select the error messages
+error_messages_7500_m_precvaltractbuff_timestwo <- 
+  safely_intersects_7500_m_precvaltractbuff_timestwo$error[tract_ids_7500_m_precvaltractbuff_timestwo_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_7500_m_precvaltractbuff_timestwo_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_7500_m_precvaltractbuff_timestwo_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_7500_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_7500_m_precvaltractbuff_timestwo$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_7500_m_precvaltractbuff_timestwo_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_7500_m_precvaltractbuff_timestwo,
+  errors_7500_m_precvaltractbuff_timestwo,
+  safely_intersects_7500_m_precvaltractbuff_timestwo,
+  tract_ids_7500_m_precvaltractbuff_timestwo_errors,
+  buffer_clips_7500_m_precvaltractbuff_timestwo_throwing_errors, 
+  error_messages_7500_m_precvaltractbuff_timestwo
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+####### 10000 meters
+
+```{r apply buffintersector to 10000-meter buffers using safely}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 10000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "buffer_clips_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 10000-meter file
+safely_intersects_10000_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = safely(buffintersector), 
+  .x = buffer_clips_10000_m_precvaltractbuff_timestwo
+) %>% 
+  transpose()
+
+save(
+  safely_intersects_10000_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_10000_m_precvaltractbuff_timestwo, 
+   safely_intersects_10000_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r apply buffintersector to 10000-meter buffers using possibly}
+
+# load buffintersector function
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffintersector.rdata"
+      )
+  )
+
+# load 10000-meter file
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# do 10000-m file
+possibly_intersects_10000_m_precvaltractbuff_timestwo <- 
+  map(
+  .f = possibly(buffintersector, 
+                otherwise = "error"), 
+  .x = buffer_clips_10000_m_precvaltractbuff_timestwo
+)
+
+save(
+  possibly_intersects_10000_m_precvaltractbuff_timestwo,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+rm(buffer_clips_10000_m_precvaltractbuff_timestwo, 
+   possibly_intersects_10000_m_precvaltractbuff_timestwo)
+invisible(gc())
+
+```
+
+
+```{r isolate the erroring tracts buffintersector 10000-meter}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "possibly_intersects_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# make true/false vector for tracts throwing errors
+errors_10000_m_precvaltractbuff_timestwo_true_false <- 
+  possibly_intersects_10000_m_precvaltractbuff_timestwo %>% 
+  str_detect(pattern = "error")
+
+# make list of just those tracts
+errors_10000_m_precvaltractbuff_timestwo <- 
+  possibly_intersects_10000_m_precvaltractbuff_timestwo %>% 
+  subset(errors_10000_m_precvaltractbuff_timestwo_true_false)
+
+# save the errors
+save(
+  errors_10000_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+```
+
+
+```{r isolate error cases buffintersector 10000-meter}
+
+# load the 10000-meter buffers clipped to tracts
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# load the error cases
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "errors_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersects_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# get the numbers of the tracts with errors
+tract_ids_10000_m_precvaltractbuff_timestwo_errors <- 
+  names(errors_10000_m_precvaltractbuff_timestwo)
+
+# select the actual tracts with errors
+buffer_clips_10000_m_precvaltractbuff_timestwo_throwing_errors <- 
+  buffer_clips_10000_m_precvaltractbuff_timestwo[tract_ids_10000_m_precvaltractbuff_timestwo_errors]
+
+# select the error messages
+error_messages_10000_m_precvaltractbuff_timestwo <- 
+  safely_intersects_10000_m_precvaltractbuff_timestwo$error[tract_ids_10000_m_precvaltractbuff_timestwo_errors]
+
+# save the tracts with clipped buffers throwing errors
+save(
+  buffer_clips_10000_m_precvaltractbuff_timestwo_throwing_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clips_10000_m_precvaltractbuff_timestwo_throwing_errors.rdata"
+    )
+)
+
+# save the error messages
+save(
+  error_messages_10000_m_precvaltractbuff_timestwo, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+# # isolate one error message
+# check_one_case_error_message <- 
+#   error_messages_10000_m_precvaltractbuff_timestwo$`04013109801`
+# 
+# # isolate one tract with errors
+# check_one_case <- 
+#   buffer_clips_10000_m_precvaltractbuff_timestwo_throwing_errors$`04013109801`
+# 
+# buffer_fix <- 
+#   st_buffer(check_one_case, 0)
+# 
+# precision_fix <- 
+#   st_set_precision(check_one_case, 1000)
+# 
+# # map the case
+# mapview::mapView(check_one_case, native.crs = TRUE)
+# 
+# buffer_thing <- 
+#   buffintersector(precision_fix)
+
+# remove files from memory
+rm(
+  buffer_clips_10000_m_precvaltractbuff_timestwo,
+  errors_10000_m_precvaltractbuff_timestwo,
+  safely_intersects_10000_m_precvaltractbuff_timestwo,
+  tract_ids_10000_m_precvaltractbuff_timestwo_errors,
+  buffer_clips_10000_m_precvaltractbuff_timestwo_throwing_errors, 
+  error_messages_10000_m_precvaltractbuff_timestwo
+)
+
+# clear working memory
+gc()
+
+```
+
+
+
+
+###### figure out the errors
+
+```{r load the errors}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_3000_m_precvalbuffonly.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_4000_m_precvalbuffonly.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_5000_m_precvalbuffonly.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_7500_m_precvalbuffonly.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_10000_m_precvalbuffonly.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_3000_m_precvaltractbuff.rdata"
+    )
+)
+
+
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_4000_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_5000_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_7500_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_10000_m_precvaltractbuff.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_3000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_4000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_5000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_7500_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_messages_10000_m_precvaltractbuff_timestwo.rdata"
+    )
+)
+
+names(error_messages_10000_m_precvaltractbuff_timestwo)
+names(error_messages_10000_m_precvaltractbuff)
+names(error_messages_10000_m_precvalbuffonly)
+
+setdiff(
+  names(error_messages_10000_m_precvaltractbuff_timestwo), 
+  names(error_messages_10000_m_precvaltractbuff)
+  )
+
+setdiff(
+  names(error_messages_10000_m_precvaltractbuff_timestwo), 
+  names(error_messages_10000_m_precvalbuffonly)
+  )
+
+setdiff(
+  names(error_messages_10000_m_precvaltractbuff), 
+  names(error_messages_10000_m_precvalbuffonly)
+  )
+
+```
 
 
