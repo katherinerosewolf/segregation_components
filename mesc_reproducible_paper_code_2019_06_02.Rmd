@@ -39,6 +39,7 @@ library(totalcensus)
 library(spdep)
 library(lubridate)
 library(lwgeom)
+library(ggdag)
 
 ```
 
@@ -14093,6 +14094,37 @@ load(
       "possibly_intersects_10000_m_precvaltractbuff.rdata"
     )
 )
+
+```
+
+
+```{r dags}
+
+# list of variables for reference
+
+# # make list of needed variables
+# sf1_totalcensus_var_list <- 
+#   list(
+#     total_pop_sf1_p1,
+#     race_sf1_p5,
+#     race_sf1_pct23, 
+#     hisp_lat_origin_sf1_pct11,
+#     sex_by_age_sf1_p12,
+#     age_median_sf1_p13,
+#     occupancy_sf1_h3,
+#     housing_tenure_sf1_h4,
+#     housing_tenure_people_sf1_h11
+#   )
+
+my_dag <- dagify(pm ~ segregation,
+                 segregation ~ wealth + other,
+                 pm ~ other,
+                 exposure = "segregation",
+                 outcome = "pm"
+                 )
+
+ggdag_parents(my_dag, "segregation") + 
+  theme_dag() 
 
 ```
 
