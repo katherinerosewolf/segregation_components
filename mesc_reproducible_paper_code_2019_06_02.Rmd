@@ -2882,7 +2882,7 @@ invisible(gc())
 
 ## geography 
 
-```{r ruca data format, eval=FALSE, include=FALSE}
+```{r ruca data format}
 
 # load column name fixer function
 load(
@@ -2970,7 +2970,7 @@ invisible(gc())
 
 ## demographic file formatting
 
-```{r census data format, eval=FALSE, include=FALSE}
+```{r census data format}
 
 # load the column name fixer function
 load(
@@ -3032,7 +3032,7 @@ invisible(gc())
 ```
 
 
-```{r acs data format, eval=FALSE, include=FALSE}
+```{r acs data format}
 
 # load the column name fixer function
 load(
@@ -3092,7 +3092,7 @@ invisible(gc())
 ```
 
 
-```{r 2012 household income quantiles data format, eval=FALSE, include=FALSE}
+```{r 2012 household income quantiles data format}
 
 # load raw historical data
 load(
@@ -3139,7 +3139,7 @@ invisible(gc())
 
 ### making census 2010 geography match acs 2012 geography
 
-```{r geography changes from 2010 to 2011, eval=FALSE, include=FALSE}
+```{r geography changes from 2010 to 2011}
 
 # https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2011/geography-changes.html
 
@@ -3288,7 +3288,7 @@ invisible(gc())
 
 ### segregation
 
-```{r calculate segregation index, eval=FALSE, include=FALSE}
+```{r calculate segregation index}
 
 # load census dataset
 load(
@@ -3370,7 +3370,7 @@ rm(
 
 ### merge sf1, acs, and segregation files
 
-```{r merge sf1, eval=FALSE, include=FALSE}
+```{r merge sf1}
 
 # load sf1 tibble
 load(
@@ -3451,7 +3451,7 @@ invisible(gc())
 
 ### add land area
 
-```{r land area to demographic tibble, eval=FALSE, include=FALSE}
+```{r land area to demographic tibble}
 
 # load tigris shapefiles
 load(
@@ -3513,7 +3513,7 @@ invisible(gc())
 
 ### construct derived variables
 
-```{r deriving demographic variables, eval=FALSE, include=FALSE}
+```{r deriving demographic variables}
 
 # load demographic area tibble
 load(
@@ -3946,7 +3946,7 @@ invisible(gc())
 
 ### carbon disasters
 
-```{r investigating carbon, eval=FALSE, include=FALSE}
+```{r investigating carbon}
 
 # load air data file
 load(
@@ -4095,7 +4095,7 @@ invisible(gc())
 ```
 
 
-```{r carbon conversions, eval=FALSE, include=FALSE}
+```{r carbon conversions}
 
 ### load files
 
@@ -4174,7 +4174,7 @@ invisible(gc())
 ```
 
 
-```{r elemental carbon variable selection, eval=FALSE, include=FALSE}
+```{r elemental carbon variable selection}
 
 # load air pollution with conversions
 load(
@@ -4325,7 +4325,7 @@ invisible(gc())
 ```
 
 
-```{r organic carbon variable selection, eval=FALSE, include=FALSE}
+```{r organic carbon variable selection}
 
 # load air pollution with conversions
 load(
@@ -4473,7 +4473,7 @@ invisible(gc())
 ```
 
 
-```{r make graphs by monitor, eval=FALSE, include=FALSE}
+```{r make graphs by monitor}
 
 # thingie <- 
 #   ggplot(
@@ -4498,7 +4498,7 @@ invisible(gc())
 
 ### assign monitors
 
-```{r count and type monitor locations, eval=FALSE, include=FALSE}
+```{r count and type monitor locations}
 
 # load air pollutant tibble for monitor counts
 load(
@@ -4700,7 +4700,7 @@ rm(air_monitor_tibble,
 ```
 
 
-```{r count monitors by state, eval=FALSE, include=FALSE}
+```{r count monitors by state}
 
 load(
   file = 
@@ -4759,7 +4759,7 @@ invisible(gc())
 ```
 
 
-```{r make spatial files from monitor locations, eval=FALSE, include=FALSE}
+```{r make spatial files from monitor locations}
 
 # load needed files
 load(
@@ -4839,7 +4839,7 @@ invisible(gc())
 ```
 
 
-```{r assign tracts to monitors, eval=FALSE, include=FALSE}
+```{r assign tracts to monitors}
 
 # load needed files
 load(
@@ -4940,7 +4940,7 @@ rm(
 ```
 
 
-```{r buffers, eval=FALSE, include=FALSE}
+```{r buffers}
 
 # load projected monitor sf
 load(
@@ -5016,7 +5016,7 @@ invisible(gc())
 ```
 
 
-```{r unionize buffers, eval=FALSE, include=FALSE}
+```{r unionize buffers}
 
 # load buffers
 load(
@@ -5057,7 +5057,7 @@ invisible(gc())
 
 ### make buffer functions
 
-```{r simple buffclipper for debugging, eval=FALSE, include=FALSE}
+```{r simple buffclipper for debugging}
 
 buffclipper <- 
   function(tract_geoid_as_character, 
@@ -5116,7 +5116,7 @@ invisible(gc())
 ```
 
 
-```{r buffer intersection function without precision or buffer fixes for debugging, eval=FALSE, include=FALSE}
+```{r buffer intersection function without precision or buffer fixes for debugging}
 
 buffintersector <- 
   function(buffers_in_tract_sf) {
@@ -5167,7 +5167,7 @@ invisible(gc())
 
 ### clip imprecise buffers
 
-```{r clipped 1000-meter buffers for all tracts, eval=FALSE, include=FALSE}
+```{r clipped 1000-meter buffers for all tracts}
 
 # load buffclipper function
 load(
@@ -5231,7 +5231,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 2000-meter buffers for all tracts, eval=FALSE, include=FALSE}
+```{r clipped 2000-meter buffers for all tracts}
 
 # load buffclipper function
 load(
@@ -5295,7 +5295,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 2500-meter buffers for all tracts, eval=FALSE, include=FALSE}
+```{r clipped 2500-meter buffers for all tracts}
 
 # load buffclipper function
 load(
@@ -5359,7 +5359,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 3000-meter buffers for all tracts, eval=FALSE, include=FALSE}
+```{r clipped 3000-meter buffers for all tracts}
 
 # load buffclipper function
 load(
@@ -5423,7 +5423,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 4000-meter buffers for all tracts, eval=FALSE, include=FALSE}
+```{r clipped 4000-meter buffers for all tracts}
 
 # load buffclipper function
 load(
@@ -5487,7 +5487,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 5000-meter buffers for all tracts, eval=FALSE, include=FALSE}
+```{r clipped 5000-meter buffers for all tracts}
 
 # load buffclipper function
 load(
@@ -5551,7 +5551,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 7500-meter buffers for all tracts, eval=FALSE, include=FALSE}
+```{r clipped 7500-meter buffers for all tracts}
 
 # load buffclipper function
 load(
@@ -5615,7 +5615,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 10000-meter buffers for all tracts, eval=FALSE, include=FALSE}
+```{r clipped 10000-meter buffers for all tracts}
 
 # load buffclipper function
 load(
@@ -5686,7 +5686,7 @@ invisible(gc())
 
 ##### 1000 meters
 
-```{r apply buffintersector to 1000-meter buffers using safely, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 1000-meter buffers using safely}
 
 # load buffintersector function
 load(
@@ -5730,7 +5730,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 1000-meter buffers using possibly, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 1000-meter buffers using possibly}
 
 # load buffintersector function
 load(
@@ -5774,7 +5774,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 1000-meter, eval=FALSE, include=FALSE}
+```{r isolate the erroring tracts buffintersector 1000-meter}
 
 load(
   file = 
@@ -5807,7 +5807,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 1000-meter, eval=FALSE, include=FALSE}
+```{r isolate error cases buffintersector 1000-meter}
 
 # load the 1000-meter buffers clipped to tracts
 load(
@@ -5885,7 +5885,7 @@ gc()
 
 ##### 2000 meters
 
-```{r apply buffintersector to 2000-meter buffers using safely, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 2000-meter buffers using safely}
 
 # load buffintersector function
 load(
@@ -5929,7 +5929,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 2000-meter buffers using possibly, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 2000-meter buffers using possibly}
 
 # load buffintersector function
 load(
@@ -5973,7 +5973,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 2000-meter, eval=FALSE, include=FALSE}
+```{r isolate the erroring tracts buffintersector 2000-meter}
 
 load(
   file = 
@@ -6006,7 +6006,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 2000-meter, eval=FALSE, include=FALSE}
+```{r isolate error cases buffintersector 2000-meter}
 
 # load the 2000-meter buffers clipped to tracts
 load(
@@ -6104,7 +6104,7 @@ gc()
 
 ##### 2500 meters
 
-```{r apply buffintersector to 2500-meter buffers using safely, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 2500-meter buffers using safely}
 
 # load buffintersector function
 load(
@@ -6148,7 +6148,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 2500-meter buffers using possibly, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 2500-meter buffers using possibly}
 
 # load buffintersector function
 load(
@@ -6192,7 +6192,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 2500-meter, eval=FALSE, include=FALSE}
+```{r isolate the erroring tracts buffintersector 2500-meter}
 
 load(
   file = 
@@ -6231,7 +6231,7 @@ invisible(gc())
 ```
 
 
-```{r isolate error cases buffintersector 2500-meter, eval=FALSE, include=FALSE}
+```{r isolate error cases buffintersector 2500-meter}
 
 # load the 2500-meter buffers clipped to tracts
 load(
@@ -6329,7 +6329,7 @@ gc()
 
 ##### 3000 meters
 
-```{r apply buffintersector to 3000-meter buffers using safely, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 3000-meter buffers using safely}
 
 # load buffintersector function
 load(
@@ -6373,7 +6373,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 3000-meter buffers using possibly, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 3000-meter buffers using possibly}
 
 # load buffintersector function
 load(
@@ -6417,7 +6417,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 3000-meter, eval=FALSE, include=FALSE}
+```{r isolate the erroring tracts buffintersector 3000-meter}
 
 load(
   file = 
@@ -6450,7 +6450,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 3000-meter, eval=FALSE, include=FALSE}
+```{r isolate error cases buffintersector 3000-meter}
 
 # load the 3000-meter buffers clipped to tracts
 load(
@@ -6548,7 +6548,7 @@ gc()
 
 ##### 4000 meters
 
-```{r apply buffintersector to 4000-meter buffers using safely, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 4000-meter buffers using safely}
 
 # load buffintersector function
 load(
@@ -6592,7 +6592,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 4000-meter buffers using possibly, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 4000-meter buffers using possibly}
 
 # load buffintersector function
 load(
@@ -6636,7 +6636,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 4000-meter, eval=FALSE, include=FALSE}
+```{r isolate the erroring tracts buffintersector 4000-meter}
 
 load(
   file = 
@@ -6669,7 +6669,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 4000-meter, eval=FALSE, include=FALSE}
+```{r isolate error cases buffintersector 4000-meter}
 
 # load the 4000-meter buffers clipped to tracts
 load(
@@ -6767,7 +6767,7 @@ gc()
 
 ##### 5000 meters
 
-```{r apply buffintersector to 5000-meter buffers using safely, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 5000-meter buffers using safely}
 
 # load buffintersector function
 load(
@@ -6811,7 +6811,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 5000-meter buffers using possibly, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 5000-meter buffers using possibly}
 
 # load buffintersector function
 load(
@@ -6855,7 +6855,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 5000-meter, eval=FALSE, include=FALSE}
+```{r isolate the erroring tracts buffintersector 5000-meter}
 
 load(
   file = 
@@ -6888,7 +6888,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 5000-meter, eval=FALSE, include=FALSE}
+```{r isolate error cases buffintersector 5000-meter}
 
 # load the 5000-meter buffers clipped to tracts
 load(
@@ -6986,7 +6986,7 @@ gc()
 
 ##### 7500 meters
 
-```{r apply buffintersector to 7500-meter buffers using safely, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 7500-meter buffers using safely}
 
 # load buffintersector function
 load(
@@ -7030,7 +7030,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 7500-meter buffers using possibly, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 7500-meter buffers using possibly}
 
 # load buffintersector function
 load(
@@ -7074,7 +7074,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 7500-meter, eval=FALSE, include=FALSE}
+```{r isolate the erroring tracts buffintersector 7500-meter}
 
 load(
   file = 
@@ -7107,7 +7107,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 7500-meter, eval=FALSE, include=FALSE}
+```{r isolate error cases buffintersector 7500-meter}
 
 # load the 7500-meter buffers clipped to tracts
 load(
@@ -7205,7 +7205,7 @@ gc()
 
 ##### 10000 meters
 
-```{r apply buffintersector to 10000-meter buffers using safely, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 10000-meter buffers using safely}
 
 # load buffintersector function
 load(
@@ -7249,7 +7249,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 10000-meter buffers using possibly, eval=FALSE, include=FALSE}
+```{r apply buffintersector to 10000-meter buffers using possibly}
 
 # load buffintersector function
 load(
@@ -7293,7 +7293,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 10000-meter, eval=FALSE, include=FALSE}
+```{r isolate the erroring tracts buffintersector 10000-meter}
 
 load(
   file = 
@@ -7326,7 +7326,7 @@ save(
 ```
 
 
-```{r isolate error cases buffintersector 10000-meter, eval=FALSE, include=FALSE}
+```{r isolate error cases buffintersector 10000-meter}
 
 # load the 10000-meter buffers clipped to tracts
 load(
@@ -7404,7 +7404,7 @@ gc()
 
 ##### load remaining errors
 
-```{r load remaining errors, eval=FALSE, include=FALSE}
+```{r load remaining errors}
 
 load(
   file = 
@@ -7476,7 +7476,7 @@ load(
 
 #### fixing errors via precision = 1000
 
-```{r 2000 meters, eval=FALSE, include=FALSE}
+```{r 2000 meters}
 
 # load tracts throwing errors
 load(
@@ -7612,7 +7612,7 @@ invisible(gc())
 ```
 
 
-```{r 2500 meters, eval=FALSE, include=FALSE}
+```{r 2500 meters}
 
 # load tracts throwing errors
 load(
@@ -7748,7 +7748,7 @@ invisible(gc())
 ```
 
 
-```{r 3000 meters, eval=FALSE, include=FALSE}
+```{r 3000 meters}
 
 # load tracts throwing errors
 load(
@@ -7884,7 +7884,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters, eval=FALSE, include=FALSE}
+```{r 4000 meters}
 
 # load tracts throwing errors
 load(
@@ -8020,7 +8020,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters, eval=FALSE, include=FALSE}
+```{r 5000 meters}
 
 # load tracts throwing errors
 load(
@@ -8156,7 +8156,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters, eval=FALSE, include=FALSE}
+```{r 7500 meters}
 
 # load tracts throwing errors
 load(
@@ -8292,7 +8292,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters, eval=FALSE, include=FALSE}
+```{r 10000 meters}
 
 # load tracts throwing errors
 load(
@@ -8430,7 +8430,7 @@ invisible(gc())
 
 ###### load remaining errors
 
-```{r load remaining errors, eval=FALSE, include=FALSE}
+```{r load remaining errors}
 
 load(
   file = 
@@ -8494,7 +8494,7 @@ load(
 
 #### fixing remaining errors via precision = 1
 
-```{r 2000 meters, eval=FALSE, include=FALSE}
+```{r 2000 meters}
 
 # load tracts throwing errors
 load(
@@ -8631,7 +8631,7 @@ invisible(gc())
 ```
 
 
-```{r 2500 meters, eval=FALSE, include=FALSE}
+```{r 2500 meters}
 
 # load tracts throwing errors
 load(
@@ -8768,7 +8768,7 @@ invisible(gc())
 ```
 
 
-```{r 3000 meters, eval=FALSE, include=FALSE}
+```{r 3000 meters}
 
 # load tracts throwing errors
 load(
@@ -8905,7 +8905,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters, eval=FALSE, include=FALSE}
+```{r 4000 meters}
 
 # load tracts throwing errors
 load(
@@ -9042,7 +9042,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters, eval=FALSE, include=FALSE}
+```{r 5000 meters}
 
 # load tracts throwing errors
 load(
@@ -9179,7 +9179,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters, eval=FALSE, include=FALSE}
+```{r 7500 meters}
 
 # load tracts throwing errors
 load(
@@ -9316,7 +9316,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters, eval=FALSE, include=FALSE}
+```{r 10000 meters}
 
 # load tracts throwing errors
 load(
@@ -9453,7 +9453,7 @@ invisible(gc())
 ```
 
 
-```{r load remaining errors, eval=FALSE, include=FALSE}
+```{r load remaining errors}
 
 load(
   file = 
@@ -9517,7 +9517,7 @@ load(
 
 #### fix remaining tracts with st_make_valid
 
-```{r 3000 meters, eval=FALSE, include=FALSE}
+```{r 3000 meters}
 
 # load tracts throwing errors
 load(
@@ -9654,7 +9654,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters, eval=FALSE, include=FALSE}
+```{r 4000 meters}
 
 # load tracts throwing errors
 load(
@@ -9791,7 +9791,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters, eval=FALSE, include=FALSE}
+```{r 5000 meters}
 
 # load tracts throwing errors
 load(
@@ -9928,7 +9928,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters, eval=FALSE, include=FALSE}
+```{r 7500 meters}
 
 # load tracts throwing errors
 load(
@@ -10065,7 +10065,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters, eval=FALSE, include=FALSE}
+```{r 10000 meters}
 
 # load tracts throwing errors
 load(
@@ -10202,7 +10202,7 @@ invisible(gc())
 ```
 
 
-```{r load remaining errors, eval=FALSE, include=FALSE}
+```{r load remaining errors}
 
 load(
   file = 
@@ -10250,7 +10250,7 @@ load(
 
 ##### load remaining errors WHY WON'T THEY FIX THEMSELVES
 
-```{r load remaining errors no change, eval=FALSE, include=FALSE}
+```{r load remaining errors no change}
 
 load(
   file = 
@@ -10425,7 +10425,7 @@ invisible(gc())
 
 #### clipping buffers using buffclipper_precvalbuffonly
 
-```{r clipped 3000-meter buffers for erroring tracts using buffclipper_precvalbuffonly, eval=FALSE, include=FALSE}
+```{r clipped 3000-meter buffers for erroring tracts using buffclipper_precvalbuffonly}
 
 # load buffclipper_precvalbuffonly function
 load(
@@ -10493,7 +10493,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 4000-meter buffers for erroring tracts using buffclipper_precvalbuffonly, eval=FALSE, include=FALSE}
+```{r clipped 4000-meter buffers for erroring tracts using buffclipper_precvalbuffonly}
 
 # load buffclipper_precvalbuffonly function
 load(
@@ -10561,7 +10561,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 5000-meter buffers for erroring tracts using buffclipper_precvalbuffonly, eval=FALSE, include=FALSE}
+```{r clipped 5000-meter buffers for erroring tracts using buffclipper_precvalbuffonly}
 
 # load buffclipper_precvalbuffonly function
 load(
@@ -10629,7 +10629,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 7500-meter buffers for erroring tracts using buffclipper_precvalbuffonly, eval=FALSE, include=FALSE}
+```{r clipped 7500-meter buffers for erroring tracts using buffclipper_precvalbuffonly}
 
 # load buffclipper_precvalbuffonly function
 load(
@@ -10697,7 +10697,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 10000-meter buffers for erroring tracts using buffclipper_precvalbuffonly, eval=FALSE, include=FALSE}
+```{r clipped 10000-meter buffers for erroring tracts using buffclipper_precvalbuffonly}
 
 # load buffclipper_precvalbuffonly function
 load(
@@ -10768,7 +10768,7 @@ invisible(gc())
 
 #### clipping buffers using buffclipper_precvaltractbuff
 
-```{r clipped 3000-meter buffers for erroring tracts using buffclipper_precvaltractbuff, eval=FALSE, include=FALSE}
+```{r clipped 3000-meter buffers for erroring tracts using buffclipper_precvaltractbuff}
 
 # load buffclipper_precvaltractbuff function
 load(
@@ -10836,7 +10836,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 4000-meter buffers for erroring tracts using buffclipper_precvaltractbuff, eval=FALSE, include=FALSE}
+```{r clipped 4000-meter buffers for erroring tracts using buffclipper_precvaltractbuff}
 
 # load buffclipper_precvaltractbuff function
 load(
@@ -10904,7 +10904,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 5000-meter buffers for erroring tracts using buffclipper_precvaltractbuff, eval=FALSE, include=FALSE}
+```{r clipped 5000-meter buffers for erroring tracts using buffclipper_precvaltractbuff}
 
 # load buffclipper_precvaltractbuff function
 load(
@@ -10972,7 +10972,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 7500-meter buffers for erroring tracts using buffclipper_precvaltractbuff, eval=FALSE, include=FALSE}
+```{r clipped 7500-meter buffers for erroring tracts using buffclipper_precvaltractbuff}
 
 # load buffclipper_precvaltractbuff function
 load(
@@ -11040,7 +11040,7 @@ invisible(gc())
 ```
 
 
-```{r clipped 10000-meter buffers for erroring tracts using buffclipper_precvaltractbuff, eval=FALSE, include=FALSE}
+```{r clipped 10000-meter buffers for erroring tracts using buffclipper_precvaltractbuff}
 
 # load buffclipper_precvaltractbuff function
 load(
@@ -12158,7 +12158,7 @@ invisible(gc())
 
 ##### load remaining errors
 
-```{r load remaining errors no change, eval=FALSE, include=FALSE}
+```{r load remaining errors no change}
 
 load(
   file = 
