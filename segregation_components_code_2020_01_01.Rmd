@@ -6662,7 +6662,7 @@ gc()
 ```
 
 
-##### 4000 meters
+##### 4000 meters big
 
 ```{r apply buffintersector to 4000-meter buffers using safely}
 
@@ -6881,7 +6881,7 @@ gc()
 ```
 
 
-##### 5000 meters
+##### 5000 meters big
 
 ```{r apply buffintersector to 5000-meter buffers using safely}
 
@@ -7100,7 +7100,7 @@ gc()
 ```
 
 
-##### 7500 meters
+##### 7500 meters big
 
 ```{r apply buffintersector to 7500-meter buffers using safely}
 
@@ -7319,7 +7319,7 @@ gc()
 ```
 
 
-##### 10000 meters
+##### 10000 meters big
 
 ```{r apply buffintersector to 10000-meter buffers using safely}
 
@@ -7592,7 +7592,7 @@ load(
 
 #### fixing errors via precision = 1000
 
-```{r 2000 meters}
+```{r 2000 meters 1000 precision}
 
 # load tracts throwing errors
 load(
@@ -7864,7 +7864,7 @@ invisible(gc())
 ```
 
 
-```{r 3000 meters}
+```{r 3000 meters the first}
 
 # load tracts throwing errors
 load(
@@ -8000,7 +8000,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters}
+```{r 4000 meters the first}
 
 # load tracts throwing errors
 load(
@@ -8136,7 +8136,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters}
+```{r 5000 meters the first}
 
 # load tracts throwing errors
 load(
@@ -8272,7 +8272,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters}
+```{r 7500 meters the first}
 
 # load tracts throwing errors
 load(
@@ -8408,7 +8408,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters}
+```{r 10000 meters the first}
 
 # load tracts throwing errors
 load(
@@ -8610,7 +8610,7 @@ load(
 
 #### fixing remaining errors via precision = 1
 
-```{r 2000 meters}
+```{r 2000 meters 1 precision}
 
 # load tracts throwing errors
 load(
@@ -8884,7 +8884,7 @@ invisible(gc())
 ```
 
 
-```{r 3000 meters}
+```{r 3000 meters the second}
 
 # load tracts throwing errors
 load(
@@ -9021,7 +9021,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters}
+```{r 4000 meters the second}
 
 # load tracts throwing errors
 load(
@@ -9295,7 +9295,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters}
+```{r 7500 meters the second}
 
 # load tracts throwing errors
 load(
@@ -9432,7 +9432,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters}
+```{r 10000 meters the second}
 
 # load tracts throwing errors
 load(
@@ -9633,7 +9633,7 @@ load(
 
 #### fix remaining tracts with st_make_valid
 
-```{r 3000 meters}
+```{r 3000 meters the third}
 
 # load tracts throwing errors
 load(
@@ -9770,7 +9770,7 @@ invisible(gc())
 ```
 
 
-```{r 4000 meters}
+```{r 4000 meters the third}
 
 # load tracts throwing errors
 load(
@@ -9907,7 +9907,7 @@ invisible(gc())
 ```
 
 
-```{r 5000 meters}
+```{r 5000 meters the second}
 
 # load tracts throwing errors
 load(
@@ -10044,7 +10044,7 @@ invisible(gc())
 ```
 
 
-```{r 7500 meters}
+```{r 7500 meters the third}
 
 # load tracts throwing errors
 load(
@@ -10181,7 +10181,7 @@ invisible(gc())
 ```
 
 
-```{r 10000 meters}
+```{r 10000 meters the third}
 
 # load tracts throwing errors
 load(
@@ -11227,7 +11227,7 @@ invisible(gc())
 
 #### intersect using precvalbuffonly buffers
 
-##### 3000 meters
+##### 3000 meters big
 
 ```{r apply buffintersector to 3000-meter buffers using safely}
 
@@ -11436,7 +11436,7 @@ invisible(gc())
 ```
 
 
-##### 4000 meters
+##### 4000 meters again
 
 ```{r apply buffintersector to 4000-meter buffers using safely}
 
@@ -11645,7 +11645,7 @@ invisible(gc())
 ```
 
 
-##### 5000 meters
+##### 5000 meters again
 
 ```{r apply buffintersector to 5000-meter buffers using safely}
 
@@ -11854,7 +11854,7 @@ invisible(gc())
 ```
 
 
-##### 7500 meters
+##### 7500 meters again
 
 ```{r apply buffintersector to 7500-meter buffers using safely}
 
@@ -12063,7 +12063,7 @@ invisible(gc())
 ```
 
 
-##### 10000 meters
+##### 10000 meters again
 
 ```{r apply buffintersector to 10000-meter buffers using safely}
 
@@ -12548,7 +12548,7 @@ invisible(gc())
 
 ##### 4000 meters (not needed!  0 tracts!)
 
-##### 5000 meters
+##### 5000 meters yet again
 
 ```{r apply buffintersector to 5000-meter buffers using safely}
 
@@ -12771,7 +12771,7 @@ invisible(gc())
 ```
 
 
-##### 7500 meters
+##### 7500 meters yet again
 
 ```{r apply buffintersector to 7500-meter buffers using safely}
 
@@ -12994,7 +12994,7 @@ invisible(gc())
 ```
 
 
-##### 10000 meters
+##### 10000 meters yet again
 
 ```{r apply buffintersector to 10000-meter buffers using safely}
 
