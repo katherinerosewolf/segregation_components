@@ -5,6 +5,8 @@ date: "June 12, 2019"
 output: html_document
 ---
 
+NOTES FOR KATIE:  CURRENT WORK TO SPEED UP THE BUFFERS IS ON LINE 5141.
+
 
 # CODE SETUP (run every time)
 
@@ -80,9 +82,9 @@ if(!dir.exists(file.path("functions"))) {
 ```{r census api key and options for tidycensus and totalcensus}
 
 # install the census api key for tidycensus
-census_api_key("eae31d12c8d9c2c9ee288e096e0c03830744aaef", 
-               install = TRUE, 
-               overwrite = TRUE)
+census_api_key(key = Sys.getenv("CENSUS_API_KEY"), 
+               install = FALSE, 
+               overwrite = FALSE)
 
 readRenviron("~/.Renviron")
 
@@ -5116,6 +5118,120 @@ invisible(gc())
 ```
 
 
+
+```{r faster buffclipper for debugging, eval=FALSE, include=FALSE}
+
+# testing outside function
+
+# load files
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+one_buffer_size <-
+  buffers$buffer_1000_m %>%
+  select(monitor_id)
+
+# extract one tract and simplify it
+one_tract <-
+  projected_tracts %>%
+  filter(geoid10 == "02270000100") %>%
+  select(geoid10) %>% 
+  st_cast("POLYGON")
+
+# check if any intersections exist
+intersect_check <-
+  one_buffer_size %>%
+  st_intersects(one_tract, .) %>% 
+  pluck(1)
+
+projected_tracts %>% 
+  filter(str_detect())
+
+buffers$buffer_1000_m$monitor_id
+
+plot(projected_tracts)
+plot(buffers$buffer_1000_m, add = TRUE)
+
+
+# buffclipper_check_intersections <- 
+#   function(tract_geoid_as_character, 
+#            buffer_sf, 
+#            tract_sf) {
+#     
+#     # extract one buffer layer and simplify it
+#     one_buffer_size <- 
+#       buffer_sf %>% 
+#       select(monitor_id)
+#     
+#     # extract one tract and simplify it
+#     one_tract <- 
+#       tract_sf %>% 
+#       filter(geoid10 == tract_geoid_as_character) %>% 
+#       select(geoid10) 
+#     
+#     # check if any intersections exist
+#     intersect_check <- 
+#       one_buffer_size %>% 
+#       st_intersects(one_tract, .)
+#     
+#     
+#     
+#     # clip buffers to only the one tract
+#     buffers_in_tract <- 
+#       one_buffer_size %>% 
+#       st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+#       rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
+#     
+#     # check if nrow from the above is zero, and if so, make a tibble and return it
+#     if(nrow(buffers_in_tract) == 0) {
+#       null_tibble <- 
+#         tibble(geoid10 = tract_geoid_as_character, 
+#                n.overlaps = as.integer(0), 
+#                origins = as.integer(0), 
+#                area = as.numeric(0), 
+#                monitor_id_overlaps = "none", 
+#                geometry = "none")
+# 
+#       return(null_tibble)
+#       
+#     } else {
+#       
+#       return(buffers_in_tract)
+#     
+#     }
+#   }
+#  
+# # save the function to disk
+# save(
+#   buffclipper, 
+#   file = 
+#     file.path(
+#       "functions", 
+#       "buffclipper.rdata"
+#     )
+# )
+# 
+# rm(buffclipper)
+# invisible(gc())
+
+```
+
+
+
+
 ```{r buffer intersection function without precision or buffer fixes for debugging}
 
 buffintersector <- 
@@ -7402,9 +7518,9 @@ gc()
 ```
 
 
-##### load remaining errors
+##### load remaining errors first
 
-```{r load remaining errors}
+```{r load remaining errors 1}
 
 load(
   file = 
@@ -8428,9 +8544,9 @@ invisible(gc())
 ```
 
 
-###### load remaining errors
+###### load more remaining errors 
 
-```{r load remaining errors}
+```{r load remaining errors 2}
 
 load(
   file = 
@@ -9453,7 +9569,7 @@ invisible(gc())
 ```
 
 
-```{r load remaining errors}
+```{r load remaining errors 3}
 
 load(
   file = 
@@ -10202,7 +10318,7 @@ invisible(gc())
 ```
 
 
-```{r load remaining errors}
+```{r load remaining errors 4}
 
 load(
   file = 
@@ -10250,7 +10366,7 @@ load(
 
 ##### load remaining errors WHY WON'T THEY FIX THEMSELVES
 
-```{r load remaining errors no change}
+```{r load remaining errors no change 5}
 
 load(
   file = 
@@ -12156,9 +12272,9 @@ invisible(gc())
 ```
 
 
-##### load remaining errors
+##### load remaining errors again
 
-```{r load remaining errors no change}
+```{r load remaining errors no change 6}
 
 load(
   file = 
@@ -13103,7 +13219,7 @@ invisible(gc())
 
 #### figure out the errors
 
-```{r load remaining errors}
+```{r load remaining errors 7}
 
 load(
   file = 
