@@ -6218,7 +6218,7 @@ gc()
 ```
 
 
-##### 2500 meters
+##### 2500 meters big
 
 ```{r apply buffintersector to 2500-meter buffers using safely}
 
@@ -7728,7 +7728,7 @@ invisible(gc())
 ```
 
 
-```{r 2500 meters}
+```{r 2500 meters 1}
 
 # load tracts throwing errors
 load(
@@ -8747,7 +8747,7 @@ invisible(gc())
 ```
 
 
-```{r 2500 meters}
+```{r 2500 meters 2}
 
 # load tracts throwing errors
 load(
