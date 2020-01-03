@@ -5157,13 +5157,25 @@ intersect_check <-
   st_intersects(one_tract, .) %>% 
   pluck(1)
 
-projected_tracts %>% 
-  filter(str_detect())
+# isolate alabama tracts
+state_01_tracts <- 
+  projected_tracts %>% 
+  filter(str_detect(geoid10, "^01.*"))
 
-buffers$buffer_1000_m$monitor_id
+# isolate alabama buffers
+buffers_1000_m_01_tracts <- 
+  buffers$buffer_1000_m %>% 
+  filter(str_detect(monitor_id, "^01.*"))
 
-plot(projected_tracts)
-plot(buffers$buffer_1000_m, add = TRUE)
+# # the below makes an interactive map for manual tract-hunting in AL
+# library(mapview)
+# library(leaflet)
+# mapView(state_01_tracts) +
+#   mapView(buffers_1000_m_01_tracts)
+
+# alabama monitor id for testing: "01-121-0002"
+# tract for testing: "01121011300"
+
 
 
 # buffclipper_check_intersections <- 
@@ -11229,7 +11241,7 @@ invisible(gc())
 
 ##### 3000 meters big
 
-```{r apply buffintersector to 3000-meter buffers using safely}
+```{r apply buffintersector to 3000-meter buffers using safely 2}
 
 # load buffintersector function
 load(
@@ -11274,7 +11286,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 3000-meter buffers using possibly}
+```{r apply buffintersector to 3000-meter buffers using possibly 2}
 
 # load buffintersector function
 load(
@@ -11438,7 +11450,7 @@ invisible(gc())
 
 ##### 4000 meters again
 
-```{r apply buffintersector to 4000-meter buffers using safely}
+```{r apply buffintersector to 4000-meter buffers using safely 2}
 
 # load buffintersector function
 load(
@@ -11483,7 +11495,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 4000-meter buffers using possibly}
+```{r apply buffintersector to 4000-meter buffers using possibly 2}
 
 # load buffintersector function
 load(
@@ -11647,7 +11659,7 @@ invisible(gc())
 
 ##### 5000 meters again
 
-```{r apply buffintersector to 5000-meter buffers using safely}
+```{r apply buffintersector to 5000-meter buffers using safely 2}
 
 # load buffintersector function
 load(
@@ -11692,7 +11704,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 5000-meter buffers using possibly}
+```{r apply buffintersector to 5000-meter buffers using possibly 2}
 
 # load buffintersector function
 load(
@@ -11856,7 +11868,7 @@ invisible(gc())
 
 ##### 7500 meters again
 
-```{r apply buffintersector to 7500-meter buffers using safely}
+```{r apply buffintersector to 7500-meter buffers using safely 2}
 
 # load buffintersector function
 load(
@@ -11901,7 +11913,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 7500-meter buffers using possibly}
+```{r apply buffintersector to 7500-meter buffers using possibly 2}
 
 # load buffintersector function
 load(
@@ -12065,7 +12077,7 @@ invisible(gc())
 
 ##### 10000 meters again
 
-```{r apply buffintersector to 10000-meter buffers using safely}
+```{r apply buffintersector to 10000-meter buffers using safely 2}
 
 # load buffintersector function
 load(
@@ -12110,7 +12122,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 10000-meter buffers using possibly}
+```{r apply buffintersector to 10000-meter buffers using possibly 2}
 
 # load buffintersector function
 load(
@@ -12325,7 +12337,7 @@ load(
 
 ##### 3000 meters
 
-```{r apply buffintersector to 3000-meter buffers using safely}
+```{r apply buffintersector to 3000-meter buffers using safely 3}
 
 # load buffintersector function
 load(
@@ -12394,7 +12406,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 3000-meter buffers using possibly}
+```{r apply buffintersector to 3000-meter buffers using possibly 3}
 
 # load buffintersector function
 load(
@@ -12550,7 +12562,7 @@ invisible(gc())
 
 ##### 5000 meters yet again
 
-```{r apply buffintersector to 5000-meter buffers using safely}
+```{r apply buffintersector to 5000-meter buffers using safely 3}
 
 # load buffintersector function
 load(
@@ -12619,7 +12631,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 5000-meter buffers using possibly}
+```{r apply buffintersector to 5000-meter buffers using possibly 3}
 
 # load buffintersector function
 load(
@@ -12773,7 +12785,7 @@ invisible(gc())
 
 ##### 7500 meters yet again
 
-```{r apply buffintersector to 7500-meter buffers using safely}
+```{r apply buffintersector to 7500-meter buffers using safely 3}
 
 # load buffintersector function
 load(
@@ -12842,7 +12854,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 7500-meter buffers using possibly}
+```{r apply buffintersector to 7500-meter buffers using possibly 3}
 
 # load buffintersector function
 load(
@@ -12996,7 +13008,7 @@ invisible(gc())
 
 ##### 10000 meters yet again
 
-```{r apply buffintersector to 10000-meter buffers using safely}
+```{r apply buffintersector to 10000-meter buffers using safely 3}
 
 # load buffintersector function
 load(
@@ -13065,7 +13077,7 @@ invisible(gc())
 ```
 
 
-```{r apply buffintersector to 10000-meter buffers using possibly}
+```{r apply buffintersector to 10000-meter buffers using possibly 3}
 
 # load buffintersector function
 load(
