@@ -9674,7 +9674,7 @@ load(
 
 #### fix remaining tracts with st_make_valid
 
-```{r 3000 meters the third}
+```{r 3000 meters the third, eval=FALSE, include=FALSE}
 
 # load tracts throwing errors
 load(
