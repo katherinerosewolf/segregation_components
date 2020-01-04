@@ -11331,7 +11331,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 3000-meter}
+```{r isolate the erroring tracts buffintersector 3000-meter 2}
 
 # load the 3000-meter buffers clipped to tracts
 load(
@@ -11540,7 +11540,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 4000-meter}
+```{r isolate the erroring tracts buffintersector 4000-meter 2}
 
 # load the 4000-meter buffers clipped to tracts
 load(
@@ -11749,7 +11749,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 5000-meter}
+```{r isolate the erroring tracts buffintersector 5000-meter 2}
 
 # load the 5000-meter buffers clipped to tracts
 load(
@@ -11958,7 +11958,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 7500-meter}
+```{r isolate the erroring tracts buffintersector 7500-meter 2}
 
 # load the 7500-meter buffers clipped to tracts
 load(
@@ -12167,7 +12167,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 10000-meter}
+```{r isolate the erroring tracts buffintersector 10000-meter 2}
 
 # load the 10000-meter buffers clipped to tracts
 load(
@@ -12451,7 +12451,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 3000-meter}
+```{r isolate the erroring tracts buffintersector 3000-meter 3}
 
 # load the 3000-meter buffers clipped to tracts
 load(
@@ -12676,7 +12676,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 5000-meter}
+```{r isolate the erroring tracts buffintersector 5000-meter 3}
 
 # load the 5000-meter buffers clipped to tracts
 load(
@@ -12899,7 +12899,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 7500-meter}
+```{r isolate the erroring tracts buffintersector 7500-meter 3}
 
 # load the 7500-meter buffers clipped to tracts
 load(
@@ -13122,7 +13122,7 @@ invisible(gc())
 ```
 
 
-```{r isolate the erroring tracts buffintersector 10000-meter}
+```{r isolate the erroring tracts buffintersector 10000-meter 3}
 
 # load the 10000-meter buffers clipped to tracts
 load(
