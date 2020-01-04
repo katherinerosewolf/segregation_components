@@ -4902,6 +4902,11 @@ monitors_to_tracts <-
     projected_tracts
   )
 
+# make projected tracts into simple polygons
+projected_tracts_simple <- 
+  projected_tracts %>% 
+  st_cast("POLYGON")
+
 # save files
 save(
   projected_tracts, 
@@ -4909,6 +4914,15 @@ save(
     file.path(
       "intermediate_data", 
       "projected_tracts.rdata"
+    )
+)
+
+save(
+  projected_tracts_simple, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts_simple.rdata"
     )
 )
 
@@ -5207,8 +5221,7 @@ buffclipper_precheck_intersect <-
     one_tract <-
       tract_sf %>%
       filter(geoid10 == tract_geoid_as_character) %>%
-      select(geoid10) %>% 
-      st_cast("POLYGON")
+      select(geoid10)
 
     # check if any intersections exist
     intersect_check <-
@@ -5311,7 +5324,7 @@ invisible(gc())
 
 ### clip imprecise buffers
 
-```{r clipped 1000-meter buffers for all tracts}
+```{r clipped 1000-meter buffers for all tracts, eval=FALSE, include=FALSE}
 
 # load buffclipper_precheck_intersect function
 load(
@@ -5327,7 +5340,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts.rdata"
+      "projected_tracts_simple.rdata"
     )
 )
 
@@ -5342,7 +5355,7 @@ load(
 
 # get list of tract geoids
 tract_geoid_characters <- 
-  projected_tracts %>% 
+  projected_tracts_simple %>% 
   pull(geoid10)
 
 # apply buffer function for all tracts for 1000-meter buffer (TIME SUCK)
@@ -5351,7 +5364,7 @@ buffer_clips_1000_m <-
     .f = buffclipper_precheck_intersect,
     .x = tract_geoid_characters,
     buffer_sf = buffers$buffer_1000_m,
-    tract_sf = projected_tracts
+    tract_sf = projected_tracts_simple
   )
 
 # name the sfs
