@@ -19196,7 +19196,281 @@ invisible(gc())
 ```
 
 
-```{r}
+
+
+```{r make alabama small sample dataset}
+
+# figuring out some testing tracts
+
+# isolate alabama tracts
+state_01_tracts <- 
+  projected_tracts %>% 
+  filter(str_detect(geoid10, "^01.*"))
+
+# isolate alabama buffers
+buffers_1000_m_01_tracts <- 
+  buffers$buffer_1000_m %>% 
+  filter(str_detect(monitor_id, "^01.*"))
+
+# # the below makes an interactive map for manual tract-hunting in AL
+# library(mapview)
+# library(leaflet)
+# mapView(state_01_tracts) +
+#   mapView(buffers_1000_m_01_tracts)
+
+# alabama monitor id for testing: "01-121-0002"
+# tract for testing: "01121011300" 
+
+# extract one tract and simplify it
+one_tract_no_intersect_02270000100 <-
+  projected_tracts %>%
+  filter(geoid10 == "02270000100") %>%
+  select(geoid10) %>% 
+  st_cast("POLYGON")
+
+one_tract_yes_intersect_01121011300 <- 
+  projected_tracts %>%
+  filter(geoid10 == "01121011300") %>%
+  select(geoid10) %>% 
+  st_cast("POLYGON")
+
+# check if any intersections exist (this should have none)
+intersect_check_nope <-
+  one_buffer_size %>%
+  st_intersects(one_tract_no_intersect_02270000100, .) %>% 
+  pluck(1) # the index of the intersecting buffer as an integer
+
+# check if any intersections exist (this should have one)
+intersect_check_yup <-
+  one_buffer_size %>%
+  st_intersects(one_tract_yes_intersect_01121011300, .) %>% 
+  pluck(1)  # the index of the intersecting buffer as an integer
+
+# now we need to get the rows that match these indices
+
+# isolate alabama tracts
+al_tracts <- 
+  projected_tracts %>% 
+  filter(str_detect(geoid10, "^01.*"))
+
+# isolate simple polygon alabama tracts
+al_tracts_simple <- 
+  projected_tracts_simple %>% 
+  filter(str_detect(geoid10, "^01.*"))
+
+# isolate alabama buffers
+buffers_1000_m_01_al <- 
+  buffers$buffer_1000_m %>% 
+  filter(str_detect(monitor_id, "^01.*"))
+
+save(
+  al_tracts, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "al_tracts.rdata"
+    )
+)
+
+save(
+  al_tracts_simple, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "al_tracts_simple.rdata"
+    )
+)
+
+save(
+  buffers_1000_m_01_al, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers_1000_m_01_al.rdata"
+    )
+)
+
+
+
+
+
+# # load buffclipper_precheck_intersect function
+# load(
+#   file = 
+#     file.path(
+#       "functions", 
+#       "buffclipper_precheck_intersect.rdata"
+#     )
+# )
+# 
+# # get list of tract geoids
+# al_tracts_simple_geoid_characters <- 
+#   al_tracts_simple %>% 
+#   pull(geoid10)
+# 
+# # load tictoc
+# library(tictoc)
+# 
+# # # apply buffer function for all tracts for 1000-meter buffer (TIME SUCK)
+# # tic("not parallel")
+# # al_buffer_clips_1000_m <-
+# #   map(
+# #     .f = buffclipper_precheck_intersect,
+# #     .x = al_tracts_simple_geoid_characters,
+# #     buffer_sf = buffers_1000_m_01_al,
+# #     tract_sf = al_tracts_simple
+# #   )
+# # toc()
+# # 
+# # tic("parallel")
+# # 
+# # par_al_buffer_clips_1000_m <-
+# #   future_map(
+# #     .f = buffclipper_precheck_intersect,
+# #     .x = al_tracts_simple_geoid_characters,
+# #     buffer_sf = buffers_1000_m_01_al,
+# #     tract_sf = al_tracts_simple, 
+# #     .progress = TRUE
+# #   )
+# # toc()
+# #
+# # # name the sfs
+# # names(al_buffer_clips_1000_m) <- 
+# #   al_tracts_simple_geoid_characters
+# # 
+# # # save the result
+# # save(
+# #   al_buffer_clips_1000_m,
+# #   file =
+# #     file.path(
+# #       "intermediate_data",
+# #       "al_buffer_clips_1000_m.rdata"
+# #       )
+# #   )
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# buffclipper_precheck_intersect <-
+#   function(tract_geoid_as_character,
+#            buffer_sf,
+#            tract_sf) {
+# 
+#     # extract one buffer layer and simplify it
+#     one_buffer_size <-
+#       buffer_sf %>%
+#       select(monitor_id)
+# 
+#     # extract one tract and simplify it
+#     one_tract <-
+#       tract_sf %>%
+#       filter(geoid10 == tract_geoid_as_character) %>%
+#       select(geoid10)
+# 
+#     # check if any intersections exist
+#     intersect_check <-
+#       one_buffer_size %>%
+#       st_intersects(one_tract, .) %>%
+#       pluck(1)
+#     
+#     if(is.null(intersect_check)) {
+#       null_tibble <-
+#         tibble(geoid10 = tract_geoid_as_character,
+#                n.overlaps = as.integer(0),
+#                origins = as.integer(0),
+#                area = as.numeric(0),
+#                monitor_id_overlaps = "none",
+#                geometry = "none")
+# 
+#       return(null_tibble)
+#       
+#     } else {
+# 
+#       # clip buffers to only the one tract
+#       buffers_in_tract <-
+#         one_buffer_size %>%
+#         st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+#         rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
+# 
+#       return(buffers_in_tract)
+# 
+#     }
+#   }
+# 
+# # save the function to disk
+# save(
+#   buffclipper_precheck_intersect,
+#   file =
+#     file.path(
+#       "functions",
+#       "buffclipper_precheck_intersect.rdata"
+#     )
+# )
+# 
+
+
+
+ buffers_in_tract <-
+        one_buffer_size %>%
+        st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+        rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
+
+)
+
+buffclipper_precheck_intersect <-
+  function(tract_geoid_as_character,
+           buffer_sf,
+           tract_sf) {
+
+    # extract one buffer layer and simplify it
+    one_buffer_size <-
+      buffer_sf %>%
+      select(monitor_id)
+
+    # extract one tract and simplify it
+    one_tract <-
+      tract_sf %>%
+      filter(geoid10 == tract_geoid_as_character) %>%
+      select(geoid10)
+
+    # check if any intersections exist
+    intersect_check <-
+      one_buffer_size %>%
+      st_intersects(one_tract, .) %>%
+      pluck(1)
+
+    if(is.null(intersect_check)) {
+      null_tibble <-
+        tibble(geoid10 = tract_geoid_as_character,
+               n.overlaps = as.integer(0),
+               origins = as.integer(0),
+               area = as.numeric(0),
+               monitor_id_overlaps = "none",
+               geometry = "none")
+
+      return(null_tibble)
+
+    } else {
+
+      # clip buffers to only the one tract
+      buffers_in_tract <-
+        one_buffer_size %>%
+        st_intersection(one_tract, .) %>%  # this clips the buffers (buffer sf is .)
+        rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
+
+      return(buffers_in_tract)
+
+    }
+  }
+
 
 
 
