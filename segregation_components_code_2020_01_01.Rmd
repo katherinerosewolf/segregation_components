@@ -4877,7 +4877,7 @@ projected_tracts <-
     proj_tract_area = 
       st_area(geometry)
   ) %>% 
-  rowid_to_column("multipolygon_tract_id")
+  rowid_to_column("multipolygon_tract_index")
 
 # set attributes for variables in projected tracts
 st_agr(projected_tracts) <-  
@@ -4908,7 +4908,7 @@ monitors_to_tracts <-
 projected_tracts_simple <- 
   projected_tracts %>% 
   st_cast("POLYGON") %>% 
-  rowid_to_column("polygon_tract_id")
+  rowid_to_column("polygon_tract_index")
 
 # save files
 save(
@@ -5172,18 +5172,25 @@ load(
 al_tracts <- 
   projected_tracts %>% 
   filter(str_detect(geoid10, "^01.*")) %>% 
-  rowid_to_column("al_polygon_tract_id")
+  rowid_to_column("al_polygon_tract_index")
 
 # isolate simple polygon alabama tracts
 al_tracts_simple <- 
   projected_tracts_simple %>% 
   filter(str_detect(geoid10, "^01.*")) %>% 
-  rowid_to_column("al_multipolygon_tract_id")
+  rowid_to_column("al_multipolygon_tract_index")
+
+al_buffer_select_enumerate <- 
+  function(buffer_sf) {
+    al_buffer_output <- 
+      filter(buffer_sf, str_detect(buffer_sf$monitor_id, "^01.*")) %>% 
+      rowid_to_column("al_buffer_index")
+  }
 
 # isolate alabama buffers
 al_buffers <-
   map(
-    .f = function(x) filter(x, str_detect(x$monitor_id, "^01.*")), 
+    .f = al_buffer_select_enumerate, 
     .x = buffers
   )
 
@@ -5436,7 +5443,14 @@ al_first_tract_buffer_intersections <-
   al_buffer_tract_intersections_polygons$buffer_1000_m[[145]] 
 
 # get tract row ids
-tract_
+al_polygon_tract_index <- 
+  al_tracts_simple %>% 
+  pull(al_polygon_tract_index)
+
+# get buffer row ids <- 
+al_buffer_tract_index <- 
+  al_buffers$buffer_1000_m %>% 
+  pull(al_buffer_index)
 
 
 # # selects the first tract, gives indices of the buffers that intersect it
