@@ -5171,12 +5171,14 @@ load(
 # isolate alabama tracts
 al_tracts <- 
   projected_tracts %>% 
-  filter(str_detect(geoid10, "^01.*"))
+  filter(str_detect(geoid10, "^01.*")) %>% 
+  rowid_to_column("al_polygon_tract_id")
 
 # isolate simple polygon alabama tracts
 al_tracts_simple <- 
   projected_tracts_simple %>% 
-  filter(str_detect(geoid10, "^01.*"))
+  filter(str_detect(geoid10, "^01.*")) %>% 
+  rowid_to_column("al_multipolygon_tract_id")
 
 # isolate alabama buffers
 al_buffers <-
@@ -5319,6 +5321,8 @@ al_buffer_tract_intersections_polygons <-
     y = al_tracts_simple
   )
 
+print("hey-o!")
+
 # calculate for all buffer sizes for multipolygons
 al_buffer_tract_intersections_multipolygons <- 
   future_map(
@@ -5326,6 +5330,8 @@ al_buffer_tract_intersections_multipolygons <-
     .x = al_buffers, 
     y = al_tracts
   )
+
+print("hey-o!")
 
 # calculate for all buffer sizes for singlepolygons
 buffer_tract_intersections_polygons <- 
@@ -5335,6 +5341,8 @@ buffer_tract_intersections_polygons <-
     y = projected_tracts_simple
   )
 
+print("hey-o!")
+
 # calculate for all buffer sizes for multipolygons
 buffer_tract_intersections_multipolygons <- 
   future_map(
@@ -5342,6 +5350,8 @@ buffer_tract_intersections_multipolygons <-
     .x = buffers, 
     y = projected_tracts
   )
+
+print("hey-o!")
 
 # save the results
 save(
@@ -5413,8 +5423,21 @@ load(
     )
 )
 
+# isolate tract with no buffers in it
 al_first_tract_buffer_intersections <- 
   al_buffer_tract_intersections_polygons$buffer_1000_m[[1]] 
+
+# isolate tract with one buffer in it
+al_seventh_tract_buffer_intersections <- 
+  al_buffer_tract_intersections_polygons$buffer_1000_m[[7]] 
+
+# isolate tract with two buffers in it
+al_first_tract_buffer_intersections <- 
+  al_buffer_tract_intersections_polygons$buffer_1000_m[[145]] 
+
+# get tract row ids
+tract_
+
 
 # # selects the first tract, gives indices of the buffers that intersect it
 # al_intersection_one_tract_its_buffers <- 
@@ -5429,8 +5452,8 @@ al_first_tract_buffer_intersections <-
 #         rowid_to_column("polygon_id")  # add row numbers to id polygons in next step
 
 
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
+# # remove all objects from the environment
+# rm(list = ls(all.names = TRUE))
 
 ```
 
