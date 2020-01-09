@@ -5269,34 +5269,7 @@ rm(list = ls(all.names = TRUE))
 
 
 
-```{r calculate buffer intersections with tracts}
-
-# load files
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffers.rdata"
-    )
-)
-
-# load projected tracts data as multipolygons
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_tracts.rdata"
-    )
-  )
-
-# load projected tracts data as singlepolygons
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_tracts_simple.rdata"
-    )
-)
+```{r al calculate buffer intersections with tracts}
 
 # load al buffers
 load(
@@ -5325,44 +5298,24 @@ load(
     )
 )
 
-future::plan(strategy = "multiprocess")
+# future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for singlepolygons
 al_buffer_tract_intersections_polygons <- 
-  future_map(
+  map(
     .f = function(x, y) st_intersects(y, x), 
     .x = al_buffers, 
     y = al_tracts_simple
   )
 
-future::plan(strategy = "multiprocess")
+# future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for multipolygons
 al_buffer_tract_intersections_multipolygons <- 
-  future_map(
+  map(
     .f = function(x, y) st_intersects(y, x), 
     .x = al_buffers, 
     y = al_tracts
-  )
-
-future::plan(strategy = "multiprocess")
-
-# calculate for all buffer sizes for singlepolygons
-buffer_tract_intersections_polygons <- 
-  future_map(
-    .f = function(x, y) st_intersects(y, x), 
-    .x = buffers, 
-    y = projected_tracts_simple
-  )
-
-future::plan(strategy = "multiprocess")
-
-# calculate for all buffer sizes for multipolygons
-buffer_tract_intersections_multipolygons <- 
-  future_map(
-    .f = function(x, y) st_intersects(y, x),
-    .x = buffers, 
-    y = projected_tracts
   )
 
 # save the results
@@ -5384,6 +5337,45 @@ save(
     )
 )
 
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
+
+
+
+
+```{r calculate buffer intersections with single polygon tracts}
+
+# load files
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# load projected tracts data as singlepolygons
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts_simple.rdata"
+    )
+)
+
+future::plan(strategy = "multiprocess")
+
+# calculate for all buffer sizes for singlepolygons
+buffer_tract_intersections_polygons <- 
+  future_map(
+    .f = function(x, y) st_intersects(y, x), 
+    .x = buffers, 
+    y = projected_tracts_simple
+  )
+
+# save result
 save(
   buffer_tract_intersections_polygons, 
   file = 
@@ -5393,6 +5385,45 @@ save(
     )
 )
 
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
+
+
+
+
+```{r calculate buffer intersections with multipolygon tracts}
+
+# load files
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# load projected tracts data as multipolygons
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+  )
+
+future::plan(strategy = "multiprocess")
+
+# calculate for all buffer sizes for multipolygons
+buffer_tract_intersections_multipolygons <- 
+  future_map(
+    .f = function(x, y) st_intersects(y, x),
+    .x = buffers, 
+    y = projected_tracts
+  )
+
+# save result
 save(
   buffer_tract_intersections_multipolygons, 
   file = 
@@ -5406,6 +5437,8 @@ save(
 rm(list = ls(all.names = TRUE))
 
 ```
+
+
 
 
 
@@ -5486,7 +5519,7 @@ tract_buffer_filter <-
   }
 
 # make buffers by tract
-buffers_by_tract_1000_m_sf_list <- 
+al_buffers_by_tract_1000_m_sf_list <- 
   map(.f = tract_buffer_filter, 
       .x = al_buffer_tract_intersections_polygons$buffer_1000_m, 
       buffer_sf = al_buffers$buffer_1000_m
@@ -5511,14 +5544,14 @@ al_tracts_simple_list <-
         seq(nrow(al_tracts_simple)))
 
 # set up multi-core processing
-future::plan(strategy = "multiprocess")
+# future::plan(strategy = "multiprocess")
 
 # buffer_clipper_multi_tract <- 
 #   function(buffer_clipper_function,
 #            tract_list,
 #            buffers_by_tract_list){
-#     future::plan(strategy = "multiprocess")
-#     future_map2(
+#     # future::plan(strategy = "multiprocess")
+#     map2(
 #       .f = buffer_clipper_function,
 #       .x = tract_list,
 #       .y = buffers_by_tract_list
@@ -5526,11 +5559,11 @@ future::plan(strategy = "multiprocess")
 #   }
 
 # clip 1000-meter buffers for all tracts
-tracts_clipped_buffers_1000_m <- 
-  future_map2(
+al_tracts_clipped_buffers_1000_m <- 
+  map2(
     .f = buffer_clipper_single_tract, 
     .x = al_tracts_simple_list, 
-    .y = buffers_by_tract_1000_m_sf_list
+    .y = al_buffers_by_tract_1000_m_sf_list
   )
 
 # # visual check of result
@@ -5595,11 +5628,11 @@ tract_buffer_filter <-
     }
   }
 
-future::plan(strategy = "multiprocess")
+# future::plan(strategy = "multiprocess")
 
 # make buffers by tract
 buffers_by_tract_1000_m_sf_list <- 
-  future_map(.f = tract_buffer_filter, 
+  map(.f = tract_buffer_filter, 
       .x = buffer_tract_intersections_polygons$buffer_1000_m, 
       buffer_sf = buffers$buffer_1000_m
   )
@@ -5631,11 +5664,11 @@ tracts_simple_list <-
         seq(nrow(projected_tracts_simple)))
 
 # set up multi-core processing
-future::plan(strategy = "multiprocess")
+# future::plan(strategy = "multiprocess")
 
 # clip 1000-meter buffers for all tracts
 tracts_clipped_buffers_1000_m <- 
-  future_map2(
+  map2(
     .f = buffer_clipper_single_tract, 
     .x = tracts_simple_list, 
     .y = buffers_by_tract_1000_m_sf_list
@@ -5752,10 +5785,10 @@ tract_geoid_characters <-
   pull(geoid10)
 
 # apply buffer function for all tracts for 1000-meter buffer (TIME SUCK)
-future::plan(strategy = "multiprocess")
+# future::plan(strategy = "multiprocess")
 
 buffer_clips_1000_m <-
-  future_map(
+  map(
     .f = buffclipper_precheck_intersect,
     .x = tract_geoid_characters,
     buffer_sf = buffers$buffer_1000_m,
