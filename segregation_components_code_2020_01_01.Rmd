@@ -4881,7 +4881,8 @@ projected_tracts <-
 
 # set attributes for variables in projected tracts
 st_agr(projected_tracts) <-  
-  c(geoid10 = "identity", 
+  c(multipolygon_tract_index = "identity",
+    geoid10 = "identity", 
     aland10 = "aggregate", 
     awater10 = "aggregate", 
     intptlat10 = "aggregate", 
@@ -4909,6 +4910,9 @@ projected_tracts_simple <-
   projected_tracts %>% 
   st_cast("POLYGON") %>% 
   rowid_to_column("polygon_tract_index")
+
+st_agr(projected_tracts_simple) <- 
+  c(polygon_tract_index = "identity")
 
 # save files
 save(
@@ -4947,14 +4951,14 @@ save(
     )
 )
 
-# remove files
-rm(
-  projected_monitors, 
-  projected_tracts,
-  monitors_sf, 
-  tract_shapefiles,
-  monitors_to_tracts
-)
+# # remove files
+# rm(
+#   projected_monitors, 
+#   projected_tracts,
+#   monitors_sf, 
+#   tract_shapefiles,
+#   monitors_to_tracts
+# )
 
 ```
 
@@ -5442,7 +5446,7 @@ rm(list = ls(all.names = TRUE))
 
 
 
-```{r buffclipper after intersections testing in al, eval=FALSE, include=FALSE}
+```{r al buffclipper after intersections testing}
 
 load(
   file = 
