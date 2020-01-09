@@ -5325,7 +5325,7 @@ load(
     )
 )
 
-future::plan(strategy = "multisession")
+future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for singlepolygons
 al_buffer_tract_intersections_polygons <- 
@@ -5337,7 +5337,7 @@ al_buffer_tract_intersections_polygons <-
 
 print("hey-o!")
 
-future::plan(strategy = "multisession")
+future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for multipolygons
 al_buffer_tract_intersections_multipolygons <- 
@@ -5349,7 +5349,7 @@ al_buffer_tract_intersections_multipolygons <-
 
 print("hey-o!")
 
-future::plan(strategy = "multisession")
+future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for singlepolygons
 buffer_tract_intersections_polygons <- 
@@ -5361,7 +5361,7 @@ buffer_tract_intersections_polygons <-
 
 print("hey-o!")
 
-future::plan(strategy = "multisession")
+future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for multipolygons
 buffer_tract_intersections_multipolygons <- 
@@ -5519,13 +5519,13 @@ al_tracts_simple_list <-
         seq(nrow(al_tracts_simple)))
 
 # set up multi-core processing
-future::plan(strategy = "multisession")
+future::plan(strategy = "multiprocess")
 
 # buffer_clipper_multi_tract <- 
 #   function(buffer_clipper_function,
 #            tract_list,
 #            buffers_by_tract_list){
-#     future::plan(strategy = "multisession")
+#     future::plan(strategy = "multiprocess")
 #     future_map2(
 #       .f = buffer_clipper_function,
 #       .x = tract_list,
@@ -5603,7 +5603,7 @@ tract_buffer_filter <-
     }
   }
 
-future::plan(strategy = "multisession")
+future::plan(strategy = "multiprocess")
 
 # make buffers by tract
 buffers_by_tract_1000_m_sf_list <- 
@@ -5639,7 +5639,7 @@ tracts_simple_list <-
         seq(nrow(projected_tracts_simple)))
 
 # set up multi-core processing
-future::plan(strategy = "multisession")
+future::plan(strategy = "multiprocess")
 
 # clip 1000-meter buffers for all tracts
 tracts_clipped_buffers_1000_m <- 
@@ -5760,7 +5760,7 @@ tract_geoid_characters <-
   pull(geoid10)
 
 # apply buffer function for all tracts for 1000-meter buffer (TIME SUCK)
-future::plan(strategy = "multisession")
+future::plan(strategy = "multiprocess")
 
 buffer_clips_1000_m <-
   future_map(
