@@ -5335,8 +5335,6 @@ al_buffer_tract_intersections_polygons <-
     y = al_tracts_simple
   )
 
-print("hey-o!")
-
 future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for multipolygons
@@ -5346,8 +5344,6 @@ al_buffer_tract_intersections_multipolygons <-
     .x = al_buffers, 
     y = al_tracts
   )
-
-print("hey-o!")
 
 future::plan(strategy = "multiprocess")
 
@@ -5359,8 +5355,6 @@ buffer_tract_intersections_polygons <-
     y = projected_tracts_simple
   )
 
-print("hey-o!")
-
 future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for multipolygons
@@ -5370,8 +5364,6 @@ buffer_tract_intersections_multipolygons <-
     .x = buffers, 
     y = projected_tracts
   )
-
-print("hey-o!")
 
 # save the results
 save(
