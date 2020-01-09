@@ -5239,7 +5239,7 @@ rm(list = ls(all.names = TRUE))
 
 
 
-```{r al buffclipper after intersections testing}
+```{r al buffer clipper after intersections testing}
 
 load(
   file = 
@@ -5376,7 +5376,7 @@ rm(list = ls(all.names = TRUE))
 
 
 
-```{r buffclipper after intersections for realsies}
+```{r buffer clipper after intersections for realsies}
 
 load(
   file = 
@@ -5467,7 +5467,7 @@ tracts_simple_list <-
 future::plan(strategy = "multiprocess")
 
 # clip 1000-meter buffers for all tracts
-tracts_clipped_buffers_1000_m <- 
+clipped_buffers_1000_m <- 
   future_map2(
     .f = buffer_clipper_single_tract, 
     .x = tracts_simple_list, 
@@ -5476,11 +5476,11 @@ tracts_clipped_buffers_1000_m <-
 
 # save files
 save(
-  tracts_clipped_buffers_1000_m, 
+  clipped_buffers_1000_m, 
   file = 
     file.path(
       "intermediate_data", 
-      "tracts_clipped_buffers_1000_m.rdata"
+      "clipped_buffers_1000_m.rdata"
     )
 )
 
@@ -5497,5 +5497,83 @@ rm(list = ls(all.names = TRUE))
 
 
 
+
+```{r buffer intersection function without precision or buffer fixes for debugging, eval=FALSE, include=FALSE}
+
+buffer_intersector <- 
+  function(buffers_clipped_to_tract_sf) {
+    # make concordance vector to replace "origin" values (rows) with monitor ids
+    
+    if(!("sf" %in% class(buffers_clipped_to_tract_sf))){
+      
+      return("no_buffers_here")
+      
+    } else {
+      
+      concordance_vector <- 
+        setNames(
+          object = buffers_clipped_to_tract_sf$monitor_id,  # object to named
+          nm = buffers_clipped_to_tract_sf$polygon_id  # names (polygon #s)
+        )
+      
+      # find buffer intersections and areas by monitor
+      buffer_intersections <- 
+        buffers_clipped_to_tract_sf %>% 
+        st_intersection() %>% 
+        mutate(area = st_area(geometry),  # add areas
+               monitor_id_overlaps =  # add column of monitor ids
+                 map(
+                   .x = origins,  # go through the origin column (with polygon #s)
+                   .f = function(a) concordance_vector[a]  # replace with monitor ids
+                   )
+               ) %>% 
+        select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
+      return(buffer_intersections)
+    }
+  }
+ 
+# save the function to disk
+save(
+  buffer_intersector, 
+  file = 
+    file.path(
+      "functions", 
+      "buffer_intersector.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
+
+
+```{r try applying the buffer intersector, eval=FALSE, include=FALSE}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "clipped_buffers_1000_m.rdata"
+      )
+  )
+
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffer_intersector.rdata"
+    )
+)
+
+# do 1000-m file
+safely_intersects_1000_m <- 
+  map(
+  .f = safely(buffer_intersector), 
+  .x = buffer_clips_1000_m
+) %>% 
+  transpose()
+
+```
 
 
