@@ -4745,7 +4745,7 @@ load(
   )
 
 # project the tracts to the NAD 83 Conus Albers Equal Area projection, a flat one, to make distances comparable
-projected_tracts <- 
+tracts_multipolygon <- 
   tract_shapefiles %>% 
   st_transform(crs = 5070) %>% 
   select(  # simplify to only needed variables
@@ -4762,7 +4762,7 @@ projected_tracts <-
   rowid_to_column("multipolygon_tract_index")
 
 # set attributes for variables in projected tracts
-st_agr(projected_tracts) <-  
+st_agr(tracts_multipolygon) <-  
   c(multipolygon_tract_index = "identity",
     geoid10 = "identity", 
     aland10 = "aggregate", 
@@ -4784,34 +4784,67 @@ projected_monitors <-
 monitors_to_tracts <- 
   st_join(
     projected_monitors, 
-    projected_tracts
+    tracts_multipolygon
   )
 
 # make projected tracts into simple polygons
-projected_tracts_simple <- 
-  projected_tracts %>% 
+tracts_polygon <- 
+  tracts_multipolygon %>% 
   st_cast("POLYGON") %>% 
   rowid_to_column("polygon_tract_index")
 
-st_agr(projected_tracts_simple) <- 
+st_agr(tracts_polygon) <- 
   c(polygon_tract_index = "identity")
+
+# make simple projected tract sf into a list of single-feature sfs
+tracts_polygon_list <- 
+  tracts_polygon %>% 
+  select(polygon_tract_index,   # select constant variables
+         multipolygon_tract_index, 
+         geoid10) %>% 
+  split(seq(nrow(tracts_polygon)))
+
+# make multipolygon projected tract sf into a list of single-tract sfs
+tracts_multipolygon_list <- 
+  tracts_multipolygon %>% 
+  select(multipolygon_tract_index, 
+         geoid10) %>% 
+  split(seq(nrow(tracts_multipolygon)))
 
 # save files
 save(
-  projected_tracts, 
+  tracts_multipolygon, 
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts.rdata"
+      "tracts_multipolygon.rdata"
     )
 )
 
 save(
-  projected_tracts_simple, 
+  tracts_polygon, 
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts_simple.rdata"
+      "tracts_polygon.rdata"
+    )
+)
+
+save(
+  tracts_polygon_list, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tracts_polygon_list.rdata"
+    )
+)
+
+save(
+  tracts_multipolygon_list, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tracts_multipolygon_list.rdata"
     )
 )
 
@@ -4953,197 +4986,6 @@ rm(list = ls(all.names = TRUE))
 
 ### make buffer functions
 
-```{r make alabama sample testing dataset}
-
-# load buffers
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "buffers.rdata"
-    )
-)
-
-# load projected tracts data as multipolygons
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_tracts.rdata"
-    )
-  )
-
-# load projected tracts data as singlepolygons
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_tracts_simple.rdata"
-    )
-)
-
-# isolate alabama tracts
-al_tracts <- 
-  projected_tracts %>% 
-  filter(str_detect(geoid10, "^01.*")) %>% 
-  rowid_to_column("al_multipolygon_tract_index")
-
-# isolate simple polygon alabama tracts
-al_tracts_simple <- 
-  projected_tracts_simple %>% 
-  filter(str_detect(geoid10, "^01.*")) %>% 
-  rowid_to_column("al_polygon_tract_index")
-
-al_buffer_select_enumerate <- 
-  function(buffer_sf) {
-    al_buffer_output <- 
-      filter(buffer_sf, str_detect(buffer_sf$monitor_id, "^01.*")) %>% 
-      rowid_to_column("al_buffer_index")
-  }
-
-# isolate alabama buffers
-al_buffers <-
-  map(
-    .f = al_buffer_select_enumerate, 
-    .x = buffers
-  )
-
-# save the files
-save(
-  al_tracts, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_tracts.rdata"
-    )
-)
-
-save(
-  al_tracts_simple, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_tracts_simple.rdata"
-    )
-)
-
-save(
-  al_buffers, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_buffers.rdata"
-    )
-)
-
-# extract one tract and simplify it
-one_tract_no_intersect_02270000100 <-
-  projected_tracts %>%
-  filter(geoid10 == "02270000100") %>%
-  select(geoid10) %>% 
-  st_cast("POLYGON")
-
-one_tract_yes_intersect_01121011300 <- 
-  projected_tracts %>%
-  filter(geoid10 == "01121011300") %>%
-  select(geoid10) %>% 
-  st_cast("POLYGON")
-
-# one buffer size
-one_buffer_size <-
-  buffers$buffer_1000_m %>%
-  select(monitor_id)
-
-# check if any intersections exist (this should have none)
-intersect_check_nope <-
-  one_buffer_size %>%
-  st_intersects(one_tract_no_intersect_02270000100, .) %>% 
-  pluck(1) # the index of the intersecting buffer as an integer
-
-# check if any intersections exist (this should have one)
-intersect_check_yup <-
-  one_buffer_size %>%
-  st_intersects(one_tract_yes_intersect_01121011300, .) %>% 
-  pluck(1)  # the index of the intersecting buffer as an integer
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-
-```{r al calculate buffer intersections with tracts}
-
-# load al buffers
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_buffers.rdata"
-    )
-)
-
-# load al projected tracts as multipolygons
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_tracts_simple.rdata"
-    )
-)
-
-# load al projected tracts as singlepolygons
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_tracts.rdata"
-    )
-)
-
-# calculate for all buffer sizes for singlepolygons
-al_buffer_tract_intersections_polygons <- 
-  map(
-    .f = function(x, y) st_intersects(y, x), 
-    .x = al_buffers, 
-    y = al_tracts_simple
-  )
-
-# calculate for all buffer sizes for multipolygons
-al_buffer_tract_intersections_multipolygons <- 
-  map(
-    .f = function(x, y) st_intersects(y, x), 
-    .x = al_buffers, 
-    y = al_tracts
-  )
-
-# save the results
-save(
-  al_buffer_tract_intersections_polygons, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_buffer_tract_intersections_polygons.rdata"
-    )
-)
-
-save(
-  al_buffer_tract_intersections_multipolygons, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_buffer_tract_intersections_multipolygons.rdata"
-    )
-)
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-
 ```{r calculate buffer intersections with single polygon tracts}
 
 # load files
@@ -5160,7 +5002,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts_simple.rdata"
+      "tracts_polygon.rdata"
     )
 )
 
@@ -5169,7 +5011,7 @@ buffer_tract_intersections_polygons <-
   future_map(
     .f = function(x, y) st_intersects(y, x), 
     .x = buffers, 
-    y = projected_tracts_simple
+    y = tracts_polygon
   )
 
 # save result
@@ -5205,7 +5047,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts.rdata"
+      "tracts_multipolygon.rdata"
     )
   )
 
@@ -5214,7 +5056,7 @@ buffer_tract_intersections_multipolygons <-
   future_map(
     .f = function(x, y) st_intersects(y, x),
     .x = buffers, 
-    y = projected_tracts
+    y = tracts_multipolygon
   )
 
 # save result
@@ -5234,7 +5076,6 @@ rm(list = ls(all.names = TRUE))
 
 
 
-
 ```{r buffer filter by tract}
 
 load(
@@ -5249,7 +5090,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts_simple.rdata"
+      "tracts_polygon.rdata"
     )
 )
 
@@ -5257,7 +5098,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts.rdata"
+      "tracts_multipolygon.rdata"
     )
 )
 
@@ -5305,9 +5146,6 @@ buffers_by_tract_1000_m_sf_list <-
     .progress = TRUE
   )
 
-library(tictoc)
-
-tic()
 # make buffers by tract for all sizes!  (takes ten minutes)
 buffers_by_tract_all_sizes <- 
   future_map2(
@@ -5317,7 +5155,6 @@ buffers_by_tract_all_sizes <-
     buffer_filter_function = buffer_filter, 
     .progress = TRUE
   )
-toc()
 
 # save the above
 save(
@@ -5335,7 +5172,8 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-```{r buffer clipping, eval=FALSE, include=FALSE}
+
+```{r buffer clipping}
 
 # load necessary files
 load(
@@ -5350,7 +5188,7 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      "projected_tracts_simple.rdata"
+      "tracts_polygon.rdata"
     )
 )
 
@@ -5370,8 +5208,16 @@ load(
     )
 )
 
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tracts_polygon_list.rdata"
+    )
+)
+
 # make buffer clipper function
-buffer_clipper_single_tract <- 
+buffer_clipper_tract <- 
   function(tract_sf, 
            buffers_by_tract_sf){
     if(!("sf" %in% class(buffers_by_tract_sf))){
@@ -5383,29 +5229,80 @@ buffer_clipper_single_tract <-
       }
   }
 
-# make tract sf into a list of single-feature sfs
-tracts_simple_list <- 
-  projected_tracts_simple %>% 
-  select(polygon_tract_index,   # select constant variables
-         multipolygon_tract_index, 
-         geoid10) %>% 
-  split(seq(nrow(projected_tracts_simple)))
-
 # clip 1000-meter buffers for all tracts
 clipped_buffers_1000_m <- 
   future_map2(
-    .f = buffer_clipper_single_tract, 
-    .x = tracts_simple_list, 
+    .f = buffer_clipper_tract, 
+    .x = tracts_polygon_list, 
     .y = buffers_by_tract_all_sizes$buffer_1000_m
   )
 
-# save files
+# make buffer clipper function for all tracts
+buffer_clipper_nation <- 
+  function(buffers_by_tract_list,
+           tract_list,
+           buffer_clipper_little_function){
+    clipped_buffers <- 
+      future_map2(
+        .f = buffer_clipper_little_function, 
+        .x = tract_list, 
+        .y = buffers_by_tract_list
+      )
+  }
+
+# clip the buffers for all the tracts!
+clipped_buffers <- 
+  future_map(
+    .x = buffers_by_tract_all_sizes, 
+    .f = buffer_clipper_nation, 
+    tract_list = tracts_polygon_list, 
+    buffer_clipper_little_function = buffer_clipper_tract, 
+    .progress = TRUE
+  )
+
+# save objects
+save(
+  buffer_clipper_tract, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clipper_tract.rdata"
+    )
+)
+
+save(
+  buffer_clipper_nation, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_clipper_nation.rdata"
+    )
+)
+
+save(
+  tracts_polygon_list, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "tracts_polygon_list.rdata"
+    )
+)
+
 save(
   clipped_buffers_1000_m, 
   file = 
     file.path(
       "intermediate_data", 
       "clipped_buffers_1000_m.rdata"
+    )
+)
+
+save(
+  clipped_buffers, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "clipped_buffers.rdata"
     )
 )
 
@@ -5421,9 +5318,18 @@ rm(list = ls(all.names = TRUE))
 
 
 
-```{r buffer_intersector, eval=FALSE, include=FALSE}
+```{r buffer intersector functions}
 
-buffer_intersector <- 
+# load clipped buffers
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "clipped_buffers.rdata"
+      )
+  )
+
+buffer_intersector_tract <- 
   function(buffers_clipped_to_tract_sf) {
     # make concordance vector to replace "origin" values (rows) with monitor ids
     
@@ -5456,58 +5362,60 @@ buffer_intersector <-
       
     }
   }
- 
-# save the function to disk
-save(
-  buffer_intersector, 
-  file = 
-    file.path(
-      "functions", 
-      "buffer_intersector.rdata"
-    )
-)
 
-# # remove all objects from the environment
-# rm(list = ls(all.names = TRUE))
-
-```
-
-
-
-
-```{r try applying the buffer intersector, eval=FALSE, include=FALSE}
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "clipped_buffers_1000_m.rdata"
+# buffer intersection function for the nation
+buffer_intersector_nation <- 
+  function(buffers_clipped_to_tracts,
+           buffer_intersector_little_function){
+    buffer_intersections_nation <- 
+      future_map(
+        .x = buffers_clipped_to_tracts,
+        .f = buffer_intersector_tract
       )
-  )
+    return(buffer_intersections_nation)
+  }
 
-load(
+# intersect all buffer sizes for all tracts!
+intersected_buffers <- 
+  future_map(
+    .f = buffer_intersector_nation, 
+    .x = clipped_buffers
+    buffer_intersector_little_function = buffer_intersector_tract, 
+    .progress = TRUE
+  )
+    
+ 
+# save the functions to disk
+save(
+  buffer_intersector_tract, 
   file = 
     file.path(
       "functions", 
-      "buffer_intersector.rdata"
+      "buffer_intersector_tract.rdata"
     )
 )
 
-# do 1000-m file and catch errors
-safely_intersects_1000_m <- 
-  future_map(
-  .f = safely(buffer_intersector), 
-  .x = clipped_buffers_1000_m
-) %>% 
-  transpose()
-
-# do 1000-m file on the wild side
-buffer_intersections_1000_m <- 
-  future_map(
-  .f = buffer_intersector, 
-  .x = clipped_buffers_1000_m
+save(
+  buffer_intersector_nation, 
+  file = 
+    file.path(
+      "functions", 
+      "buffer_intersector_nation.rdata"
+    )
 )
 
-```
+# save intersected buffer file to disk
+save(
+ intersected_buffers, 
+  file = 
+    file.path(
+      "functions", 
+      "intersected_buffers.rdata"
+    )
+)
 
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
 
