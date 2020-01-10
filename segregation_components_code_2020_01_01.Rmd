@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
-NOTES FOR KATIE:  IN 5600S, FIX TRACT IDS
+NOTES FOR KATIE: FIGURE OUT IF CONVERSION TO SINGLE POLYGONS IS CAUSING ERRORS
 
 
 # CODE SETUP (run every time)
@@ -52,7 +52,7 @@ library(furrr)
 
 ```{r set up future parallel processing options}
 
-future::plan(strategy = "multiprocess")
+future::plan(strategy = "multiprocess", workers = 2)
 
 ```
 
@@ -5375,16 +5375,27 @@ buffer_intersector_nation <-
     return(buffer_intersections_nation)
   }
 
+# buffer intersection function for the nation that works for all buffers
+safe_buffer_intersector_nation <- 
+  function(buffers_clipped_to_tracts,
+           buffer_intersector_little_function){
+    buffer_intersections_nation <- 
+      future_map(
+        .x = buffers_clipped_to_tracts,
+        .f = safely(buffer_intersector_tract)
+      )
+    return(buffer_intersections_nation)
+  }
+
 # intersect all buffer sizes for all tracts!
-intersected_buffers <- 
+safely_intersected_buffers <- 
   future_map(
-    .f = buffer_intersector_nation, 
-    .x = clipped_buffers
+    .f = safe_buffer_intersector_nation, 
+    .x = clipped_buffers,
     buffer_intersector_little_function = buffer_intersector_tract, 
     .progress = TRUE
   )
     
- 
 # save the functions to disk
 save(
   buffer_intersector_tract, 
