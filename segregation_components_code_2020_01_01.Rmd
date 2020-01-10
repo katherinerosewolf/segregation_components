@@ -11,7 +11,9 @@ NOTES FOR KATIE:  IN 5600S, FIX TRACT IDS
 # CODE SETUP (run every time)
 
 ```{r rmarkdown setup}
+
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
 
@@ -43,6 +45,13 @@ library(lubridate)
 library(lwgeom)
 library(ggdag)
 library(furrr)
+
+```
+
+
+```{r set up future parallel processing options}
+
+future::plan(strategy = "multiprocess")
 
 ```
 
@@ -96,6 +105,7 @@ options(tigris_use_cache = TRUE)
 Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
 
 ```
+
 
 
 ```{r functions for general later use}
@@ -4828,6 +4838,9 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
+## buffer work
+
+
 ```{r buffers}
 
 # load projected monitor sf
@@ -4864,17 +4877,15 @@ buffer_names <-
 # make the buffers
 pre_attribute_pre_index_buffers <- 
   map2(.f = st_buffer, 
-      .y = distances, 
-      .x = list_of_proj_mon_sf) %>% 
+       .y = distances, 
+       .x = list_of_proj_mon_sf) %>% 
   set_names(buffer_names)  # name the list elements
 
 # make buffer index
 pre_attribute_buffers <-
-  map(
-    .f = rowid_to_column,
-    .x = pre_attribute_pre_index_buffers, 
-    var = "buffer_index"
-  )
+  map(.f = rowid_to_column,
+      .x = pre_attribute_pre_index_buffers, 
+      var = "buffer_index")
 
 # set relation_to_geometry ("agr") attribute to "constant"
 buffers <-
@@ -4938,9 +4949,6 @@ rm(list = ls(all.names = TRUE))
 
 ```
 
-
-
-## buffer work
 
 ### make buffer functions
 
@@ -5064,9 +5072,6 @@ rm(list = ls(all.names = TRUE))
 
 
 
-
-
-
 ```{r al calculate buffer intersections with tracts}
 
 # load al buffers
@@ -5096,8 +5101,6 @@ load(
     )
 )
 
-# future::plan(strategy = "multiprocess")
-
 # calculate for all buffer sizes for singlepolygons
 al_buffer_tract_intersections_polygons <- 
   map(
@@ -5105,8 +5108,6 @@ al_buffer_tract_intersections_polygons <-
     .x = al_buffers, 
     y = al_tracts_simple
   )
-
-# future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for multipolygons
 al_buffer_tract_intersections_multipolygons <- 
@@ -5142,7 +5143,6 @@ rm(list = ls(all.names = TRUE))
 
 
 
-
 ```{r calculate buffer intersections with single polygon tracts}
 
 # load files
@@ -5162,8 +5162,6 @@ load(
       "projected_tracts_simple.rdata"
     )
 )
-
-future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for singlepolygons
 buffer_tract_intersections_polygons <- 
@@ -5190,7 +5188,6 @@ rm(list = ls(all.names = TRUE))
 
 
 
-
 ```{r calculate buffer intersections with multipolygon tracts}
 
 # load files
@@ -5210,8 +5207,6 @@ load(
       "projected_tracts.rdata"
     )
   )
-
-future::plan(strategy = "multiprocess")
 
 # calculate for all buffer sizes for multipolygons
 buffer_tract_intersections_multipolygons <- 
@@ -5239,144 +5234,7 @@ rm(list = ls(all.names = TRUE))
 
 
 
-```{r al buffer clipper after intersections testing}
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_tracts_simple.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_buffers.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "al_buffer_tract_intersections_polygons.rdata"
-    )
-)
-
-# isolate tract with no buffers in it
-al_tract_1_buffer_intersections <- 
-  al_buffer_tract_intersections_polygons$buffer_1000_m[[1]] 
-
-# isolate tract with one buffer in it
-al_tract_7_buffer_intersections <- 
-  al_buffer_tract_intersections_polygons$buffer_1000_m[[7]] 
-
-# isolate tract with two buffers in it
-al_tract_145_buffer_intersections <- 
-  al_buffer_tract_intersections_polygons$buffer_1000_m[[145]] 
-
-# get tract row ids
-al_polygon_tract_index <- 
-  al_tracts_simple %>% 
-  pull(al_polygon_tract_index)
-
-# get buffer row ids <- 
-al_buffer_index <- 
-  al_buffers$buffer_1000_m %>% 
-  pull(al_buffer_index)
-
-# select buffers in that tract from buffer tibble
-little_buffer_tibble <- 
-  al_buffers$buffer_1000_m %>% 
-  filter(al_buffer_index %in% al_tract_145_buffer_intersections)
-
-# select tract from tract tibble 
-single_tract_tibble <- 
-  al_tracts_simple[145,] 
-
-# clip buffers in the tract to the tract
-al_intersection_tract_145_buffers_clipped <-
-  little_buffer_tibble %>%
-  st_intersection(single_tract_tibble, .) # this clips the buffers (buffer sf is .)
-
-# little filter function
-tract_buffer_filter <- 
-  function(tract_buffer_sgbp_row, 
-           buffer_sf) {
-    initial_filter_sf <- 
-      buffer_sf %>% 
-        filter(al_buffer_index %in% tract_buffer_sgbp_row)
-    if(nrow(initial_filter_sf) == 0){
-      return("no_buffers_here")
-    } else {
-      return(initial_filter_sf)
-    }
-  }
-
-# make buffers by tract
-al_buffers_by_tract_1000_m_sf_list <- 
-  map(.f = tract_buffer_filter, 
-      .x = al_buffer_tract_intersections_polygons$buffer_1000_m, 
-      buffer_sf = al_buffers$buffer_1000_m
-  )
-
-# make buffer clipper function
-buffer_clipper_single_tract <- 
-  function(tract_sf, 
-           buffers_by_tract_sf){
-    if(!("sf" %in% class(buffers_by_tract_sf))){
-      return("no_buffers_here")
-    } else {
-      tract_buffer_intersection <- 
-        tract_sf %>% 
-        st_intersection(buffers_by_tract_sf)
-      }
-  }
-
-# make tract sf into a list of single-feature sfs
-al_tracts_simple_list <- 
-  split(al_tracts_simple, 
-        seq(nrow(al_tracts_simple)))
-
-# set up multi-core processing
-# future::plan(strategy = "multiprocess")
-
-# buffer_clipper_multi_tract <- 
-#   function(buffer_clipper_function,
-#            tract_list,
-#            buffers_by_tract_list){
-#     # future::plan(strategy = "multiprocess")
-#     map2(
-#       .f = buffer_clipper_function,
-#       .x = tract_list,
-#       .y = buffers_by_tract_list
-#     )
-#   }
-
-# clip 1000-meter buffers for all tracts
-al_tracts_clipped_buffers_1000_m <- 
-  map2(
-    .f = buffer_clipper_single_tract, 
-    .x = al_tracts_simple_list, 
-    .y = al_buffers_by_tract_1000_m_sf_list
-  )
-
-# # visual check of result
-# library(mapview)
-# mapview::mapView(list(tracts_clipped_buffers[[145]], al_tracts_simple[145,]), native.crs = TRUE)
-
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-
-
-```{r buffer clipper after intersections for realsies}
+```{r buffer filter by tract}
 
 load(
   file = 
@@ -5411,7 +5269,7 @@ load(
 )
 
 # little filter function that creates the sf of buffers intersecting the input tract (unclipped)
-tract_buffer_filter <- 
+buffer_filter <- 
   function(tract_buffer_sgbp_row, 
            buffer_sf) {
     initial_filter_sf <- 
@@ -5425,22 +5283,91 @@ tract_buffer_filter <-
     }
   }
 
-future::plan(strategy = "multiprocess")
+# bigger filter function that does the above for all tracts for one size
+buffer_colander <- 
+  function(buffer_sf_for_colander,
+           buffer_sgbp_guide,
+           buffer_filter_function){
+    list_by_tract_of_filtered_buffers <- 
+      future_map(.f = buffer_filter_function,
+                 .x = buffer_sgbp_guide, 
+                 buffer_sf = buffer_sf_for_colander)
+    return(list_by_tract_of_filtered_buffers)    
+  }
 
-# make buffers by tract
+# make buffers by tract for one size
 buffers_by_tract_1000_m_sf_list <- 
-  future_map(.f = tract_buffer_filter, 
+  future_map(.f = buffer_filter, 
       .x = buffer_tract_intersections_polygons$buffer_1000_m, 
       buffer_sf = buffers$buffer_1000_m
   )
 
-buffers_full_in_single_tract <-   # geometry still ok
-  tract_buffer_filter(tract_buffer_sgbp_row = buffer_tract_intersections_polygons$buffer_1000_m[[7]], 
-                      buffer_sf = buffers$buffer_1000_m)
+# make buffers by tract for all sizes!
+buffers_by_tract_all_sizes <- 
+  future_map2(
+    .x = buffers,
+    .y = buffer_sgbp_guide,
+    .f = buffer_colander, 
+    buffer_filter_function = buffer_filter
+  )
 
-single_clipped_tract_2 <- 
-  tract_buffer_filter(tract_buffer_sgbp_row = buffer_tract_intersections_polygons$buffer_1000_m[[7]], 
-                      buffer_sf = buffers$buffer_1000_m)
+save(
+  buffers_by_tract_all_sizes, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers_by_tract_all_sizes.rdata"
+    )
+)
+
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
+
+```{r buffer clipping, eval=FALSE, include=FALSE}
+
+# load necessary files
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts_simple.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "projected_tracts.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffer_tract_intersections_polygons.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers_by_tract_all_sizes.rdata"
+    )
+)
 
 # make buffer clipper function
 buffer_clipper_single_tract <- 
@@ -5463,15 +5390,12 @@ tracts_simple_list <-
          geoid10) %>% 
   split(seq(nrow(projected_tracts_simple)))
 
-# set up multi-core processing
-future::plan(strategy = "multiprocess")
-
 # clip 1000-meter buffers for all tracts
 clipped_buffers_1000_m <- 
   future_map2(
     .f = buffer_clipper_single_tract, 
     .x = tracts_simple_list, 
-    .y = buffers_by_tract_1000_m_sf_list
+    .y = buffers_by_tract_all_sizes$buffer_1000_m
   )
 
 # save files
@@ -5496,9 +5420,7 @@ rm(list = ls(all.names = TRUE))
 
 
 
-
-
-```{r buffer intersection function without precision or buffer fixes for debugging, eval=FALSE, include=FALSE}
+```{r buffer_intersector, eval=FALSE, include=FALSE}
 
 buffer_intersector <- 
   function(buffers_clipped_to_tract_sf) {
@@ -5510,10 +5432,11 @@ buffer_intersector <-
       
     } else {
       
-      concordance_vector <- 
+      # label monitors with their indices
+      concordance_vector <-
         setNames(
           object = buffers_clipped_to_tract_sf$monitor_id,  # object to named
-          nm = buffers_clipped_to_tract_sf$polygon_id  # names (polygon #s)
+          nm = buffers_clipped_to_tract_sf$buffer_index  # names (polygon #s)
         )
       
       # find buffer intersections and areas by monitor
@@ -5526,9 +5449,10 @@ buffer_intersector <-
                    .x = origins,  # go through the origin column (with polygon #s)
                    .f = function(a) concordance_vector[a]  # replace with monitor ids
                    )
-               ) %>% 
-        select(-c(polygon_id, monitor_id))  # remove origin polygon id and monitor id
+               ) 
+      
       return(buffer_intersections)
+      
     }
   }
  
@@ -5542,10 +5466,12 @@ save(
     )
 )
 
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
+# # remove all objects from the environment
+# rm(list = ls(all.names = TRUE))
 
 ```
+
+
 
 
 ```{r try applying the buffer intersector, eval=FALSE, include=FALSE}
@@ -5566,13 +5492,20 @@ load(
     )
 )
 
-# do 1000-m file
+# do 1000-m file and catch errors
 safely_intersects_1000_m <- 
-  map(
+  future_map(
   .f = safely(buffer_intersector), 
-  .x = buffer_clips_1000_m
+  .x = clipped_buffers_1000_m
 ) %>% 
   transpose()
+
+# do 1000-m file on the wild side
+buffer_intersections_1000_m <- 
+  future_map(
+  .f = buffer_intersector, 
+  .x = clipped_buffers_1000_m
+)
 
 ```
 
