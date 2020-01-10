@@ -5302,14 +5302,19 @@ buffers_by_tract_1000_m_sf_list <-
       buffer_sf = buffers$buffer_1000_m
   )
 
+library(tictoc)
+
+tic()
 # make buffers by tract for all sizes!
 buffers_by_tract_all_sizes <- 
   future_map2(
     .x = buffers,
-    .y = buffer_sgbp_guide,
+    .y = buffer_tract_intersections_polygons,
     .f = buffer_colander, 
-    buffer_filter_function = buffer_filter
+    buffer_filter_function = buffer_filter, 
+    .progress = TRUE
   )
+toc()
 
 save(
   buffers_by_tract_all_sizes, 
@@ -5325,6 +5330,7 @@ save(
 rm(list = ls(all.names = TRUE))
 
 ```
+
 
 ```{r buffer clipping, eval=FALSE, include=FALSE}
 
