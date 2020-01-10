@@ -13,5 +13,5 @@ before_install:
   - git lfs pull
 
 script: 
-  - R -f tests/render_rmds.R
+  - travis_wait 30 R -f tests/render_rmds.R
   - df -h

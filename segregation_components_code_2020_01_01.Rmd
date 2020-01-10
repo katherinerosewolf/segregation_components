@@ -5383,11 +5383,12 @@ safe_buffer_intersector_nation <-
       future_map(
         .x = buffers_clipped_to_tracts,
         .f = safely(buffer_intersector_tract)
-      )
+      ) %>% 
+      transpose()
     return(buffer_intersections_nation)
   }
 
-# intersect all buffer sizes for all tracts!
+# safely intersect all buffer sizes for all tracts!
 safely_intersected_buffers <- 
   future_map(
     .f = safe_buffer_intersector_nation, 
@@ -5415,18 +5416,45 @@ save(
     )
 )
 
-# save intersected buffer file to disk
 save(
- intersected_buffers, 
+  safe_buffer_intersector_nation, 
   file = 
     file.path(
       "functions", 
-      "intersected_buffers.rdata"
+      "safe_buffer_intersector_nation.rdata"
+    )
+)
+
+# save intersected buffer file to disk
+save(
+ safely_intersected_buffers, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersected_buffers.rdata"
     )
 )
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+
+```
+
+```{r investigating intersected buffers, eval=FALSE, include=FALSE}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersected_buffers.rdata"
+    )
+)
+
+not_null_error_buffer_intersections <- 
+  map()
+  Filter(Negate(is.null), safely_intersected_buffers$buffer_10000_m$error)
+
+length(not_null_errors)
 
 ```
 
