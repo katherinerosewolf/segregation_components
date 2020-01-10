@@ -5349,7 +5349,6 @@ buffer_intersector_tract <-
       # find buffer intersections and areas by monitor
       buffer_intersections <- 
         buffers_clipped_to_tract_sf %>% 
-        st_make_valid() %>% 
         st_intersection() %>% 
         mutate(area = st_area(geometry),  # add areas
                monitor_id_overlaps =  # add column of monitor ids
@@ -5487,6 +5486,7 @@ rm(list = ls(all.names = TRUE))
 
 ```
 
+
 ```{r select erroring tracts}
 
 load(
@@ -5505,21 +5505,117 @@ load(
     )
 )
 
-# # get buffer indices of erroring tracts
-# error_tract_buffer_indices <- 
-#   map(
-#     
-#   )
-  
+# save the functions to disk
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffer_intersector_tract.rdata"
+    )
+)
 
-# # select the tracts
-# erroring_tracts <- 
-#   clipped_buffers %>% 
-#   hi
+load(
+  file = 
+    file.path(
+      "functions", 
+      "buffer_intersector_nation.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "functions", 
+      "safe_buffer_intersector_nation.rdata"
+    )
+)
+
+# get buffer indices of erroring tracts
+error_tract_indices <-
+  map(
+    .f = names,
+    .x = not_null_buffer_intersection_errors
+  )
+
+# select the tracts
+erroring_tracts <-
+  map2(
+    .x = clipped_buffers, 
+    .y = error_tract_indices,
+    .f = function(x, y) x[y]
+  )
 
 # snap them to themselves
+snap_tracts_one_buffer_size <- 
+  function(tracts_in_one_buffer_size) {
+    map(
+      .x = tracts_in_one_buffer_size,
+      .f = function(x) st_snap(x, x, tolerance = 10)
+    )
+  }
+
+# snap the tracts and try again
+snapped_erroring_tracts <- 
+  map(
+    .x = erroring_tracts, 
+    .f = snap_tracts_one_buffer_size
+  )
 
 # try again
+
+# safely intersect all buffer sizes for all erroring tracts
+safely_intersected_buffers_snapped_erroring_tracts <- 
+  future_map(
+    .f = safe_buffer_intersector_nation, 
+    .x = snapped_erroring_tracts,
+    buffer_intersector_little_function = buffer_intersector_tract, 
+    .progress = TRUE
+  )
+
+# save result
+save(
+  safely_intersected_buffers_snapped_erroring_tracts,
+  file = 
+    file.path(
+      "intermediate_data", 
+      "safely_intersected_buffers_snapped_erroring_tracts.rdata"
+      )
+  )
+
+# investigate errors
+snapped_not_null_buffer_intersection_errors <- 
+  map(
+    .f = function(x) Filter(Negate(is.null), 
+                            x$error),
+    .x = safely_intersected_buffers_snapped_erroring_tracts
+  )
+
+snapped_error_counts_by_buffer_size <- 
+  map(
+    .x = snapped_not_null_buffer_intersection_errors,
+    .f = length
+  )
+
+save(
+  snapped_not_null_buffer_intersection_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "snapped_not_null_buffer_intersection_errors.rdata"
+    )
+)
+
+save(
+  snapped_error_counts_by_buffer_size, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "snapped_error_counts_by_buffer_size.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
 
   
 ```
