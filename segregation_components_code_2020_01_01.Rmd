@@ -52,7 +52,7 @@ library(furrr)
 
 ```{r set up future parallel processing options}
 
-future::plan(strategy = "multiprocess", workers = 2)
+# future::plan(strategy = "multiprocess")
 
 ```
 
@@ -5440,7 +5440,7 @@ rm(list = ls(all.names = TRUE))
 
 ```
 
-```{r investigating intersected buffers, eval=FALSE, include=FALSE}
+```{r investigating intersected buffers}
 
 load(
   file = 
@@ -5450,11 +5450,43 @@ load(
     )
 )
 
-not_null_error_buffer_intersections <- 
-  map()
-  Filter(Negate(is.null), safely_intersected_buffers$buffer_10000_m$error)
+not_null_10000_m <- 
+  Filter(Negate(is.null), 
+         safely_intersected_buffers$buffer_10000_m$error)
 
-length(not_null_errors)
+not_null_buffer_intersection_errors <- 
+  map(
+    .f = function(x) Filter(Negate(is.null), 
+                            x$error),
+    .x = safely_intersected_buffers
+  )
+
+error_counts_by_buffer_size <- 
+  map(
+    .x = not_null_buffer_intersection_errors,
+    .f = length
+  )
+
+save(
+  not_null_buffer_intersection_errors, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "not_null_buffer_intersection_errors.rdata"
+    )
+)
+
+save(
+  error_counts_by_buffer_size, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "error_counts_by_buffer_size.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
 
 ```
 
