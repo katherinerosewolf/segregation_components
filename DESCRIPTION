@@ -1,3 +1,4 @@
 Package: compendium
 Version: 0.1.0
-Depends: stringi, knitr, plyr, data.table, Hmisc, extrafontdb, extrafont, NADA, gridExtra, grid, lattice, reshape2, tmap, sf, tidycensus, tigris, rgeos, sjPlot, stargazer, readxl, tidyverse, totalcensus, spdep, lubridate, lwgeom, ggdag, furrr
+Remotes: cran/stringi@1.4.3
+Depends: knitr, plyr, data.table, Hmisc, extrafontdb, extrafont, NADA, gridExtra, grid, lattice, reshape2, tmap, sf, tidycensus, tigris, rgeos, sjPlot, stargazer, readxl, tidyverse, totalcensus, spdep, lubridate, lwgeom, ggdag, furrr
