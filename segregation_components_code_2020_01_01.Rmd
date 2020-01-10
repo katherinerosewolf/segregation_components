@@ -20,6 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load packages}
 
 library(rmarkdown)
+library(stringi)
 library(knitr)
 library(plyr)
 library(data.table)
@@ -5307,7 +5308,7 @@ buffers_by_tract_1000_m_sf_list <-
 library(tictoc)
 
 tic()
-# make buffers by tract for all sizes!
+# make buffers by tract for all sizes!  (takes ten minutes)
 buffers_by_tract_all_sizes <- 
   future_map2(
     .x = buffers,
@@ -5318,6 +5319,7 @@ buffers_by_tract_all_sizes <-
   )
 toc()
 
+# save the above
 save(
   buffers_by_tract_all_sizes, 
   file = 
@@ -5326,7 +5328,6 @@ save(
       "buffers_by_tract_all_sizes.rdata"
     )
 )
-
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -5350,14 +5351,6 @@ load(
     file.path(
       "intermediate_data", 
       "projected_tracts_simple.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_tracts.rdata"
     )
 )
 
