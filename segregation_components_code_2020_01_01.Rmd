@@ -5297,9 +5297,11 @@ buffer_colander <-
 
 # make buffers by tract for one size
 buffers_by_tract_1000_m_sf_list <- 
-  future_map(.f = buffer_filter, 
-      .x = buffer_tract_intersections_polygons$buffer_1000_m, 
-      buffer_sf = buffers$buffer_1000_m
+  future_map(
+    .f = buffer_filter, 
+    .x = buffer_tract_intersections_polygons$buffer_1000_m, 
+    buffer_sf = buffers$buffer_1000_m, 
+    .progress = TRUE
   )
 
 library(tictoc)
