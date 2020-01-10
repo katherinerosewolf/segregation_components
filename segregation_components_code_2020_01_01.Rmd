@@ -5349,6 +5349,7 @@ buffer_intersector_tract <-
       # find buffer intersections and areas by monitor
       buffer_intersections <- 
         buffers_clipped_to_tract_sf %>% 
+        st_make_valid() %>% 
         st_intersection() %>% 
         mutate(area = st_area(geometry),  # add areas
                monitor_id_overlaps =  # add column of monitor ids
@@ -5450,10 +5451,6 @@ load(
     )
 )
 
-not_null_10000_m <- 
-  Filter(Negate(is.null), 
-         safely_intersected_buffers$buffer_10000_m$error)
-
 not_null_buffer_intersection_errors <- 
   map(
     .f = function(x) Filter(Negate(is.null), 
@@ -5487,6 +5484,53 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+
+```
+
+```{r select erroring tracts}
+
+load(
+  file = 
+    file.path(
+      "intermediate_data",
+      "clipped_buffers.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      "not_null_buffer_intersection_errors.rdata"
+    )
+)
+
+# # get buffer indices of erroring tracts
+# error_tract_buffer_indices <- 
+#   map(
+#     
+#   )
+  
+
+# # select the tracts
+# erroring_tracts <- 
+#   clipped_buffers %>% 
+#   hi
+
+# snap them to themselves
+
+# try again
+
+  
+```
+
+
+end goal: weights from each buffer in each census tract
+
+
+```{r}
+
+# ignore this
 
 ```
 
