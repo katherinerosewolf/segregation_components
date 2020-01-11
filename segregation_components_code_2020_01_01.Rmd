@@ -5487,7 +5487,7 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-```{r select erroring tracts}
+```{r snap erroring tracts to themselves}
 
 load(
   file = 
@@ -5572,6 +5572,16 @@ safely_intersected_buffers_snapped_erroring_tracts <-
     .progress = TRUE
   )
 
+# save the snapped erroring tracts
+save(
+  snapped_erroring_tracts,
+  file =
+    file.path(
+      "intermediate_data",
+      "snapped_erroring_tracts.rdata"
+    )
+)
+
 # save result
 save(
   safely_intersected_buffers_snapped_erroring_tracts,
@@ -5626,7 +5636,8 @@ end goal: weights from each buffer in each census tract
 
 ```{r}
 
-# ignore this
+# load snapped buffers
+
 
 ```
 
