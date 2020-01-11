@@ -5637,7 +5637,13 @@ end goal: weights from each buffer in each census tract
 ```{r}
 
 # load snapped buffers
-
+load(
+  file = 
+    file.path(
+      "intermediate_data", 
+      
+    )
+)
 
 
 ```
