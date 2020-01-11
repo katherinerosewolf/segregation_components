@@ -5008,7 +5008,7 @@ load(
 
 # calculate for all buffer sizes for singlepolygons
 buffer_tract_intersections_polygons <- 
-  future_map(
+  map(
     .f = function(x, y) st_intersects(y, x), 
     .x = buffers, 
     y = tracts_polygon
@@ -5053,7 +5053,7 @@ load(
 
 # calculate for all buffer sizes for multipolygons
 buffer_tract_intersections_multipolygons <- 
-  future_map(
+  map(
     .f = function(x, y) st_intersects(y, x),
     .x = buffers, 
     y = tracts_multipolygon
@@ -5131,7 +5131,7 @@ buffer_colander <-
            buffer_sgbp_guide,
            buffer_filter_function){
     list_by_tract_of_filtered_buffers <- 
-      future_map(.f = buffer_filter_function,
+      map(.f = buffer_filter_function,
                  .x = buffer_sgbp_guide, 
                  buffer_sf = buffer_sf_for_colander)
     return(list_by_tract_of_filtered_buffers)    
@@ -5139,7 +5139,7 @@ buffer_colander <-
 
 # make buffers by tract for one size
 buffers_by_tract_1000_m_sf_list <- 
-  future_map(
+  map(
     .f = buffer_filter, 
     .x = buffer_tract_intersections_polygons$buffer_1000_m, 
     buffer_sf = buffers$buffer_1000_m, 
@@ -5148,7 +5148,7 @@ buffers_by_tract_1000_m_sf_list <-
 
 # make buffers by tract for all sizes!  (takes ten minutes)
 buffers_by_tract_all_sizes <- 
-  future_map2(
+  map2(
     .x = buffers,
     .y = buffer_tract_intersections_polygons,
     .f = buffer_colander, 
@@ -5231,7 +5231,7 @@ buffer_clipper_tract <-
 
 # clip 1000-meter buffers for all tracts
 clipped_buffers_1000_m <- 
-  future_map2(
+  map2(
     .f = buffer_clipper_tract, 
     .x = tracts_polygon_list, 
     .y = buffers_by_tract_all_sizes$buffer_1000_m
@@ -5243,7 +5243,7 @@ buffer_clipper_nation <-
            tract_list,
            buffer_clipper_little_function){
     clipped_buffers <- 
-      future_map2(
+      map2(
         .f = buffer_clipper_little_function, 
         .x = tract_list, 
         .y = buffers_by_tract_list
@@ -5252,7 +5252,7 @@ buffer_clipper_nation <-
 
 # clip the buffers for all the tracts!
 clipped_buffers <- 
-  future_map(
+  map(
     .x = buffers_by_tract_all_sizes, 
     .f = buffer_clipper_nation, 
     tract_list = tracts_polygon_list, 
@@ -5368,7 +5368,7 @@ buffer_intersector_nation <-
   function(buffers_clipped_to_tracts,
            buffer_intersector_little_function){
     buffer_intersections_nation <- 
-      future_map(
+      map(
         .x = buffers_clipped_to_tracts,
         .f = buffer_intersector_tract
       )
@@ -5380,7 +5380,7 @@ safe_buffer_intersector_nation <-
   function(buffers_clipped_to_tracts,
            buffer_intersector_little_function){
     buffer_intersections_nation <- 
-      future_map(
+      map(
         .x = buffers_clipped_to_tracts,
         .f = safely(buffer_intersector_tract)
       ) %>% 
@@ -5390,7 +5390,7 @@ safe_buffer_intersector_nation <-
 
 # safely intersect all buffer sizes for all tracts!
 safely_intersected_buffers <- 
-  future_map(
+  map(
     .f = safe_buffer_intersector_nation, 
     .x = clipped_buffers,
     buffer_intersector_little_function = buffer_intersector_tract, 
@@ -5565,7 +5565,7 @@ snapped_erroring_tracts <-
 
 # safely intersect all buffer sizes for all erroring tracts
 safely_intersected_buffers_snapped_erroring_tracts <- 
-  future_map(
+  map(
     .f = safe_buffer_intersector_nation, 
     .x = snapped_erroring_tracts,
     buffer_intersector_little_function = buffer_intersector_tract, 
@@ -5637,6 +5637,7 @@ end goal: weights from each buffer in each census tract
 ```{r}
 
 # load snapped buffers
+
 
 
 ```
