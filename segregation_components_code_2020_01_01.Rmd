@@ -108,8 +108,39 @@ Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
 ```
 
 
-
 ```{r functions for general later use}
+
+# intermediate object saver
+intermediate_object_saver <- 
+  function(...) {
+    objects_themselves <- tibble::lst(...)
+    object_names <- names(objects_themselves)
+    saver <- 
+      function(object_itself, object_name){
+        save(list = object_name,
+             file = file.path("intermediate_data",
+                              paste0(object_name,
+                                     ".rdata")))
+      }
+    map2(.x = objects_themselves, 
+         .y = object_names,
+         .f = saver)
+  }
+
+# intermediate object loader
+intermediate_object_loader <- 
+  function(...) {
+    object_names <- tibble::lst(...)
+    loader <- 
+      function(object_name){
+        load(file = file.path("intermediate_data",
+                              paste0(object_name,
+                                     ".rdata")),
+             envir = .GlobalEnv)
+      }
+    map(.x = object_names,
+        .f = loader)
+  }
 
 # function to convert column names to snake case
 column_name_fixer <-
@@ -188,6 +219,24 @@ save(
        file.path(
          "functions", 
          "download_generated_data_auto.rdata"
+       )
+)
+
+save(
+  intermediate_object_saver,
+     file = 
+       file.path(
+         "functions", 
+         "intermediate_object_saver.rdata"
+       )
+)
+
+save(
+  intermediate_object_loader,
+     file = 
+       file.path(
+         "functions", 
+         "intermediate_object_loader.rdata"
        )
 )
 
@@ -5440,104 +5489,40 @@ rm(list = ls(all.names = TRUE))
 
 ```
 
+
 ```{r investigating intersected buffers}
 
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "safely_intersected_buffers.rdata"
-    )
-)
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
-not_null_buffer_intersection_errors <- 
+# load intermediate files
+intermediate_object_loader("clipped_buffers", 
+                           "safely_intersected_buffers")
+
+# isolate the erroring tracts
+buffer_intersection_errors <- 
   map(
     .f = function(x) Filter(Negate(is.null), 
                             x$error),
     .x = safely_intersected_buffers
   )
 
+# count the erroring tracts
 error_counts_by_buffer_size <- 
   map(
-    .x = not_null_buffer_intersection_errors,
+    .x = buffer_intersection_errors,
     .f = length
   )
 
-save(
-  not_null_buffer_intersection_errors, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "not_null_buffer_intersection_errors.rdata"
-    )
-)
-
-save(
-  error_counts_by_buffer_size, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "error_counts_by_buffer_size.rdata"
-    )
-)
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-```{r snap erroring tracts to themselves}
-
-load(
-  file = 
-    file.path(
-      "intermediate_data",
-      "clipped_buffers.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "not_null_buffer_intersection_errors.rdata"
-    )
-)
-
-# save the functions to disk
-load(
-  file = 
-    file.path(
-      "functions", 
-      "buffer_intersector_tract.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "functions", 
-      "buffer_intersector_nation.rdata"
-    )
-)
-
-load(
-  file = 
-    file.path(
-      "functions", 
-      "safe_buffer_intersector_nation.rdata"
-    )
-)
-
-# get buffer indices of erroring tracts
+# get indices of erroring tracts
 error_tract_indices <-
   map(
     .f = names,
-    .x = not_null_buffer_intersection_errors
+    .x = buffer_intersection_errors
   )
 
-# select the tracts
+# select the erroring tracts
 erroring_tracts <-
   map2(
     .x = clipped_buffers, 
@@ -5545,88 +5530,88 @@ erroring_tracts <-
     .f = function(x, y) x[y]
   )
 
-# snap them to themselves
-snap_tracts_one_buffer_size <- 
-  function(tracts_in_one_buffer_size) {
-    map(
-      .x = tracts_in_one_buffer_size,
-      .f = function(x) st_snap(x, x, tolerance = 10)
-    )
-  }
-
-# snap the tracts and try again
-snapped_erroring_tracts <- 
-  map(
-    .x = erroring_tracts, 
-    .f = snap_tracts_one_buffer_size
-  )
-
-# try again
-
-# safely intersect all buffer sizes for all erroring tracts
-safely_intersected_buffers_snapped_erroring_tracts <- 
-  map(
-    .f = safe_buffer_intersector_nation, 
-    .x = snapped_erroring_tracts,
-    buffer_intersector_little_function = buffer_intersector_tract #, 
-    # .progress = TRUE
-  )
-
-# save the snapped erroring tracts
-save(
-  snapped_erroring_tracts,
-  file =
-    file.path(
-      "intermediate_data",
-      "snapped_erroring_tracts.rdata"
-    )
-)
-
-# save result
-save(
-  safely_intersected_buffers_snapped_erroring_tracts,
-  file = 
-    file.path(
-      "intermediate_data", 
-      "safely_intersected_buffers_snapped_erroring_tracts.rdata"
-      )
-  )
-
-# investigate errors
-snapped_not_null_buffer_intersection_errors <- 
-  map(
-    .f = function(x) Filter(Negate(is.null), 
-                            x$error),
-    .x = safely_intersected_buffers_snapped_erroring_tracts
-  )
-
-snapped_error_counts_by_buffer_size <- 
-  map(
-    .x = snapped_not_null_buffer_intersection_errors,
-    .f = length
-  )
-
-save(
-  snapped_not_null_buffer_intersection_errors, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "snapped_not_null_buffer_intersection_errors.rdata"
-    )
-)
-
-save(
-  snapped_error_counts_by_buffer_size, 
-  file = 
-    file.path(
-      "intermediate_data", 
-      "snapped_error_counts_by_buffer_size.rdata"
-    )
-)
+# save files
+intermediate_object_saver(buffer_intersection_errors,
+                          error_counts_by_buffer_size, 
+                          error_tract_indices, 
+                          erroring_tracts)
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 
+```
+
+
+```{r try setting precision to one}
+
+# load functions to save and load intermediate files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "intermediate_object_saver.rdata"))
+load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
+
+intermediate_object_loader("clipped_buffers", 
+                           "buffer_intersection_errors", 
+                           "erroring_tracts")
+
+# make function to set their precision to 1
+precisor_one_function <- 
+  function(buffers_by_tract) {
+    map(.x = buffers_by_tract,
+        .f = function(x) st_set_precision(x, precision = 1))
+  }
+
+# make tracts precise and try again
+erroring_tracts_made_precise_one <- 
+  map(.x = erroring_tracts, 
+      .f = precisor_one_function)
+  
+# safely intersect all buffer sizes for all erroring tracts
+safely_intersected_precise_one_tracts <- 
+  map(.f = safe_buffer_intersector_nation, 
+      .x = erroring_tracts_made_precise_one,
+      buffer_intersector_little_function = buffer_intersector_tract #, 
+    # .progress = TRUE
+    )
+
+# select the tracts still erroring
+intersected_precise_one_errors <- 
+  map(
+    .f = function(x) Filter(Negate(is.null), 
+                            x$error),
+    .x = safely_intersected_precise_one_tracts
+  )
+
+# count the tracts still erroring
+precise_one_error_counts <- 
+  map(
+    .x = intersected_precise_one_errors,
+    .f = length
+  )
+
+# get buffer indices of tracts still erroring
+precise_one_tracts_still_erroring_indices <-
+  map(
+    .f = names,
+    .x = intersected_precise_one_errors
+  )
+
+# select the tracts still erroring
+precise_one_tracts_still_erroring <-
+  map2(
+    .x = erroring_tracts, 
+    .y = precise_one_tracts_still_erroring_indices,
+    .f = function(x, y) x[y]
+  )
+
+# save results
+intermediate_object_saver(precise_one_error_counts,
+                          precise_one_tracts_still_erroring_indices,
+                          safely_intersected_precise_one_tracts,
+                          precise_one_tracts_still_erroring)
+
+# # remove all objects from the environment
+# rm(list = ls(all.names = TRUE))
   
 ```
 
@@ -5636,17 +5621,80 @@ end goal: weights from each buffer in each census tract
 
 ```{r}
 
-# load snapped buffers
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "snapped_erroring_tracts.rdata"
+# load functions to save and load intermediate files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "intermediate_object_saver.rdata"))
+load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
+
+intermediate_object_loader("clipped_buffers", 
+                           "buffer_intersection_errors", 
+                           "erroring_tracts")
+
+# make function to snap tracts to themselves
+tract_snapper <-
+  function(tracts_in_one_buffer_size) {
+    map(
+      .x = tracts_in_one_buffer_size,
+      .f = function(x) st_snap(x, x, tolerance = 1)
     )
-)
+  }
 
-# 
+# do the snapping
+snapped_erroring_tracts <-
+  map(
+    .x = erroring_tracts,
+    .f = tract_snapper
+  )
 
+# safely intersect all buffer sizes for all erroring tracts
+safely_intersected_snapped_erroring_tracts <-
+  map(
+    .f = safe_buffer_intersector_nation,
+    .x = snapped_erroring_tracts,
+    buffer_intersector_little_function = buffer_intersector_tract #,
+    # .progress = TRUE
+  )
+
+# investigate errors
+intersected_snapped_errors <-
+  map(
+    .f = function(x) Filter(Negate(is.null),
+                            x$error),
+    .x = safely_intersected_snapped_erroring_tracts
+  )
+
+# count errors
+snapped_error_counts <-
+  map(
+    .x = intersected_snapped_errors,
+    .f = length
+  )
+
+# get buffer indices of tracts still erroring
+snapped_tracts_still_erroring_indices <-
+  map(
+    .f = names,
+    .x = intersected_snapped_errors
+  )
+
+# select the tracts still erroring
+tracts_still_erroring_after_snapping <-
+  map2(
+    .x = erroring_tracts, 
+    .y = snapped_tracts_still_erroring_indices,
+    .f = function(x, y) x[y]
+  )
+
+intermediate_object_saver(snapped_erroring_tracts, 
+                          safely_intersected_snapped_erroring_tracts, 
+                          intersected_snapped_errors,
+                          snapped_error_counts, 
+                          snapped_tracts_still_erroring_indices, 
+                          tracts_still_erroring_after_snapping)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
 
 ```
 
