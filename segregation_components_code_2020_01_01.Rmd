@@ -5142,8 +5142,8 @@ buffers_by_tract_1000_m_sf_list <-
   map(
     .f = buffer_filter, 
     .x = buffer_tract_intersections_polygons$buffer_1000_m, 
-    buffer_sf = buffers$buffer_1000_m, 
-    .progress = TRUE
+    buffer_sf = buffers$buffer_1000_m #, 
+    # .progress = TRUE
   )
 
 # make buffers by tract for all sizes!  (takes ten minutes)
@@ -5152,8 +5152,8 @@ buffers_by_tract_all_sizes <-
     .x = buffers,
     .y = buffer_tract_intersections_polygons,
     .f = buffer_colander, 
-    buffer_filter_function = buffer_filter, 
-    .progress = TRUE
+    buffer_filter_function = buffer_filter #, 
+    # .progress = TRUE
   )
 
 # save the above
@@ -5256,8 +5256,8 @@ clipped_buffers <-
     .x = buffers_by_tract_all_sizes, 
     .f = buffer_clipper_nation, 
     tract_list = tracts_polygon_list, 
-    buffer_clipper_little_function = buffer_clipper_tract, 
-    .progress = TRUE
+    buffer_clipper_little_function = buffer_clipper_tract #, 
+    # .progress = TRUE
   )
 
 # save objects
@@ -5393,8 +5393,8 @@ safely_intersected_buffers <-
   map(
     .f = safe_buffer_intersector_nation, 
     .x = clipped_buffers,
-    buffer_intersector_little_function = buffer_intersector_tract, 
-    .progress = TRUE
+    buffer_intersector_little_function = buffer_intersector_tract #, 
+    # .progress = TRUE
   )
     
 # save the functions to disk
@@ -5568,8 +5568,8 @@ safely_intersected_buffers_snapped_erroring_tracts <-
   map(
     .f = safe_buffer_intersector_nation, 
     .x = snapped_erroring_tracts,
-    buffer_intersector_little_function = buffer_intersector_tract, 
-    .progress = TRUE
+    buffer_intersector_little_function = buffer_intersector_tract #, 
+    # .progress = TRUE
   )
 
 # save the snapped erroring tracts
@@ -5641,9 +5641,11 @@ load(
   file = 
     file.path(
       "intermediate_data", 
-      
+      "snapped_erroring_tracts.rdata"
     )
 )
+
+# 
 
 
 ```
