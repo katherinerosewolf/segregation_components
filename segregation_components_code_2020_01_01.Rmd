@@ -5186,15 +5186,6 @@ buffer_colander <-
     return(list_by_tract_of_filtered_buffers)    
   }
 
-# make buffers by tract for one size
-buffers_by_tract_1000_m_sf_list <- 
-  map(
-    .f = buffer_filter, 
-    .x = buffer_tract_intersections_polygons$buffer_1000_m, 
-    buffer_sf = buffers$buffer_1000_m #, 
-    # .progress = TRUE
-  )
-
 # make buffers by tract for all sizes!  (takes ten minutes)
 buffers_by_tract_all_sizes <- 
   map2(
@@ -5486,6 +5477,7 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
 
 ```
 
@@ -5507,6 +5499,10 @@ buffer_intersection_errors <-
                             x$error),
     .x = safely_intersected_buffers
   )
+
+# remove the safely intersected buffers to save memory
+rm(safely_intersected_buffers)
+gc()
 
 # count the erroring tracts
 error_counts_by_buffer_size <- 
@@ -5530,6 +5526,10 @@ erroring_tracts <-
     .f = function(x, y) x[y]
   )
 
+# remove clipped buffers to save memory
+rm(clipped_buffers)
+gc()
+
 # save files
 intermediate_object_saver(buffer_intersection_errors,
                           error_counts_by_buffer_size, 
@@ -5550,8 +5550,7 @@ load(file = file.path("functions", "intermediate_object_saver.rdata"))
 load(file = file.path("functions", "buffer_intersector_tract.rdata"))
 load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
 
-intermediate_object_loader("clipped_buffers", 
-                           "buffer_intersection_errors", 
+intermediate_object_loader("buffer_intersection_errors", 
                            "erroring_tracts")
 
 # make function to set their precision to 1
@@ -5610,8 +5609,8 @@ intermediate_object_saver(precise_one_error_counts,
                           safely_intersected_precise_one_tracts,
                           precise_one_tracts_still_erroring)
 
-# # remove all objects from the environment
-# rm(list = ls(all.names = TRUE))
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
   
 ```
 
@@ -5627,8 +5626,7 @@ load(file = file.path("functions", "intermediate_object_saver.rdata"))
 load(file = file.path("functions", "buffer_intersector_tract.rdata"))
 load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
 
-intermediate_object_loader("clipped_buffers", 
-                           "buffer_intersection_errors", 
+intermediate_object_loader("buffer_intersection_errors", 
                            "erroring_tracts")
 
 # make function to snap tracts to themselves
