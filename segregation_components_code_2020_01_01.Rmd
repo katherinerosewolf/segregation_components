@@ -5489,8 +5489,7 @@ load(file = file.path("functions", "intermediate_object_loader.rdata"))
 load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load intermediate files
-intermediate_object_loader("clipped_buffers", 
-                           "safely_intersected_buffers")
+intermediate_object_loader("safely_intersected_buffers")
 
 # isolate the erroring tracts
 buffer_intersection_errors <- 
@@ -5518,6 +5517,12 @@ error_tract_indices <-
     .x = buffer_intersection_errors
   )
 
+intermediate_object_saver(buffer_intersection_errors)
+rm(buffer_intersection_errors)
+gc()
+
+intermediate_object_loader(clipped_buffers)
+
 # select the erroring tracts
 erroring_tracts <-
   map2(
@@ -5531,8 +5536,7 @@ rm(clipped_buffers)
 gc()
 
 # save files
-intermediate_object_saver(buffer_intersection_errors,
-                          error_counts_by_buffer_size, 
+intermediate_object_saver(error_counts_by_buffer_size, 
                           error_tract_indices, 
                           erroring_tracts)
 
