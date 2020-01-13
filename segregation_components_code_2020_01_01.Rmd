@@ -4686,7 +4686,6 @@ rm(list = ls(all.names = TRUE))
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load needed files
 intermediate_object_loader("sparse_monitors_nad83", 
@@ -4725,7 +4724,7 @@ monitors_sf <-
     sparse_monitors_wgs84_to_nad_83_sf
   )
 
-intermediate_object_saver(monitors_sf)
+save(monitors_sf, file = file.path("intermediate_data", "monitors_sf.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
