@@ -50,9 +50,9 @@ library(furrr)
 ```
 
 
-```{r set up future parallel processing options}
+```{r set up future parallel processing options, eval=FALSE, include=FALSE}
 
-future::plan(strategy = "multiprocess")
+# future::plan(strategy = "multiprocess")
 
 ```
 
@@ -4905,7 +4905,7 @@ load(file = file.path("intermediate_data", "buffers.rdata"))
 
 # unionize buffers
 unionized_buffers <- 
-  future_map(.f = st_union, 
+  map(.f = st_union, 
              .x = buffers)
 
 # save result
@@ -4932,7 +4932,7 @@ intermediate_object_loader("buffers",
 
 # calculate for all buffer sizes for singlepolygons
 buffer_tract_intersections_polygons <- 
-  future_map(
+  map(
     .f = function(x, y) st_intersects(y, x), 
     .x = buffers, 
     y = tracts_polygon
@@ -4960,7 +4960,7 @@ intermediate_object_loader("buffers",
 
 # calculate for all buffer sizes for multipolygons
 buffer_tract_intersections_multipolygons <- 
-  future_map(.f = function(x, y) st_intersects(y, x), 
+  map(.f = function(x, y) st_intersects(y, x), 
              .x = buffers, 
              y = tracts_multipolygon)
 
@@ -5006,7 +5006,7 @@ buffer_colander <-
            buffer_sgbp_guide,
            buffer_filter_function){
     list_by_tract_of_filtered_buffers <- 
-      future_map(.f = buffer_filter_function,
+      map(.f = buffer_filter_function,
                  .x = buffer_sgbp_guide, 
                  buffer_sf = buffer_sf_for_colander)
     return(list_by_tract_of_filtered_buffers)    
@@ -5062,7 +5062,7 @@ buffer_clipper_nation <-
            tract_list,
            buffer_clipper_little_function){
     clipped_buffers <- 
-      future_map2(
+      map2(
         .f = buffer_clipper_little_function, 
         .x = tract_list, 
         .y = buffers_by_tract_list
@@ -5071,7 +5071,7 @@ buffer_clipper_nation <-
 
 # clip the buffers for all the tracts!
 clipped_buffers <- 
-  future_map(
+  map(
     .x = buffers_by_tract_all_sizes, 
     .f = buffer_clipper_nation, 
     tract_list = tracts_polygon_list, 
@@ -5132,7 +5132,7 @@ buffer_intersector_tract <-
         st_intersection() %>% 
         mutate(area = st_area(geometry),  # add areas
                monitor_id_overlaps =  # add column of monitor ids
-                 future_map(
+                 map(
                    .x = origins,  # go through the origin column (with polygon #s)
                    .f = function(a) concordance_vector[a]  # replace with monitor ids
                    )
@@ -5148,7 +5148,7 @@ buffer_intersector_nation <-
   function(buffers_clipped_to_tracts,
            buffer_intersector_little_function){
     buffer_intersections_nation <- 
-      future_map(
+      map(
         .x = buffers_clipped_to_tracts,
         .f = buffer_intersector_tract
       )
@@ -5160,7 +5160,7 @@ safe_buffer_intersector_nation <-
   function(buffers_clipped_to_tracts,
            buffer_intersector_little_function){
     buffer_intersections_nation <- 
-      future_map(
+      map(
         .x = buffers_clipped_to_tracts,
         .f = safely(buffer_intersector_tract)
       ) %>% 
@@ -5170,7 +5170,7 @@ safe_buffer_intersector_nation <-
 
 # safely intersect all buffer sizes for all tracts!
 safely_intersected_buffers <- 
-  future_map(
+  map(
     .f = safe_buffer_intersector_nation, 
     .x = clipped_buffers,
     buffer_intersector_little_function = buffer_intersector_tract #, 
@@ -5229,7 +5229,7 @@ intermediate_object_loader("safely_intersected_buffers")
 
 # isolate the erroring tracts
 buffer_intersection_errors <- 
-  future_map(
+  map(
     .f = function(x) Filter(Negate(is.null), 
                             x$error),
     .x = safely_intersected_buffers
@@ -5241,14 +5241,14 @@ gc()
 
 # count the erroring tracts
 error_counts_by_buffer_size <- 
-  future_map(
+  map(
     .x = buffer_intersection_errors,
     .f = length
   )
 
 # get indices of erroring tracts
 error_tract_indices <-
-  future_map(
+  map(
     .f = names,
     .x = buffer_intersection_errors
   )
@@ -5261,7 +5261,7 @@ intermediate_object_loader("clipped_buffers")
 
 # select the erroring tracts
 erroring_tracts <-
-  future_map2(
+  map2(
     .x = clipped_buffers, 
     .y = error_tract_indices,
     .f = function(x, y) x[y]
@@ -5296,18 +5296,18 @@ intermediate_object_loader("buffer_intersection_errors",
 # make function to set their precision to 1
 precisor_one_function <- 
   function(buffers_by_tract) {
-    future_map(.x = buffers_by_tract,
+    map(.x = buffers_by_tract,
         .f = function(x) st_set_precision(x, precision = 1))
   }
 
 # make tracts precise and try again
 erroring_tracts_made_precise_one <- 
-  future_map(.x = erroring_tracts, 
+  map(.x = erroring_tracts, 
       .f = precisor_one_function)
   
 # safely intersect all buffer sizes for all erroring tracts
 safely_intersected_precise_one_tracts <- 
-  future_map(.f = safe_buffer_intersector_nation, 
+  map(.f = safe_buffer_intersector_nation, 
       .x = erroring_tracts_made_precise_one,
       buffer_intersector_little_function = buffer_intersector_tract #, 
     # .progress = TRUE
@@ -5315,7 +5315,7 @@ safely_intersected_precise_one_tracts <-
 
 # select the tracts still erroring
 intersected_precise_one_errors <- 
-  future_map(
+  map(
     .f = function(x) Filter(Negate(is.null), 
                             x$error),
     .x = safely_intersected_precise_one_tracts
@@ -5323,21 +5323,21 @@ intersected_precise_one_errors <-
 
 # count the tracts still erroring
 precise_one_error_counts <- 
-  future_map(
+  map(
     .x = intersected_precise_one_errors,
     .f = length
   )
 
 # get buffer indices of tracts still erroring
 precise_one_tracts_still_erroring_indices <-
-  future_map(
+  map(
     .f = names,
     .x = intersected_precise_one_errors
   )
 
 # select the tracts still erroring
 precise_one_tracts_still_erroring <-
-  future_map2(
+  map2(
     .x = erroring_tracts, 
     .y = precise_one_tracts_still_erroring_indices,
     .f = function(x, y) x[y]
@@ -5372,7 +5372,7 @@ intermediate_object_loader("buffer_intersection_errors",
 # make function to snap tracts to themselves
 tract_snapper <-
   function(tracts_in_one_buffer_size) {
-    future_map(
+    map(
       .x = tracts_in_one_buffer_size,
       .f = function(x) st_snap(x, x, tolerance = 1)
     )
@@ -5380,14 +5380,14 @@ tract_snapper <-
 
 # do the snapping
 snapped_erroring_tracts <-
-  future_map(
+  map(
     .x = erroring_tracts,
     .f = tract_snapper
   )
 
 # safely intersect all buffer sizes for all erroring tracts
 safely_intersected_snapped_erroring_tracts <-
-  future_map(
+  map(
     .f = safe_buffer_intersector_nation,
     .x = snapped_erroring_tracts,
     buffer_intersector_little_function = buffer_intersector_tract #,
@@ -5396,7 +5396,7 @@ safely_intersected_snapped_erroring_tracts <-
 
 # investigate errors
 intersected_snapped_errors <-
-  future_map(
+  map(
     .f = function(x) Filter(Negate(is.null),
                             x$error),
     .x = safely_intersected_snapped_erroring_tracts
@@ -5404,21 +5404,21 @@ intersected_snapped_errors <-
 
 # count errors
 snapped_error_counts <-
-  future_map(
+  map(
     .x = intersected_snapped_errors,
     .f = length
   )
 
 # get buffer indices of tracts still erroring
 snapped_tracts_still_erroring_indices <-
-  future_map(
+  map(
     .f = names,
     .x = intersected_snapped_errors
   )
 
 # select the tracts still erroring
 tracts_still_erroring_after_snapping <-
-  future_map2(
+  map2(
     .x = erroring_tracts, 
     .y = snapped_tracts_still_erroring_indices,
     .f = function(x, y) x[y]
