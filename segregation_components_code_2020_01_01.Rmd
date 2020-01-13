@@ -4782,6 +4782,14 @@ monitors_to_tracts <-
   st_join(projected_monitors, 
           tracts_multipolygon)
 
+intermediate_object_saver(projected_monitors)
+rm(projected_monitors)
+gc()
+
+intermediate_object_saver(monitors_to_tracts)
+rm(monitors_to_tracts)
+gc()
+
 # make projected tracts into simple polygons
 tracts_polygon <- 
   tracts_multipolygon %>% 
@@ -4799,6 +4807,14 @@ tracts_polygon_list <-
          geoid10) %>% 
   split(seq(nrow(tracts_polygon)))
 
+intermediate_object_saver(tracts_polygon)
+rm(tracts_polygon)
+gc()
+
+intermediate_object_saver(tracts_polygon_list)
+rm(tracts_polygon_list)
+gc()
+
 # make multipolygon projected tract sf into a list of single-tract sfs
 tracts_multipolygon_list <- 
   tracts_multipolygon %>% 
@@ -4807,12 +4823,8 @@ tracts_multipolygon_list <-
   split(seq(nrow(tracts_multipolygon)))
 
 # save files
-intermediate_object_saver(tracts_polygon, 
-                          tracts_multipolygon,
-                          tracts_polygon_list, 
-                          tracts_multipolygon_list, 
-                          projected_monitors, 
-                          monitors_to_tracts)
+intermediate_object_saver(tracts_multipolygon,
+                          tracts_multipolygon_list)
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
