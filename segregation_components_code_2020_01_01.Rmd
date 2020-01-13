@@ -4782,7 +4782,8 @@ monitors_to_tracts <-
   st_join(projected_monitors, 
           tracts_multipolygon)
 
-intermediate_object_saver(projected_monitors)
+save(projected_monitors, file = file.path("intermediate_data", 
+                                          "projected_monitors.rdata"))
 rm(projected_monitors)
 gc()
 
@@ -4810,7 +4811,7 @@ tracts_polygon_list <-
 intermediate_object_saver(tracts_polygon)
 rm(tracts_polygon)
 gc()
-
+ 
 intermediate_object_saver(tracts_polygon_list)
 rm(tracts_polygon_list)
 gc()
