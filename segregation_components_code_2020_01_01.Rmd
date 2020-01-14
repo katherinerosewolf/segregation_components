@@ -5157,6 +5157,9 @@ gc()
 
 ## fixing intersection errors
 
+
+### investigation
+
 ```{r investigating intersected buffers}
 
 # load functions to get the other files
@@ -5221,73 +5224,145 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-```{r try setting precision to one meter}
+### precision tries
+
+```{r write precision function}
+
+precise_intersector <- 
+  function(precision_integer, erroring_tract_list){
+    
+    buffer_intersector_tract <- 
+      function(buffers_clipped_to_tract_sf) {
+        # make concordance vector to replace "origin" values (rows) with monitor ids
+        
+        if(!("sf" %in% class(buffers_clipped_to_tract_sf))){
+          
+          return("no_buffers_here")
+          
+        } else {
+          
+          # label monitors with their indices
+          concordance_vector <-
+            setNames(
+              object = buffers_clipped_to_tract_sf$monitor_id,  # object to named
+              nm = buffers_clipped_to_tract_sf$buffer_index  # names (polygon #s)
+            )
+          
+          # find buffer intersections and areas by monitor
+          buffer_intersections <- 
+            buffers_clipped_to_tract_sf %>% 
+            st_intersection() %>% 
+            mutate(area = st_area(geometry),  # add areas
+                   monitor_id_overlaps =  # add column of monitor ids
+                     map(
+                       .x = origins,  # go through the origin column (with polygon #s)
+                       .f = function(a) concordance_vector[a]  # replace with monitor ids
+                       )
+                   ) 
+          
+          return(buffer_intersections)
+          
+        }
+      }
+    
+    
+    # buffer intersection function for the nation that works for all buffers
+    safe_buffer_intersector_nation <- 
+      function(buffers_clipped_to_tracts,
+               buffer_intersector_little_function){
+        buffer_intersections_nation <- 
+          map(
+            .x = buffers_clipped_to_tracts,
+            .f = safely(buffer_intersector_tract)
+          ) %>% 
+          transpose()
+        return(buffer_intersections_nation)
+      }
+    
+    
+    precise_function <- 
+      function(tracts_sf, desired_precision) {
+        map(.x = tracts_sf,
+            .f = function(x) st_set_precision(x, precision = precision_integer))
+      }
+    
+    
+    precise_erroring_tracts <- 
+      map(.x = erroring_tract_list, 
+          .f = precise_function, 
+          desired_precision = precision_integer)
+    
+    
+    # safely intersect all buffer sizes for all erroring tracts
+    safely_intersected_tracts <- 
+      map(.f = safe_buffer_intersector_nation,
+          .x = precise_erroring_tracts,
+          buffer_intersector_little_function = buffer_intersector_tract)
+    
+    
+    # isolate tracts still erroring
+    remaining_errors <- 
+      map(.f = function(x) Filter(Negate(is.null), x$error),
+          .x = safely_intersected_tracts)
+    
+    
+    # count errors
+    remaining_error_counts <- 
+      map(.x = remaining_errors,
+          .f = length)
+
+    
+    # buffer indices of tracts still erroring
+    error_indices <- 
+      map(.f = names,
+          .x = remaining_errors)
+    
+    
+    results_list <- lst(precise_erroring_tracts, 
+                        safely_intersected_tracts, 
+                        remaining_errors, 
+                        remaining_error_counts, 
+                        error_indices)
+    
+    return(results_list)
+    
+  }
+
+save(precise_intersector, file = file.path("functions", 
+                                           "precise_intersector.rdata"))
+
+```
+
+
+```{r run precise function for desired precisions}
 
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
 load(file = file.path("functions", "intermediate_object_saver.rdata"))
-load(file = file.path("functions", "buffer_intersector_tract.rdata"))
-load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
 
-intermediate_object_loader("buffer_intersection_errors", 
-                           "erroring_tracts")
+# load function to make intersections
+load(file = file.path("functions", "precise_intersector.rdata"))
 
-# make function to set their precision to 1
-precisor_one_function <- 
-  function(buffers_by_tract) {
-    map(.x = buffers_by_tract,
-        .f = function(x) st_set_precision(x, precision = 1))
-  }
+# load files
+intermediate_object_loader("erroring_tracts")
 
-# make tracts precise and try again
-erroring_tracts_made_precise_one <- 
-  map(.x = erroring_tracts, 
-      .f = precisor_one_function)
-  
-# safely intersect all buffer sizes for all erroring tracts
-safely_intersected_precise_one_tracts <- 
-  map(.f = safe_buffer_intersector_nation, 
-      .x = erroring_tracts_made_precise_one,
-      buffer_intersector_little_function = buffer_intersector_tract #, 
-    # .progress = TRUE
-    )
+# make vector of precision options
+precision_vector <- c(1000, 100, 10, 1, 0.1, 0.01, 0.001)
 
-# select the tracts still erroring
-intersected_precise_one_errors <- 
-  map(.f = function(x) Filter(Negate(is.null), 
-                              x$error),
-      .x = safely_intersected_precise_one_tracts)
+# run all the precisions!
+precise_results <- 
+  map(.f = precise_intersector, 
+      .x = precision_vector, 
+      erroring_tract_list = erroring_tracts)
 
-# count the tracts still erroring
-precise_one_error_counts <- 
-  map(.x = intersected_precise_one_errors,
-      .f = length)
+intermediate_object_saver("precise_results")
 
-# get buffer indices of tracts still erroring
-precise_one_tracts_still_erroring_indices <-
-  map(.f = names,
-      .x = intersected_precise_one_errors)
 
-# select the tracts still erroring
-precise_one_tracts_still_erroring <-
-  map2(.x = erroring_tracts, 
-      .y = precise_one_tracts_still_erroring_indices,
-      .f = function(x, y) x[y])
-
-# save results
-intermediate_object_saver("precise_one_error_counts",
-                          "precise_one_tracts_still_erroring_indices",
-                          "safely_intersected_precise_one_tracts",
-                          "precise_one_tracts_still_erroring")
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-  
 ```
 
 
-end goal: weights from each buffer in each census tract
 
+### snap tries
 
 ```{r snap tracts to themselves one-meter tolerance}
 
@@ -5297,8 +5372,7 @@ load(file = file.path("functions", "intermediate_object_saver.rdata"))
 load(file = file.path("functions", "buffer_intersector_tract.rdata"))
 load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
 
-intermediate_object_loader("buffer_intersection_errors", 
-                           "erroring_tracts")
+intermediate_object_loader("erroring_tracts")
 
 # make function to snap tracts to themselves
 tract_snapper <-
@@ -5308,14 +5382,14 @@ tract_snapper <-
   }
 
 # do the snapping
-snapped_erroring_tracts <-
+erroring_tracts_snapped <-
   map(.x = erroring_tracts,
       .f = tract_snapper)
 
 # safely intersect all buffer sizes for all erroring tracts
 safely_intersected_snapped_erroring_tracts <-
   map(.f = safe_buffer_intersector_nation,
-      .x = snapped_erroring_tracts,
+      .x = erroring_tracts_snapped,
       buffer_intersector_little_function = buffer_intersector_tract #,
     # .progress = TRUE
   )
@@ -5334,26 +5408,16 @@ snapped_error_counts <-
   )
 
 # get buffer indices of tracts still erroring
-snapped_tracts_still_erroring_indices <-
+snapped_error_indices <-
   map(
     .f = names,
     .x = intersected_snapped_errors
   )
 
-# select the tracts still erroring
-tracts_still_erroring_after_snapping <-
-  map2(
-    .x = erroring_tracts, 
-    .y = snapped_tracts_still_erroring_indices,
-    .f = function(x, y) x[y]
-  )
-
-intermediate_object_saver("snapped_erroring_tracts", 
-                          "safely_intersected_snapped_erroring_tracts", 
-                          "intersected_snapped_errors",
+intermediate_object_saver("erroring_tracts_snapped", 
+                          "safely_intersected_snapped_erroring_tracts",
                           "snapped_error_counts", 
-                          "snapped_tracts_still_erroring_indices", 
-                          "tracts_still_erroring_after_snapping")
+                          "snapped_error_indices")
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -5361,7 +5425,15 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-```{r find remaining errors after each set combined}
+```{r}
+
+```
+
+
+
+
+
+```{r find remaining errors after each set combined, eval=FALSE, include=FALSE}
 
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
@@ -5400,354 +5472,8 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-```{r make tracts precise 0.1}
 
-# load functions to save and load intermediate files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
-load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
-load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+end goal: weights from each buffer in each census tract
 
-# load files
-intermediate_object_loader("erroring_tracts", 
-                           "indices_tracts_erroring_post_snap_precise")
-
-# precision 10
-precise_point_one_function <- 
-  function(buffers_by_tract) {
-    map(.x = buffers_by_tract,
-        .f = function(x) st_set_precision(x, precision = 0.1))
-  }
-
-# make tracts precise and try again
-erroring_tracts_precise_point_one <- 
-  map(.x = erroring_tracts, 
-      .f = precise_point_one_function)
-
-# safely intersect all buffer sizes for all erroring tracts
-safely_intersected_precise_point_one_tracts <-
-  map(.f = safe_buffer_intersector_nation,
-      .x = erroring_tracts_precise_point_one,
-      buffer_intersector_little_function = buffer_intersector_tract #,
-    # .progress = TRUE
-  )
-
-# investigate errors
-precise_point_one_remaining_errors <-
-  map(.f = function(x) Filter(Negate(is.null),
-                              x$error),
-      .x = safely_intersected_precise_point_one_tracts)
-
-# count errors
-precise_point_one_error_counts <-
-  map(.x = precise_point_one_remaining_errors,
-      .f = length)
-
-# get buffer indices of tracts still erroring
-precise_point_one_still_erroring_indices <-
-  map(.f = names,
-      .x = precise_point_one_remaining_errors)
-
-# indices of tracts still erroring
-indices_tracts_erroring_post_snap_precise_one_point_one <- 
-  map2(.x = indices_tracts_erroring_post_snap_precise,
-       .y = precise_point_one_still_erroring_indices, 
-       .f = intersect)
-
-# counts of tracts still erroring
-counts_erroring_post_snap_precise_one_point_one <- 
-  map(.x = indices_tracts_erroring_post_snap_precise_one_point_one, 
-      length)
-
-# save results
-intermediate_object_saver(
-  "indices_tracts_erroring_post_snap_precise_one_point_one")
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-```{r make tracts precise 0.01}
-
-# load functions to save and load intermediate files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
-load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
-load(file = file.path("functions", "buffer_intersector_tract.rdata"))
-
-# load files
-intermediate_object_loader(
-  "erroring_tracts", 
-  "indices_tracts_erroring_post_snap_precise_one_point_one"
-  )
-
-# precision 100
-precise_point_zero_one_function <- 
-  function(buffers_by_tract) {
-    map(.x = buffers_by_tract,
-        .f = function(x) st_set_precision(x, precision = 0.01))
-  }
-
-# make tracts precise and try again
-erroring_tracts_precise_point_zero_one <- 
-  map(.x = erroring_tracts, 
-      .f = precise_point_zero_one_function)
-
-# safely intersect all buffer sizes for all erroring tracts
-safely_intersected_precise_point_zero_one_tracts <-
-  map(.f = safe_buffer_intersector_nation,
-      .x = erroring_tracts_precise_point_zero_one,
-      buffer_intersector_little_function = buffer_intersector_tract #,
-    # .progress = TRUE
-  )
-
-# investigate errors
-precise_point_zero_one_remaining_errors <-
-  map(.f = function(x) Filter(Negate(is.null),
-                              x$error),
-      .x = safely_intersected_precise_point_zero_one_tracts)
-
-# count errors
-precise_point_zero_one_error_counts <-
-  map(.x = precise_point_zero_one_remaining_errors,
-      .f = length)
-
-# get buffer indices of tracts still erroring
-precise_point_zero_one_still_erroring_indices <-
-  map(.f = names,
-      .x = precise_point_zero_one_remaining_errors)
-
-# indices of tracts still erroring
-indices_tracts_erroring_post_snap_precise_one_point_one_zero_one <- 
-  map2(.x = indices_tracts_erroring_post_snap_precise_one_point_one,
-       .y = precise_point_zero_one_still_erroring_indices, 
-       .f = intersect)
-
-# counts of tracts still erroring
-counts_erroring_post_snap_precise_one_point_one_zero_one <- 
-  map(.x = indices_tracts_erroring_post_snap_precise_one_point_one_zero_one, 
-      length)
-
-intermediate_object_saver(
-  "indices_tracts_erroring_post_snap_precise_one_point_one_zero_one")
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-```{r make tracts precise 10}
-
-# load functions to save and load intermediate files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
-load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
-load(file = file.path("functions", "buffer_intersector_tract.rdata"))
-
-# load files
-intermediate_object_loader(
-  "erroring_tracts", 
-  "indices_tracts_erroring_post_snap_precise_one_point_one_zero_one"
-  )
-
-# precision 100
-precise_ten_function <- 
-  function(buffers_by_tract) {
-    map(.x = buffers_by_tract,
-        .f = function(x) st_set_precision(x, precision = 10))
-  }
-
-# make tracts precise and try again
-erroring_tracts_precise_ten <- 
-  map(.x = erroring_tracts, 
-      .f = precise_ten_function)
-
-# safely intersect all buffer sizes for all erroring tracts
-safely_intersected_precise_ten_tracts <-
-  map(.f = safe_buffer_intersector_nation,
-      .x = erroring_tracts_precise_ten,
-      buffer_intersector_little_function = buffer_intersector_tract #,
-    # .progress = TRUE
-  )
-
-# investigate errors
-precise_ten_remaining_errors <-
-  map(.f = function(x) Filter(Negate(is.null),
-                              x$error),
-      .x = safely_intersected_precise_ten_tracts)
-
-# count errors
-precise_ten_error_counts <-
-  map(.x = precise_ten_remaining_errors,
-      .f = length)
-
-# get buffer indices of tracts still erroring
-precise_ten_still_erroring_indices <-
-  map(.f = names,
-      .x = precise_ten_remaining_errors)
-
-# indices of tracts still erroring
-indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten <- 
-  map2(.x = indices_tracts_erroring_post_snap_precise_one_point_one_zero_one,
-       .y = precise_ten_still_erroring_indices, 
-       .f = intersect)
-
-# counts of tracts still erroring
-counts_erroring_post_snap_precise_one_point_one_zero_one_ten <- 
-  map(.x = indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten, 
-      length)
-
-intermediate_object_saver(
-  "indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten")
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-```{r make tracts precise 100}
-
-# load functions to save and load intermediate files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
-load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
-load(file = file.path("functions", "buffer_intersector_tract.rdata"))
-
-# load files
-intermediate_object_loader(
-  "erroring_tracts", 
-  "indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten"
-  )
-
-# precision 0.01 meters
-precise_100_function <- 
-  function(buffers_by_tract) {
-    map(.x = buffers_by_tract,
-        .f = function(x) st_set_precision(x, precision = 100))
-  }
-
-# make tracts precise and try again
-erroring_tracts_precise_100 <- 
-  map(.x = erroring_tracts, 
-      .f = precise_100_function)
-
-# safely intersect all buffer sizes for all erroring tracts
-safely_intersected_precise_100_tracts <-
-  map(.f = safe_buffer_intersector_nation,
-      .x = erroring_tracts_precise_100,
-      buffer_intersector_little_function = buffer_intersector_tract #,
-    # .progress = TRUE
-  )
-
-# investigate errors
-precise_100_remaining_errors <-
-  map(.f = function(x) Filter(Negate(is.null),
-                              x$error),
-      .x = safely_intersected_precise_100_tracts)
-
-# count errors
-precise_100_error_counts <-
-  map(.x = precise_100_remaining_errors,
-      .f = length)
-
-# get buffer indices of tracts still erroring
-precise_100_still_erroring_indices <-
-  map(.f = names,
-      .x = precise_100_remaining_errors)
-
-# indices of tracts still erroring
-indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten_100 <- 
-  map2(.x = indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten,
-       .y = precise_100_still_erroring_indices, 
-       .f = intersect)
-
-# counts of tracts still erroring
-counts_erroring_post_snap_precise_one_point_one_zero_one_ten_100 <- 
-  map(
-    .x = indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten_100, 
-    length)
-
-intermediate_object_saver(
-  "indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten_100")
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-```{r make tracts precise 0.001}
-
-# load functions to save and load intermediate files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
-load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
-load(file = file.path("functions", "buffer_intersector_tract.rdata"))
-
-# load files
-intermediate_object_loader(
-  "erroring_tracts", 
-  "indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten_100"
-  )
-
-# precision one kilometer (jeepers)
-precise_point_001_function <- 
-  function(buffers_by_tract) {
-    map(.x = buffers_by_tract,
-        .f = function(x) st_set_precision(x, precision = 0.001))
-  }
-
-# make tracts precise and try again
-erroring_tracts_precise_point_001 <- 
-  map(.x = erroring_tracts, 
-      .f = precise_point_001_function)
-
-# safely intersect all buffer sizes for all erroring tracts
-safely_intersected_precise_point_001_tracts <-
-  map(.f = safe_buffer_intersector_nation,
-      .x = erroring_tracts_precise_point_001,
-      buffer_intersector_little_function = buffer_intersector_tract #,
-    # .progress = TRUE
-  )
-
-# investigate errors
-precise_point_001_remaining_errors <-
-  map(.f = function(x) Filter(Negate(is.null),
-                              x$error),
-      .x = safely_intersected_precise_point_001_tracts)
-
-# count errors
-precise_point_001_error_counts <-
-  map(.x = precise_point_001_remaining_errors,
-      .f = length)
-
-# get buffer indices of tracts still erroring
-precise_point_001_still_erroring_indices <-
-  map(.f = names,
-      .x = precise_point_001_remaining_errors)
-
-# indices of tracts still erroring
-indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten_100_001 <- 
-  map2(.x = indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten_100,
-       .y = precise_point_001_still_erroring_indices, 
-       .f = intersect)
-
-# counts of tracts still erroring
-counts_erroring_post_snap_precise_one_point_one_zero_one_ten_100_001 <- 
-  map(.x = indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten_100_001, 
-      length)
-
-# intermediate object saver
-intermediate_object_saver(
-  "indices_tracts_erroring_post_snap_precise_one_point_one_zero_one_ten_100_001")
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
 
 

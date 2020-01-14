@@ -29068,4 +29068,14 @@ counts_erroring_post_snap_precise_buffer_zero <-
   map(.x = indices_tracts_erroring_post_snap_precise_buffer_zero, 
       length)
 
+
+
+# select the tracts still erroring
+tracts_still_erroring_after_snapping <-
+  map2(
+    .x = erroring_tracts, 
+    .y = snapped_tracts_error_indices,
+    .f = function(x, y) x[y]
+  )
+
 ```
