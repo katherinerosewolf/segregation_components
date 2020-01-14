@@ -28967,9 +28967,6 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-
-
-
 ```{r try applying the buffer intersector, eval=FALSE, include=FALSE}
 
 load(
@@ -29006,3 +29003,69 @@ buffer_intersections_1000_m <-
 ```
 
 
+
+
+```{r buffer erroring tracts by 0}
+
+# load functions to save and load intermediate files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "intermediate_object_saver.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
+load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+
+# load files
+intermediate_object_loader("erroring_tracts", 
+                           "indices_tracts_erroring_post_snap_precise")
+
+# make function to buffer tracts by zero
+buffer_zero_function <- 
+  function(buffers_by_tract) {
+    map(.x = buffers_by_tract,
+        .f = function(x) st_buffer(x, dist = 0))
+  }
+
+# make tracts precise and try again
+erroring_tracts_buffer_zero <- 
+  map(.x = erroring_tracts, 
+      .f = buffer_zero_function)
+
+# safely intersect all buffer sizes for all erroring tracts
+safely_intersected_buffered_erroring_tracts <-
+  map(.f = safe_buffer_intersector_nation,
+      .x = erroring_tracts_buffer_zero,
+      buffer_intersector_little_function = buffer_intersector_tract #,
+    # .progress = TRUE
+  )
+
+# investigate errors
+buffer_zero_remaining_errors <-
+  map(.f = function(x) Filter(Negate(is.null),
+                              x$error),
+      .x = safely_intersected_buffered_erroring_tracts)
+
+# count errors
+buffer_zero_error_counts <-
+  map(
+    .x = buffer_zero_remaining_errors,
+    .f = length
+  )
+
+# get buffer indices of tracts still erroring
+buffer_zero_still_erroring_indices <-
+  map(
+    .f = names,
+    .x = buffer_zero_remaining_errors
+  )
+
+# indices of tracts still erroring
+indices_tracts_erroring_post_snap_precise_buffer_zero <- 
+  map2(.x = indices_tracts_erroring_post_snap_precise,
+       .y = buffer_zero_still_erroring_indices, 
+       .f = intersect)
+
+# counts of tracts still erroring
+counts_erroring_post_snap_precise_buffer_zero <- 
+  map(.x = indices_tracts_erroring_post_snap_precise_buffer_zero, 
+      length)
+
+```
