@@ -119,7 +119,8 @@ intermediate_object_saver <-
         save(list = object_name,
              file = file.path("intermediate_data",
                               paste0(object_name,
-                                     ".rdata")))
+                                     ".rdata")), 
+             envir = .GlobalEnv)
       }
     map(.x = object_names,
         .f = saver)
@@ -236,18 +237,14 @@ state_abbreviation_character_vector <-
   c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS",  "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
 
 # save to disk
-save(
-  state_abbreviation_character_vector, 
-  file = 
-    file.path(
-      "pre_travis_intermediate_data", 
-      "state_abbreviation_character_vector.rdata"
-    )
-)
+save(state_abbreviation_character_vector, 
+     file = file.path("pre_travis_intermediate_data", 
+                      "state_abbreviation_character_vector.rdata"))
 
 # remove it
 rm(state_abbreviation_character_vector)
 invisible(gc())
+
 }
 
 ```
@@ -5378,9 +5375,6 @@ indices_tracts_erroring_post_snap_precise <-
   map2(.x = tracts_still_erroring_after_snapping,
        .y = precise_one_tracts_still_erroring, 
        .f = )
-  
-  
-  
   
 
 
