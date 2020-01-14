@@ -116,14 +116,15 @@ intermediate_object_saver <-
     object_names <- tibble::lst(...)
     saver <- 
       function(object_name){
-        save(list = object_name,
+        save(list = as.list(object_name),
              file = file.path("intermediate_data",
                               paste0(object_name,
                                      ".rdata")), 
              envir = .GlobalEnv)
       }
     map(.x = object_names,
-        .f = saver)
+        .f = saver, 
+        envir = .GlobalEnv)
   }
 
 # intermediate object loader
@@ -5368,16 +5369,29 @@ load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load files
 intermediate_object_loader("tracts_still_erroring_after_snapping", 
-                           "precise_one_tracts_still_erroring")
+                           "precise_one_tracts_still_erroring", 
+                           "snapped_tracts_still_erroring_indices", 
+                           "precise_one_tracts_still_erroring_indices")
 
 # find tracts still erroring in both sets
-indices_tracts_erroring_post_snap_precise <- 
+tracts_erroring_post_snap_precise <- 
   map2(.x = tracts_still_erroring_after_snapping,
        .y = precise_one_tracts_still_erroring, 
-       .f = )
+       .f = intersect)
+
+# indices of tracts still erroring
+indices_tracts_erroring_post_snap_precise <- 
+  map2(.x = snapped_tracts_still_erroring_indices,
+       .y = precise_one_tracts_still_erroring_indices, 
+       .f = intersect)
+  
   
 
 
+
+```
+
+```{r buffer }
 
 ```
 
