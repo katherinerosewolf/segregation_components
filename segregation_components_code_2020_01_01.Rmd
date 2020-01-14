@@ -5355,8 +5355,10 @@ precise_results <-
       .x = precision_vector, 
       erroring_tract_list = erroring_tracts)
 
-intermediate_object_saver("precise_results")
+# name results by precision value
+names(precise_results) <- as.character(precision_vector)
 
+intermediate_object_saver("precise_results")
 
 ```
 
@@ -5426,6 +5428,9 @@ rm(list = ls(all.names = TRUE))
 
 
 ```{r}
+
+precise_results[[1]]$error_indices
+
 
 ```
 
