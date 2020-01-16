@@ -29079,3 +29079,143 @@ tracts_still_erroring_after_snapping <-
   )
 
 ```
+
+
+```{r snap to grid minimizer detritus}
+
+
+    
+    
+    
+
+
+
+# for each erroring tract, run it until 
+
+snap_to_gridder <- 
+  function(buffer_sf, cell_size) {
+    snapped_buffers <- 
+      st_snap_to_grid(buffers,
+                      size = cell_size) 
+    
+    
+    
+    # run the interesections
+    safely(buffer_intersector_tract(snapped_buffers))
+    
+    # check the output
+    if(something){
+      
+    } else {
+      
+    }
+    
+  }
+
+  
+  
+  
+  
+  
+  
+  # function(precision_integer, erroring_tract_list){
+  #   
+  #   buffer_intersector_tract <- 
+  #     function(buffers_clipped_to_tract_sf) {
+  #       # make concordance vector to replace "origin" values (rows) with monitor ids
+  #       
+  #       if(!("sf" %in% class(buffers_clipped_to_tract_sf))){
+  #         
+  #         return("no_buffers_here")
+  #         
+  #       } else {
+  #         
+  #         # label monitors with their indices
+  #         concordance_vector <-
+  #           setNames(
+  #             object = buffers_clipped_to_tract_sf$monitor_id,  # object to named
+  #             nm = buffers_clipped_to_tract_sf$buffer_index  # names (polygon #s)
+  #           )
+  #         
+  #         # find buffer intersections and areas by monitor
+  #         buffer_intersections <- 
+  #           buffers_clipped_to_tract_sf %>% 
+  #           st_intersection() %>% 
+  #           mutate(area = st_area(geometry),  # add areas
+  #                  monitor_id_overlaps =  # add column of monitor ids
+  #                    map(
+  #                      .x = origins,  # go through the origin column (with polygon #s)
+  #                      .f = function(a) concordance_vector[a]  # replace with monitor ids
+  #                      )
+  #                  ) 
+  #         
+  #         return(buffer_intersections)
+  #         
+  #       }
+  #     }
+  #   
+  #   
+  #   # buffer intersection function for the nation that works for all buffers
+  #   safe_buffer_intersector_nation <- 
+  #     function(buffers_clipped_to_tracts,
+  #              buffer_intersector_little_function){
+  #       buffer_intersections_nation <- 
+  #         map(
+  #           .x = buffers_clipped_to_tracts,
+  #           .f = safely(buffer_intersector_tract)
+  #         ) %>% 
+  #         transpose()
+  #       return(buffer_intersections_nation)
+  #     }
+  #   
+  #   
+  #   precise_function <- 
+  #     function(tracts_sf, desired_precision) {
+  #       map(.x = tracts_sf,
+  #           .f = function(x) st_set_precision(x, precision = precision_integer))
+  #     }
+  #   
+  #   
+  #   precise_erroring_tracts <- 
+  #     map(.x = erroring_tract_list, 
+  #         .f = precise_function, 
+  #         desired_precision = precision_integer)
+  #   
+  #   
+  #   # safely intersect all buffer sizes for all erroring tracts
+  #   safely_intersected_tracts <- 
+  #     map(.f = safe_buffer_intersector_nation,
+  #         .x = precise_erroring_tracts,
+  #         buffer_intersector_little_function = buffer_intersector_tract)
+  #   
+  #   
+  #   # isolate tracts still erroring
+  #   remaining_errors <- 
+  #     map(.f = function(x) Filter(Negate(is.null), x$error),
+  #         .x = safely_intersected_tracts)
+  #   
+  #   
+  #   # count errors
+  #   remaining_error_counts <- 
+  #     map(.x = remaining_errors,
+  #         .f = length)
+  # 
+  #   
+  #   # buffer indices of tracts still erroring
+  #   error_indices <- 
+  #     map(.f = names,
+  #         .x = remaining_errors)
+  #   
+  #   
+  #   results_list <- lst(precise_erroring_tracts, 
+  #                       safely_intersected_tracts, 
+  #                       remaining_errors, 
+  #                       remaining_error_counts, 
+  #                       error_indices)
+  #   
+  #   return(results_list)
+  #   
+  # }
+
+```
+

@@ -5334,6 +5334,81 @@ save(precise_intersector, file = file.path("functions",
 ```
 
 
+
+```{r write snap to grid function}
+
+# load necessary functions
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "intermediate_object_saver.rdata"))
+load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+
+# load tracts with errors
+intermediate_object_loader("erroring_tracts")
+
+# make function that generates results and errors after intersecting buffers
+safe_intersect <- safely(buffer_intersector_tract)
+
+test_tract <- erroring_tracts$buffer_10000_m$`2906`
+
+# function that snaps single tracts to grid at the minimum possible cell size
+snap_to_grid_minimizer_tract <- 
+  function(tract_of_buffers_sf){
+    
+    cell_size <- 0
+    error_existence <- TRUE
+    
+    while (error_existence) {
+      cell_size = cell_size + 1
+      snapped_tract <- st_snap_to_grid(tract_of_buffers_sf,
+                                       size = cell_size)
+      intersect_snap <- safe_intersect(snapped_tract)
+      error_existence <- !is.null(intersect_snap$error)
+      }
+
+  list_to_return <- tibble::lst(cell_size, 
+                                snapped_tract, 
+                                intersect_snap)
+  
+  return(list_to_return)
+  
+  }
+  
+minimizer_test <- snap_to_grid_minimizer_tract(test_tract)
+
+# function to run the snap_to_grid_minimizer nationally
+snap_to_grid_minimizer_nation <- 
+  function(tract_sf_list){
+    map(.f = snap_to_grid_minimizer_tract,
+        .x = tract_sf_list)
+  }
+
+# run all tracts!
+minimally_snapped_tracts <- map(.f = snap_to_grid_minimizer_nation, 
+                                .x = erroring_tracts)
+
+# save objects to disk
+save(snap_to_grid_minimizer_tract, 
+     file = file.path("functions", 
+                      "snap_to_grid_minimizer_tract.rdata"))
+
+save(snap_to_grid_minimizer_nation, 
+     file = file.path("functions", 
+                      "snap_to_grid_minimizer_nation.rdata"))
+
+intermediate_object_saver("minimally_snapped_tracts")
+
+
+
+
+
+
+
+```
+
+
+
+
+
 ```{r run precise function for desired precisions}
 
 # load functions to save and load intermediate files
@@ -5429,7 +5504,7 @@ rm(list = ls(all.names = TRUE))
 
 ```{r}
 
-precise_results[[1]]$error_indices
+# precise_results[[1]]$error_indices
 
 
 ```
