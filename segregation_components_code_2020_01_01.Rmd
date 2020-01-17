@@ -5318,6 +5318,7 @@ gc()
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
 load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
 load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
 
 intermediate_object_loader("erroring_tracts")
@@ -5337,10 +5338,7 @@ erroring_tracts_snapped <-
 # safely intersect all buffer sizes for all erroring tracts
 snapped_self_intersected_tracts <-
   map(.f = safe_buffer_intersector_nation,
-      .x = erroring_tracts_snapped,
-      buffer_intersector_little_function = buffer_intersector_tract #,
-    # .progress = TRUE
-  )
+      .x = erroring_tracts_snapped)
 
 # investigate errors
 intersected_snapped_errors <-
