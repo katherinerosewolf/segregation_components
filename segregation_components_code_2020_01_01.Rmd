@@ -4662,7 +4662,6 @@ rm(list = ls(all.names = TRUE))
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load needed files
 load(file = file.path("travis_cache", "tract_shapefiles.rdata"))
@@ -4733,11 +4732,13 @@ tracts_polygon_list <-
          geoid10) %>% 
   split(seq(nrow(tracts_polygon)))
 
-intermediate_object_saver("tracts_polygon")
+save(tracts_polygon, file = file.path("intermediate_data", 
+                                      "tracts_polygon.rdata"))
 rm(tracts_polygon)
 gc()
- 
-intermediate_object_saver("tracts_polygon_list")
+
+save(tracts_polygon_list, file = file.path("intermediate_data", 
+                                           "tracts_polygon_list.rdata"))
 rm(tracts_polygon_list)
 gc()
 
@@ -4749,8 +4750,12 @@ tracts_multipolygon_list <-
   split(seq(nrow(tracts_multipolygon)))
 
 # save files
-intermediate_object_saver("tracts_multipolygon",
-                          "tracts_multipolygon_list")
+save(tracts_multipolygon, 
+     file = file.path("intermediate_data", 
+                      "tracts_multipolygon.rdata"))
+save(tracts_multipolygon_list, 
+     file = file.path("intermediate_data", 
+                      "tracts_multipolygon_list.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -4862,7 +4867,6 @@ rm(list = ls(all.names = TRUE))
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load files
 intermediate_object_loader("buffers", 
@@ -4877,7 +4881,9 @@ buffer_tract_intersections_polygons <-
   )
 
 # save result
-intermediate_object_saver("buffer_tract_intersections_polygons")
+save(buffer_tract_intersections_polygons, 
+     file = file.path("intermediate_data", 
+                      "buffer_tract_intersections_polygons.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -4890,7 +4896,6 @@ rm(list = ls(all.names = TRUE))
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load files
 intermediate_object_loader("buffers", 
@@ -4903,7 +4908,9 @@ buffer_tract_intersections_multipolygons <-
              y = tracts_multipolygon)
 
 # save result
-intermediate_object_saver("buffer_tract_intersections_multipolygons")
+save(buffer_tract_intersections_multipolygons, 
+     file = file.path("intermediate_data", 
+                      "buffer_tract_intersections_multipolygons.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -4913,10 +4920,7 @@ rm(list = ls(all.names = TRUE))
 
 ```{r buffer filter by tract}
 
-load(file = file.path("functions", 
-                      "intermediate_object_loader.rdata"))
-load(file = file.path("functions", 
-                      "intermediate_object_saver.rdata"))
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
 
 intermediate_object_loader("buffers", 
                            "tracts_polygon", 
@@ -4960,7 +4964,9 @@ buffers_by_tract_all_sizes <-
   )
 
 # save the above
-intermediate_object_saver("buffers_by_tract_all_sizes")
+save(buffers_by_tract_all_sizes, 
+     file = file.path("intermediate_data", 
+                      "buffers_by_tract_all_sizes.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -4972,7 +4978,6 @@ rm(list = ls(all.names = TRUE))
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load necessary files
 intermediate_object_loader("buffer_tract_intersections_polygons", 
@@ -5024,9 +5029,10 @@ save(buffer_clipper_tract, file = file.path("functions",
                                             "buffer_clipper_tract.rdata"))
 
 save(buffer_clipper_nation, file = file.path("functions", 
-                                            "buffer_clipper_nation.rdata"))
+                                             "buffer_clipper_nation.rdata"))
 
-intermediate_object_saver("clipped_buffers")
+save(clipped_buffers, file = file.path("intermediate_data", 
+                                       "clipped_buffers.rdata"))
   
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -5039,7 +5045,6 @@ gc()
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load clipped buffers
 intermediate_object_loader("clipped_buffers")
@@ -5116,35 +5121,22 @@ rm(clipped_buffers)
 gc()
     
 # save the functions to disk
-save(
-  buffer_intersector_tract, 
-  file = 
-    file.path(
-      "functions", 
-      "buffer_intersector_tract.rdata"
-    )
-)
+save(buffer_intersector_tract, 
+     file = file.path("functions", 
+                      "buffer_intersector_tract.rdata"))
 
-save(
-  buffer_intersector_nation, 
-  file = 
-    file.path(
-      "functions", 
-      "buffer_intersector_nation.rdata"
-    )
-)
+save(buffer_intersector_nation, 
+     file = file.path("functions", 
+                      "buffer_intersector_nation.rdata"))
 
-save(
-  safe_buffer_intersector_nation, 
-  file = 
-    file.path(
-      "functions", 
-      "safe_buffer_intersector_nation.rdata"
-    )
-)
+save(safe_buffer_intersector_nation, 
+     file = file.path("functions", 
+                      "safe_buffer_intersector_nation.rdata"))
 
 # save intersected buffer file to disk
-intermediate_object_saver("safely_intersected_buffers")
+save(safely_intersected_buffers, 
+     file = file.path("intermediate_data", 
+                      "safely_intersected_buffers.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -5161,7 +5153,6 @@ gc()
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load intermediate files
 intermediate_object_loader("safely_intersected_buffers")
@@ -5192,7 +5183,9 @@ error_tract_indices <-
     .x = buffer_intersection_errors
   )
 
-intermediate_object_saver("buffer_intersection_errors")
+save(buffer_intersection_errors, 
+     file = file.path("intermediate_data", 
+                      "buffer_intersection_errors.rdata"))
 rm(buffer_intersection_errors)
 gc()
 
@@ -5211,9 +5204,17 @@ rm(clipped_buffers)
 gc()
 
 # save files
-intermediate_object_saver("error_counts_by_buffer_size", 
-                          "error_tract_indices", 
-                          "erroring_tracts")
+save(error_counts_by_buffer_size, 
+     file = file.path("intermediate_data", 
+                      "error_counts_by_buffer_size.rdata"))
+
+save(error_tract_indices, 
+     file = file.path("intermediate_data", 
+                      "error_tract_indices.rdata"))
+
+save(erroring_tracts, 
+     file = file.path("intermediate_data", 
+                      "erroring_tracts.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -5228,7 +5229,6 @@ rm(list = ls(all.names = TRUE))
 
 # load necessary functions
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 load(file = file.path("functions", "buffer_intersector_tract.rdata"))
 
 # load tracts with errors
@@ -5241,48 +5241,51 @@ test_tract <- erroring_tracts$buffer_10000_m$`2906`
 
 # function that snaps single tracts to grid at the minimum possible cell size
 precision_maximizer_tract <- 
+  
   function(tract_of_buffers_sf){
     
     precision_vector <- c(seq(1000, 10, by = -10), 5, 4, 3, 2, 1)
     
-    indexer <- 0  # set index
+    i <- 0  # set index
     
     error_existence <- TRUE
     
     more_vector_left <- TRUE
     
     while (error_existence & more_vector_left) {
-      indexer <- (indexer + 1)
+      i <- (i + 1)
       precise_tract <- st_set_precision(tract_of_buffers_sf,
-                                        precision = precision_vector[indexer])
+                                        precision = precision_vector[i])
       intersect_precise <- safe_intersect(precise_tract)
       error_existence <- !is.null(intersect_precise$error)
-      more_vector_left <- (indexer < length(precision_vector))
+      more_vector_left <- (i < length(precision_vector))
     }
     
-    if(more_vector_left == FALSE & error_existence == TRUE){
+    err_bool <- (more_vector_left == FALSE & error_existence == TRUE)
+    
+    if(err_bool){
       
       return("precision didn't fix it")
       
     } else {
       
-      list_to_return <- tibble::lst(precision_vector[indexer],
-                                    precise_tract, 
-                                    intersect_precise)
+      return_list <- list(precision_vector[i],
+                          precise_tract, 
+                          intersect_precise)
       
-      return(list_to_return)
+      return(return_list)
   
     }
   
   }
 
-# indexer <- 0  # set index
+# i <- 0  # set index
 # 
-# indexer <- indexer + 1
+# i <- i + 1
 # 
 # precision_vector <- c(seq(1000, 10, by = -10), 5, 4, 3, 2, 1)
 # 
-# more_vector_left <- (indexer < length(precision_vector))
+# more_vector_left <- (i < length(precision_vector))
 
 precision_maximizer_tract_test <- precision_maximizer_tract(test_tract)
 
@@ -5294,12 +5297,20 @@ precision_maximizer_nation <-
   }
 
 # run all tracts!
-maximally_precise_tracts <- map(.f = precision_maximizer_nation,
-                                .x = erroring_tracts)
+precise_tracts <- map(.f = precision_maximizer_nation,
+                      .x = erroring_tracts)
 
+# save objects to disk
+save(precision_maximizer_tract, 
+     file = file.path("functions", 
+                      "precision_maximizer_tract.rdata"))
 
+save(precision_maximizer_nation, 
+     file = file.path("functions", 
+                      "precision_maximizer_nation.rdata"))
 
-  
+save(precise_tracts, 
+     file = file.path("intermediate_data", "precise_tracts.rdata"))
 
 ```
 
@@ -5418,7 +5429,6 @@ save(precise_intersector, file = file.path("functions",
 
 # load necessary functions
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 load(file = file.path("functions", "buffer_intersector_tract.rdata"))
 
 # load tracts with errors
@@ -5474,7 +5484,9 @@ save(snap_to_grid_minimizer_nation,
      file = file.path("functions", 
                       "snap_to_grid_minimizer_nation.rdata"))
 
-intermediate_object_saver("minimally_snapped_tracts")
+save(minimally_snapped_tracts, 
+     file = file.path("intermediate_data", 
+                      "minimally_snapped_tracts.rdata"))
 
 ```
 
@@ -5484,7 +5496,6 @@ intermediate_object_saver("minimally_snapped_tracts")
 
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load function to make intersections
 load(file = file.path("functions", "precise_intersector.rdata"))
@@ -5504,7 +5515,7 @@ precise_results <-
 # name results by precision value
 names(precise_results) <- as.character(precision_vector)
 
-intermediate_object_saver("precise_results")
+save("intermediate_data", "precise_results.rdata")
 
 ```
 
@@ -5516,7 +5527,6 @@ intermediate_object_saver("precise_results")
 
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 load(file = file.path("functions", "buffer_intersector_tract.rdata"))
 load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
 
@@ -5562,10 +5572,15 @@ snapped_error_indices <-
     .x = intersected_snapped_errors
   )
 
-intermediate_object_saver("erroring_tracts_snapped", 
-                          "safely_intersected_snapped_erroring_tracts",
-                          "snapped_error_counts", 
-                          "snapped_error_indices")
+save(erroring_tracts_snapped, 
+     file = file.path("intermediate_data", "erroring_tracts_snapped.rdata")) 
+save(safely_intersected_snapped_erroring_tracts, 
+     file = file.path("intermediate_data", 
+                      "safely_intersected_snapped_erroring_tracts.rdata"))
+save(snapped_error_counts, 
+     file = file.path("intermediate_data", "snapped_error_counts.rdata"))
+save(snapped_error_indices, 
+     file = file.path("intermediate_data", "snapped_error_indices.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -5588,7 +5603,6 @@ rm(list = ls(all.names = TRUE))
 
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "intermediate_object_saver.rdata"))
 
 # load files
 intermediate_object_loader("tracts_still_erroring_after_snapping", 
@@ -5613,9 +5627,17 @@ post_snap_precise_error_counts <-
   map(.x = indices_tracts_erroring_post_snap_precise, 
       length)
 
-intermediate_object_saver("tracts_erroring_post_snap_precise", 
-                          "indices_tracts_erroring_post_snap_precise", 
-                          "post_snap_precise_error_counts")
+save(tracts_erroring_post_snap_precise, 
+     file = file.path("intermediate_data", 
+                      "tracts_erroring_post_snap_precise.rdata"))
+
+save(indices_tracts_erroring_post_snap_precise, 
+     file = file.path("intermediate_data", 
+                      "indices_tracts_erroring_post_snap_precise.rdata"))
+
+save(post_snap_precise_error_counts, 
+     file = file.path("intermediate_data", 
+                      "post_snap_precise_error_counts.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
