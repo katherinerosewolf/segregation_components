@@ -4957,6 +4957,7 @@ save(buffers_by_tract_all_sizes,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
 
 ```
 
@@ -4966,7 +4967,40 @@ rm(list = ls(all.names = TRUE))
 load(file = file.path("intermediate_data", 
                       "buffers_by_tract_all_sizes.rdata"))
 
-length(buffers_by_tract_all_sizes$buffer_1000_m)
+# make function to name list items
+numeric_namer <- 
+  function(list_to_name){
+    names(list_to_name) <- as.character(seq(1:length(list_to_name)))
+    return(list_to_name)
+  }
+
+# do it for all buffer sizes
+buffers_by_tract_all_sizes_named <- 
+  map(.x = buffers_by_tract_all_sizes, 
+      .f = numeric_namer)
+
+# remove unneeded file to spare memory
+rm(buffers_by_tract_all_sizes)
+gc()
+
+# make function to remove tracts with no buffers in them
+no_buffer_remover <- 
+  function(list_of_tracts){
+    list_of_tracts[list_of_tracts != "no_buffers_here"]
+  }
+
+# run the above function (takes a bit)
+buffers_by_tracts_with_buffers <- 
+  map(.x = buffers_by_tract_all_sizes_named, 
+      .f = no_buffer_remover)
+
+# remove unneeded file to spare memory
+rm(buffers_by_tract_all_sizes_named)
+gc()
+
+load(file = file.path("intermediate_data", "tracts_polygon_list.rdata"))
+
+
 
 ```
 
