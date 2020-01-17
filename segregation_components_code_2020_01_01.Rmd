@@ -4765,7 +4765,6 @@ rm(list = ls(all.names = TRUE))
 
 ## buffer work
 
-
 ```{r buffers}
 
 # load projected monitor sf
@@ -4861,8 +4860,6 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-### make buffer functions
-
 ```{r calculate buffer intersections with single polygon tracts}
 
 # load functions to get the other files
@@ -4889,7 +4886,6 @@ save(buffer_tract_intersections_polygons,
 rm(list = ls(all.names = TRUE))
 
 ```
-
 
 
 ```{r calculate buffer intersections with multipolygon tracts}
@@ -5095,7 +5091,9 @@ buffer_intersector_nation <-
     return(buffer_intersections_nation)
   }
 
-# buffer intersection function for the nation that works for all buffers
+safe_buffer_intersector_tract <- safely(buffer_intersector_tract)
+
+# safe buffer intersection function for nation that gives results and errors
 safe_buffer_intersector_nation <- 
   function(buffers_clipped_to_tracts,
            buffer_intersector_little_function){
@@ -5129,6 +5127,10 @@ save(buffer_intersector_nation,
      file = file.path("functions", 
                       "buffer_intersector_nation.rdata"))
 
+save(safe_buffer_intersector_tract, 
+     file = file.path("functions", 
+                      "safe_buffer_intersector_tract.rdata"))
+
 save(safe_buffer_intersector_nation, 
      file = file.path("functions", 
                       "safe_buffer_intersector_nation.rdata"))
@@ -5144,12 +5146,13 @@ gc()
 
 ```
 
+
 ## fixing intersection errors
 
 
 ### investigation
 
-```{r investigating intersected buffers}
+```{r investigate intersected buffers}
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
@@ -5222,22 +5225,14 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-### precision tries
-
-
-```{r systematically fixing precision}
+```{r set precision and then intersect buffers}
 
 # load necessary functions
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
 
 # load tracts with errors
 intermediate_object_loader("erroring_tracts")
-
-# make function that generates results and errors after intersecting buffers
-safe_intersect <- safely(buffer_intersector_tract)
-
-test_tract <- erroring_tracts$buffer_10000_m$`2906`
 
 # function that snaps single tracts to grid at the minimum possible cell size
 precision_maximizer_tract <- 
@@ -5256,7 +5251,7 @@ precision_maximizer_tract <-
       i <- (i + 1)
       precise_tract <- st_set_precision(tract_of_buffers_sf,
                                         precision = precision_vector[i])
-      intersect_precise <- safe_intersect(precise_tract)
+      intersect_precise <- safe_buffer_intersector_tract(precise_tract)
       error_existence <- !is.null(intersect_precise$error)
       more_vector_left <- (i < length(precision_vector))
     }
@@ -5278,16 +5273,6 @@ precision_maximizer_tract <-
     }
   
   }
-
-# i <- 0  # set index
-# 
-# i <- i + 1
-# 
-# precision_vector <- c(seq(1000, 10, by = -10), 5, 4, 3, 2, 1)
-# 
-# more_vector_left <- (i < length(precision_vector))
-
-precision_maximizer_tract_test <- precision_maximizer_tract(test_tract)
 
 # function to run the precision_maximizer nationally
 precision_maximizer_nation <- 
@@ -5315,215 +5300,7 @@ save(precise_tracts,
 ```
 
 
-
-```{r write precision function}
-
-precise_intersector <- 
-  function(precision_integer, erroring_tract_list){
-    
-    buffer_intersector_tract <- 
-      function(buffers_clipped_to_tract_sf) {
-        # make concordance vector to replace "origin" values (rows) with monitor ids
-        
-        if(!("sf" %in% class(buffers_clipped_to_tract_sf))){
-          
-          return("no_buffers_here")
-          
-        } else {
-          
-          # label monitors with their indices
-          concordance_vector <-
-            setNames(
-              object = buffers_clipped_to_tract_sf$monitor_id,  # object to named
-              nm = buffers_clipped_to_tract_sf$buffer_index  # names (polygon #s)
-            )
-          
-          # find buffer intersections and areas by monitor
-          buffer_intersections <- 
-            buffers_clipped_to_tract_sf %>% 
-            st_intersection() %>% 
-            mutate(area = st_area(geometry),  # add areas
-                   monitor_id_overlaps =  # add column of monitor ids
-                     map(
-                       .x = origins,  # go through the origin column (with polygon #s)
-                       .f = function(a) concordance_vector[a]  # replace with monitor ids
-                       )
-                   ) 
-          
-          return(buffer_intersections)
-          
-        }
-      }
-    
-    
-    # buffer intersection function for the nation that works for all buffers
-    safe_buffer_intersector_nation <- 
-      function(buffers_clipped_to_tracts,
-               buffer_intersector_little_function){
-        buffer_intersections_nation <- 
-          map(
-            .x = buffers_clipped_to_tracts,
-            .f = safely(buffer_intersector_tract)
-          ) %>% 
-          transpose()
-        return(buffer_intersections_nation)
-      }
-    
-    
-    precise_function <- 
-      function(tracts_sf, desired_precision) {
-        map(.x = tracts_sf,
-            .f = function(x) st_set_precision(x, precision = precision_integer))
-      }
-    
-    
-    precise_erroring_tracts <- 
-      map(.x = erroring_tract_list, 
-          .f = precise_function, 
-          desired_precision = precision_integer)
-    
-    
-    # safely intersect all buffer sizes for all erroring tracts
-    safely_intersected_tracts <- 
-      map(.f = safe_buffer_intersector_nation,
-          .x = precise_erroring_tracts,
-          buffer_intersector_little_function = buffer_intersector_tract)
-    
-    
-    # isolate tracts still erroring
-    remaining_errors <- 
-      map(.f = function(x) Filter(Negate(is.null), x$error),
-          .x = safely_intersected_tracts)
-    
-    
-    # count errors
-    remaining_error_counts <- 
-      map(.x = remaining_errors,
-          .f = length)
-
-    
-    # buffer indices of tracts still erroring
-    error_indices <- 
-      map(.f = names,
-          .x = remaining_errors)
-    
-    
-    results_list <- lst(precise_erroring_tracts, 
-                        safely_intersected_tracts, 
-                        remaining_errors, 
-                        remaining_error_counts, 
-                        error_indices)
-    
-    return(results_list)
-    
-  }
-
-save(precise_intersector, file = file.path("functions", 
-                                           "precise_intersector.rdata"))
-
-```
-
-
-
-```{r snap tracts to grid}
-
-# load necessary functions
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-load(file = file.path("functions", "buffer_intersector_tract.rdata"))
-
-# load tracts with errors
-intermediate_object_loader("erroring_tracts")
-
-# make function that generates results and errors after intersecting buffers
-safe_intersect <- safely(buffer_intersector_tract)
-
-test_tract <- erroring_tracts$buffer_10000_m$`2906`
-
-# function that snaps single tracts to grid at the minimum possible cell size
-snap_to_grid_minimizer_tract <- 
-  function(tract_of_buffers_sf){
-    
-    cell_size <- 0
-    error_existence <- TRUE
-    
-    while (error_existence) {
-      cell_size = cell_size + 1
-      snapped_tract <- st_snap_to_grid(tract_of_buffers_sf,
-                                       size = cell_size)
-      intersect_snap <- safe_intersect(snapped_tract)
-      error_existence <- !is.null(intersect_snap$error)
-      }
-
-  list_to_return <- tibble::lst(cell_size, 
-                                snapped_tract, 
-                                intersect_snap)
-  
-  return(list_to_return)
-  
-  }
-  
-minimizer_test <- snap_to_grid_minimizer_tract(test_tract)
-
-# function to run the snap_to_grid_minimizer nationally
-snap_to_grid_minimizer_nation <- 
-  function(tract_sf_list){
-    map(.f = snap_to_grid_minimizer_tract,
-        .x = tract_sf_list)
-  }
-
-# run all tracts!
-minimally_snapped_tracts <- map(.f = snap_to_grid_minimizer_nation, 
-                                .x = erroring_tracts)
-
-# save objects to disk
-save(snap_to_grid_minimizer_tract, 
-     file = file.path("functions", 
-                      "snap_to_grid_minimizer_tract.rdata"))
-
-save(snap_to_grid_minimizer_nation, 
-     file = file.path("functions", 
-                      "snap_to_grid_minimizer_nation.rdata"))
-
-save(minimally_snapped_tracts, 
-     file = file.path("intermediate_data", 
-                      "minimally_snapped_tracts.rdata"))
-
-```
-
-
-
-```{r run precise function for desired precisions}
-
-# load functions to save and load intermediate files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-
-# load function to make intersections
-load(file = file.path("functions", "precise_intersector.rdata"))
-
-# load files
-intermediate_object_loader("erroring_tracts")
-
-# make vector of precision options
-precision_vector <- c(1000, 100, 10, 1, 0.1, 0.01, 0.001)
-
-# run all the precisions!
-precise_results <- 
-  map(.f = precise_intersector, 
-      .x = precision_vector, 
-      erroring_tract_list = erroring_tracts)
-
-# name results by precision value
-names(precise_results) <- as.character(precision_vector)
-
-save("intermediate_data", "precise_results.rdata")
-
-```
-
-
-
-### snap tries
-
-```{r snap tracts to themselves one-meter tolerance}
+```{r snap tracts to themselves one-meter tolerance and then intersect buffers}
 
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
@@ -5588,15 +5365,63 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-```{r}
+```{r snap tracts to grid and then intersect buffers}
 
-# precise_results[[1]]$error_indices
+# load necessary functions
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
 
+# load tracts with errors
+intermediate_object_loader("erroring_tracts")
+
+# function that snaps single tracts to grid at the minimum possible cell size
+snap_to_grid_minimizer_tract <- 
+  function(tract_of_buffers_sf){
+    
+    cell_size <- 0
+    error_existence <- TRUE
+    
+    while (error_existence) {
+      cell_size = cell_size + 1
+      snapped_tract <- st_snap_to_grid(tract_of_buffers_sf,
+                                       size = cell_size)
+      intersect_snap <- safe_buffer_intersector_tract(snapped_tract)
+      error_existence <- !is.null(intersect_snap$error)
+      }
+
+  list_to_return <- tibble::lst(cell_size, 
+                                snapped_tract, 
+                                intersect_snap)
+  
+  return(list_to_return)
+  
+  }
+
+# function to run the snap_to_grid_minimizer nationally
+snap_to_grid_minimizer_nation <- 
+  function(tract_sf_list){
+    map(.f = snap_to_grid_minimizer_tract,
+        .x = tract_sf_list)
+  }
+
+# run all tracts!
+minimally_snapped_tracts <- map(.f = snap_to_grid_minimizer_nation, 
+                                .x = erroring_tracts)
+
+# save objects to disk
+save(snap_to_grid_minimizer_tract, 
+     file = file.path("functions", 
+                      "snap_to_grid_minimizer_tract.rdata"))
+
+save(snap_to_grid_minimizer_nation, 
+     file = file.path("functions", 
+                      "snap_to_grid_minimizer_nation.rdata"))
+
+save(minimally_snapped_tracts, 
+     file = file.path("intermediate_data", 
+                      "minimally_snapped_tracts.rdata"))
 
 ```
-
-
-
 
 
 ```{r find remaining errors after each set combined, eval=FALSE, include=FALSE}
@@ -5645,8 +5470,11 @@ rm(list = ls(all.names = TRUE))
 ```
 
 
-
 end goal: weights from each buffer in each census tract
+
+```{r}
+
+```
 
 
 

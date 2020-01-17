@@ -13,5 +13,9 @@ before_install:
   - git lfs pull
 
 script: 
-  - travis_wait 150 R -f tests/render_rmds.R
+  # Output something every 10 minutes or Travis kills the job
+  - while sleep 540; do echo "=====[ $SECONDS seconds still running ]====="; done &
+  - R -f tests/render_rmds.R
+  # Killing background sleep loop
+  - kill %1
   - df -h
