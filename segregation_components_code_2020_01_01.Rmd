@@ -4699,8 +4699,7 @@ st_agr(tracts_multipolygon) <-
 projected_monitors <-
   monitors_sf %>% 
   st_transform(crs = 5070) %>% 
-  select(monitor_id, 
-         monitor_type) 
+  select(monitor_id) 
 
 # join tracts to monitors
 monitors_to_tracts <- 
@@ -4768,13 +4767,7 @@ rm(list = ls(all.names = TRUE))
 ```{r buffers}
 
 # load projected monitor sf
-load(
-  file = 
-    file.path(
-      "intermediate_data", 
-      "projected_monitors.rdata"
-    )
-  )
+load(file = file.path("intermediate_data", "projected_monitors.rdata"))
 
 # make list in which to store the projected monitor sf
 list_of_proj_mon_sf <- 
@@ -4817,8 +4810,7 @@ buffers <-
     .f = function(x) {
       st_agr(x) = 
         c(buffer_index = "identity",
-          monitor_id = "identity", 
-          monitor_type = "constant")
+          monitor_id = "identity")
       return(x)
       },
     .x = pre_attribute_buffers
@@ -4944,8 +4936,8 @@ buffer_colander <-
            buffer_filter_function){
     list_by_tract_of_filtered_buffers <- 
       map(.f = buffer_filter_function,
-                 .x = buffer_sgbp_guide, 
-                 buffer_sf = buffer_sf_for_colander)
+          .x = buffer_sgbp_guide, 
+          buffer_sf = buffer_sf_for_colander)
     return(list_by_tract_of_filtered_buffers)    
   }
 
@@ -4955,8 +4947,7 @@ buffers_by_tract_all_sizes <-
     .x = buffers,
     .y = buffer_tract_intersections_polygons,
     .f = buffer_colander, 
-    buffer_filter_function = buffer_filter #, 
-    # .progress = TRUE
+    buffer_filter_function = buffer_filter
   )
 
 # save the above
@@ -4968,6 +4959,17 @@ save(buffers_by_tract_all_sizes,
 rm(list = ls(all.names = TRUE))
 
 ```
+
+
+```{r create dataset of only tracts with buffers, eval=FALSE, include=FALSE}
+
+load(file = file.path("intermediate_data", 
+                      "buffers_by_tract_all_sizes.rdata"))
+
+length(buffers_by_tract_all_sizes$buffer_1000_m)
+
+```
+
 
 
 ```{r buffer clipping}
@@ -5012,8 +5014,7 @@ clipped_buffers <-
     .x = buffers_by_tract_all_sizes, 
     .f = buffer_clipper_nation, 
     tract_list = tracts_polygon_list, 
-    buffer_clipper_little_function = buffer_clipper_tract #, 
-    # .progress = TRUE
+    buffer_clipper_little_function = buffer_clipper_tract
   )
 
 # # visual check of result
@@ -5091,16 +5092,16 @@ buffer_intersector_nation <-
     return(buffer_intersections_nation)
   }
 
+# safe buffer intersection function for one tract that gives results and errors
 safe_buffer_intersector_tract <- safely(buffer_intersector_tract)
 
 # safe buffer intersection function for nation that gives results and errors
 safe_buffer_intersector_nation <- 
-  function(buffers_clipped_to_tracts,
-           buffer_intersector_little_function){
+  function(buffers_clipped_to_tracts){
     buffer_intersections_nation <- 
       map(
         .x = buffers_clipped_to_tracts,
-        .f = safely(buffer_intersector_tract)
+        .f = safe_buffer_intersector_tract
       ) %>% 
       transpose()
     return(buffer_intersections_nation)
@@ -5145,6 +5146,21 @@ rm(list = ls(all.names = TRUE))
 gc()
 
 ```
+
+
+## safely intersect the buffers
+
+```{r}
+
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
+load(file = file.path("intermediate_data", "clipped_buffers.rdata"))
+
+head(clipped_buffers$buffer_1000_m, 200)
+
+```
+
+
 
 
 ## fixing intersection errors
@@ -5260,13 +5276,19 @@ precision_maximizer_tract <-
     
     if(err_bool){
       
-      return("precision didn't fix it")
+      return_list <- tibble::lst(precision_vector[i],
+                                 precise_tract, 
+                                 intersect_precise, 
+                                 err_bool)
+      
+      return(return_list)
       
     } else {
       
-      return_list <- list(precision_vector[i],
-                          precise_tract, 
-                          intersect_precise)
+      return_list <- tibble::lst(precision_vector[i],
+                                 precise_tract, 
+                                 intersect_precise, 
+                                 err_bool)
       
       return(return_list)
   
@@ -5296,6 +5318,10 @@ save(precision_maximizer_nation,
 
 save(precise_intersected_tracts, 
      file = file.path("intermediate_data", "precise_intersected_tracts.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
 
 ```
 
@@ -5421,6 +5447,10 @@ save(snapped_grid_intersected_tracts,
      file = file.path("intermediate_data", 
                       "snapped_grid_intersected_tracts.rdata"))
 
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+
 ```
 
 
@@ -5435,7 +5465,11 @@ intermediate_object_loader("precise_intersected_tracts",
                            "snapped_grid_intersected_tracts")
 
 # tracts still erroring after precision setting
+transpose_try <-transpose(precise_intersected_tracts$buffer_10000_m)
 
+snapped_self_intersected_tracts$buffer_10000_m$error
+
+snapped_grid_intersected_tracts$buffer_10000_m
 
 # pull tracts from self-intersections
 
