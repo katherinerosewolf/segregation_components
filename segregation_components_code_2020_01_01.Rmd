@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
-NOTES FOR KATIE: line 5001, figure out how to pull indexes on the fly
+NOTES FOR KATIE: 5110ish, transpose that section (individual tracts)
 
 
 # CODE SETUP (run every time)
@@ -4764,7 +4764,7 @@ rm(list = ls(all.names = TRUE))
 
 ## buffer work
 
-```{r buffers}
+```{r make buffers}
 
 # load projected monitor sf
 load(file = file.path("intermediate_data", "projected_monitors.rdata"))
@@ -4873,32 +4873,6 @@ buffer_tract_intersections_polygons <-
 save(buffer_tract_intersections_polygons, 
      file = file.path("intermediate_data", 
                       "buffer_tract_intersections_polygons.rdata"))
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
-
-
-```{r calculate buffer intersections with multipolygon tracts}
-
-# load functions to get the other files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-
-# load files
-intermediate_object_loader("buffers", 
-                           "tracts_multipolygon")  # multipolygon tracts
-
-# calculate for all buffer sizes for multipolygons
-buffer_tract_intersections_multipolygons <- 
-  map(.f = function(x, y) st_intersects(y, x), 
-             .x = buffers, 
-             y = tracts_multipolygon)
-
-# save result
-save(buffer_tract_intersections_multipolygons, 
-     file = file.path("intermediate_data", 
-                      "buffer_tract_intersections_multipolygons.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -5075,7 +5049,7 @@ gc()
 ```
 
 
-```{r buffer intersector functions}
+```{r buffer intersections}
 
 # load functions to get the other files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
@@ -5109,38 +5083,20 @@ buffer_intersector_tract <-
     return(buffer_intersections)
   }
 
-# buffer intersection function for the nation
-buffer_intersector_nation <- 
-  function(buffers_clipped_to_tracts){
-    buffer_intersections_nation <- 
-      map(
-        .x = buffers_clipped_to_tracts,
-        .f = buffer_intersector_tract
-      )
-    return(buffer_intersections_nation)
-  }
-
 # safe buffer intersection function for one tract that gives results and errors
 safe_buffer_intersector_tract <- safely(buffer_intersector_tract)
 
 # safe buffer intersection function for nation that gives results and errors
 safe_buffer_intersector_nation <- 
   function(buffers_clipped_to_tracts){
-    buffer_intersections_nation <- 
-      map(
-        .x = buffers_clipped_to_tracts,
-        .f = safe_buffer_intersector_tract
-      ) %>% 
-      transpose()
-    return(buffer_intersections_nation)
+    map(.x = buffers_clipped_to_tracts,
+        .f = safe_buffer_intersector_tract)
   }
 
 # safely intersect all buffer sizes for all tracts!
 safely_intersected_buffers <- 
-  map(
-    .f = safe_buffer_intersector_nation, 
-    .x = clipped_buffers
-  )
+  map(.f = safe_buffer_intersector_nation, 
+      .x = clipped_buffers)
 
 rm(clipped_buffers)
 gc()
@@ -5149,10 +5105,6 @@ gc()
 save(buffer_intersector_tract, 
      file = file.path("functions", 
                       "buffer_intersector_tract.rdata"))
-
-save(buffer_intersector_nation, 
-     file = file.path("functions", 
-                      "buffer_intersector_nation.rdata"))
 
 save(safe_buffer_intersector_tract, 
      file = file.path("functions", 
@@ -5174,23 +5126,7 @@ gc()
 ```
 
 
-## safely intersect the buffers
-
-```{r}
-
-load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
-load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
-load(file = file.path("intermediate_data", "clipped_buffers.rdata"))
-
-head(clipped_buffers$buffer_1000_m, 200)
-
-```
-
-
-
-
 ## fixing intersection errors
-
 
 ### investigation
 

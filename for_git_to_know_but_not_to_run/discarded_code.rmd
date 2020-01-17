@@ -29275,3 +29275,29 @@ buffer_clipper_tract <-
 
 ```
 
+
+```{r calculate buffer intersections with multipolygon tracts}
+
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+# load files
+intermediate_object_loader("buffers", 
+                           "tracts_multipolygon")  # multipolygon tracts
+
+# calculate for all buffer sizes for multipolygons
+buffer_tract_intersections_multipolygons <- 
+  map(.f = function(x, y) st_intersects(y, x), 
+             .x = buffers, 
+             y = tracts_multipolygon)
+
+# save result
+save(buffer_tract_intersections_multipolygons, 
+     file = file.path("intermediate_data", 
+                      "buffer_tract_intersections_multipolygons.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
+
