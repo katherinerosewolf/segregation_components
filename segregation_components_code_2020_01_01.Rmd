@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
-NOTES FOR KATIE: FIGURE OUT IF CONVERSION TO SINGLE POLYGONS IS CAUSING ERRORS
+NOTES FOR KATIE: line 5001, figure out how to pull indexes on the fly
 
 
 # CODE SETUP (run every time)
@@ -4998,8 +4998,27 @@ buffers_by_tracts_with_buffers <-
 rm(buffers_by_tract_all_sizes_named)
 gc()
 
+# get names of buffers by tract with buffers 
+names_tracts_with_buffers <- 
+  map(.x = buffers_by_tracts_with_buffers, 
+      .f = names) %>% 
+  unlist() %>% 
+  unique()
+
 load(file = file.path("intermediate_data", "tracts_polygon_list.rdata"))
 
+shrunken_tract_polygon_list <- tracts_polygon_list[names_tracts_with_buffers]
+
+rm(tracts_polygon_list)
+gc()
+
+save(buffers_by_tracts_with_buffers,
+     file = file.path("intermediate_data", 
+                      "buffers_by_tracts_with_buffers.rdata"))
+
+save(shrunken_tract_polygon_list,
+     file = file.path("intermediate_data", 
+                      "shrunken_tract_polygon_list.rdata"))
 
 
 ```
@@ -5012,53 +5031,37 @@ load(file = file.path("intermediate_data", "tracts_polygon_list.rdata"))
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
 
 # load necessary files
-intermediate_object_loader("buffer_tract_intersections_polygons", 
-                           "buffers_by_tract_all_sizes", 
-                           "tracts_polygon_list")
-
-# make buffer clipper function
-buffer_clipper_tract <- 
-  function(tract_sf, 
-           buffers_by_tract_sf){
-    if(!("sf" %in% class(buffers_by_tract_sf))){
-      return("no_buffers_here")
-    } else {
-      tract_buffer_intersection <- 
-        tract_sf %>% 
-        st_intersection(buffers_by_tract_sf)
-      }
-  }
+intermediate_object_loader("buffers_by_tracts_with_buffers", 
+                           "shrunken_tract_polygon_list")
 
 # make buffer clipper function for all tracts
 buffer_clipper_nation <- 
   function(buffers_by_tract_list,
-           tract_list,
-           buffer_clipper_little_function){
+           tract_list){
+    
+    tract_names <- names(buffers_by_tract_list)
+    
+    tract_list_subset <- tract_list[tract_names]
+    
     clipped_buffers <- 
-      map2(
-        .f = buffer_clipper_little_function, 
-        .x = tract_list, 
-        .y = buffers_by_tract_list
-      )
+      map2(.f = st_intersection, 
+           .x = tract_list_subset, 
+           .y = buffers_by_tract_list)
   }
 
 # clip the buffers for all the tracts!
 clipped_buffers <- 
-  map(
-    .x = buffers_by_tract_all_sizes, 
-    .f = buffer_clipper_nation, 
-    tract_list = tracts_polygon_list, 
-    buffer_clipper_little_function = buffer_clipper_tract
-  )
+  map(.x = buffers_by_tracts_with_buffers, 
+      .f = buffer_clipper_nation, 
+      tract_list = shrunken_tract_polygon_list)
 
-# # visual check of result
-# library(mapview)
-# mapview::mapView(list(tracts_clipped_buffers[[145]], al_tracts_simple[145,]), native.crs = TRUE)
+# visual check of result
+library(mapview)
+mapview::mapView(list(clipped_buffers$buffer_1000_m$`26253`, 
+                      shrunken_tract_polygon_list$`26253`),
+                 native.crs = TRUE)
 
 # save objects
-save(buffer_clipper_tract, file = file.path("functions", 
-                                            "buffer_clipper_tract.rdata"))
-
 save(buffer_clipper_nation, file = file.path("functions", 
                                              "buffer_clipper_nation.rdata"))
 
@@ -5083,41 +5086,32 @@ intermediate_object_loader("clipped_buffers")
 buffer_intersector_tract <- 
   function(buffers_clipped_to_tract_sf) {
     # make concordance vector to replace "origin" values (rows) with monitor ids
+      
+    # label monitors with their indices
+    concordance_vector <-
+      setNames(
+        object = buffers_clipped_to_tract_sf$monitor_id,  # object to named
+        nm = buffers_clipped_to_tract_sf$buffer_index  # names (polygon #s)
+      )
     
-    if(!("sf" %in% class(buffers_clipped_to_tract_sf))){
-      
-      return("no_buffers_here")
-      
-    } else {
-      
-      # label monitors with their indices
-      concordance_vector <-
-        setNames(
-          object = buffers_clipped_to_tract_sf$monitor_id,  # object to named
-          nm = buffers_clipped_to_tract_sf$buffer_index  # names (polygon #s)
-        )
-      
-      # find buffer intersections and areas by monitor
-      buffer_intersections <- 
-        buffers_clipped_to_tract_sf %>% 
-        st_intersection() %>% 
-        mutate(area = st_area(geometry),  # add areas
-               monitor_id_overlaps =  # add column of monitor ids
-                 map(
-                   .x = origins,  # go through the origin column (with polygon #s)
-                   .f = function(a) concordance_vector[a]  # replace with monitor ids
-                   )
-               ) 
-      
-      return(buffer_intersections)
-      
-    }
+    # find buffer intersections and areas by monitor
+    buffer_intersections <- 
+      buffers_clipped_to_tract_sf %>% 
+      st_intersection() %>% 
+      mutate(area = st_area(geometry),  # add areas
+             monitor_id_overlaps =  # add column of monitor ids
+               map(
+                 .x = origins,  # go through the origin column (with polygon #s)
+                 .f = function(a) concordance_vector[a]  # replace with monitor ids
+                 )
+             ) 
+    
+    return(buffer_intersections)
   }
 
 # buffer intersection function for the nation
 buffer_intersector_nation <- 
-  function(buffers_clipped_to_tracts,
-           buffer_intersector_little_function){
+  function(buffers_clipped_to_tracts){
     buffer_intersections_nation <- 
       map(
         .x = buffers_clipped_to_tracts,
@@ -5145,9 +5139,7 @@ safe_buffer_intersector_nation <-
 safely_intersected_buffers <- 
   map(
     .f = safe_buffer_intersector_nation, 
-    .x = clipped_buffers,
-    buffer_intersector_little_function = buffer_intersector_tract #, 
-    # .progress = TRUE
+    .x = clipped_buffers
   )
 
 rm(clipped_buffers)
