@@ -29219,3 +29219,41 @@ snap_to_gridder <-
 
 ```
 
+
+
+```{r deleted whatnot from comparing errors}
+
+# find tracts still erroring in both sets
+tracts_erroring_post_snap_precise <- 
+  map2(.x = tracts_still_erroring_after_snapping,
+       .y = precise_one_tracts_still_erroring, 
+       .f = intersect)
+
+# indices of tracts still erroring
+indices_tracts_erroring_post_snap_precise <- 
+  map2(.x = snapped_tracts_still_erroring_indices,
+       .y = precise_one_tracts_still_erroring_indices, 
+       .f = intersect)
+
+# counts of tracts still erroring
+post_snap_precise_error_counts <- 
+  map(.x = indices_tracts_erroring_post_snap_precise, 
+      length)
+
+save(tracts_erroring_post_snap_precise, 
+     file = file.path("intermediate_data", 
+                      "tracts_erroring_post_snap_precise.rdata"))
+
+save(indices_tracts_erroring_post_snap_precise, 
+     file = file.path("intermediate_data", 
+                      "indices_tracts_erroring_post_snap_precise.rdata"))
+
+save(post_snap_precise_error_counts, 
+     file = file.path("intermediate_data", 
+                      "post_snap_precise_error_counts.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
+

@@ -5282,8 +5282,8 @@ precision_maximizer_nation <-
   }
 
 # run all tracts!
-precise_tracts <- map(.f = precision_maximizer_nation,
-                      .x = erroring_tracts)
+precise_intersected_tracts <- map(.f = precision_maximizer_nation,
+                                  .x = erroring_tracts)
 
 # save objects to disk
 save(precision_maximizer_tract, 
@@ -5294,8 +5294,8 @@ save(precision_maximizer_nation,
      file = file.path("functions", 
                       "precision_maximizer_nation.rdata"))
 
-save(precise_tracts, 
-     file = file.path("intermediate_data", "precise_tracts.rdata"))
+save(precise_intersected_tracts, 
+     file = file.path("intermediate_data", "precise_intersected_tracts.rdata"))
 
 ```
 
@@ -5322,7 +5322,7 @@ erroring_tracts_snapped <-
       .f = tract_snapper)
 
 # safely intersect all buffer sizes for all erroring tracts
-safely_intersected_snapped_erroring_tracts <-
+snapped_self_intersected_tracts <-
   map(.f = safe_buffer_intersector_nation,
       .x = erroring_tracts_snapped,
       buffer_intersector_little_function = buffer_intersector_tract #,
@@ -5333,7 +5333,7 @@ safely_intersected_snapped_erroring_tracts <-
 intersected_snapped_errors <-
   map(.f = function(x) Filter(Negate(is.null),
                               x$error),
-      .x = safely_intersected_snapped_erroring_tracts)
+      .x = snapped_self_intersected_tracts)
 
 # count errors
 snapped_error_counts <-
@@ -5351,9 +5351,9 @@ snapped_error_indices <-
 
 save(erroring_tracts_snapped, 
      file = file.path("intermediate_data", "erroring_tracts_snapped.rdata")) 
-save(safely_intersected_snapped_erroring_tracts, 
+save(snapped_self_intersected_tracts, 
      file = file.path("intermediate_data", 
-                      "safely_intersected_snapped_erroring_tracts.rdata"))
+                      "snapped_self_intersected_tracts.rdata"))
 save(snapped_error_counts, 
      file = file.path("intermediate_data", "snapped_error_counts.rdata"))
 save(snapped_error_indices, 
@@ -5405,8 +5405,8 @@ snap_to_grid_minimizer_nation <-
   }
 
 # run all tracts!
-minimally_snapped_tracts <- map(.f = snap_to_grid_minimizer_nation, 
-                                .x = erroring_tracts)
+snapped_grid_intersected_tracts <- map(.f = snap_to_grid_minimizer_nation, 
+                                       .x = erroring_tracts)
 
 # save objects to disk
 save(snap_to_grid_minimizer_tract, 
@@ -5417,55 +5417,43 @@ save(snap_to_grid_minimizer_nation,
      file = file.path("functions", 
                       "snap_to_grid_minimizer_nation.rdata"))
 
-save(minimally_snapped_tracts, 
+save(snapped_grid_intersected_tracts, 
      file = file.path("intermediate_data", 
-                      "minimally_snapped_tracts.rdata"))
+                      "snapped_grid_intersected_tracts.rdata"))
 
 ```
 
 
-```{r find remaining errors after each set combined, eval=FALSE, include=FALSE}
+```{r find remaining errors after each set combined}
 
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
 
 # load files
-intermediate_object_loader("tracts_still_erroring_after_snapping", 
-                           "precise_one_tracts_still_erroring", 
-                           "snapped_tracts_still_erroring_indices", 
-                           "precise_one_tracts_still_erroring_indices")
+intermediate_object_loader("precise_intersected_tracts", 
+                           "snapped_self_intersected_tracts", 
+                           "snapped_grid_intersected_tracts")
 
-# find tracts still erroring in both sets
-tracts_erroring_post_snap_precise <- 
-  map2(.x = tracts_still_erroring_after_snapping,
-       .y = precise_one_tracts_still_erroring, 
-       .f = intersect)
+# tracts still erroring after precision setting
 
-# indices of tracts still erroring
-indices_tracts_erroring_post_snap_precise <- 
-  map2(.x = snapped_tracts_still_erroring_indices,
-       .y = precise_one_tracts_still_erroring_indices, 
-       .f = intersect)
 
-# counts of tracts still erroring
-post_snap_precise_error_counts <- 
-  map(.x = indices_tracts_erroring_post_snap_precise, 
-      length)
+# pull tracts from self-intersections
 
-save(tracts_erroring_post_snap_precise, 
-     file = file.path("intermediate_data", 
-                      "tracts_erroring_post_snap_precise.rdata"))
 
-save(indices_tracts_erroring_post_snap_precise, 
-     file = file.path("intermediate_data", 
-                      "indices_tracts_erroring_post_snap_precise.rdata"))
+# tracts still erroring after precision and snapping to self at meter tolerance
 
-save(post_snap_precise_error_counts, 
-     file = file.path("intermediate_data", 
-                      "post_snap_precise_error_counts.rdata"))
 
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
+# pull rest from those snapped to the grid
+
+
+# add column with snapping information
+
+  
+
+
+
+
+
 
 ```
 
