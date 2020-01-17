@@ -5126,6 +5126,31 @@ gc()
 ```
 
 
+```{r transpose results above}
+
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+intermediate_object_loader("safely_intersected_buffers")
+
+transposed_safely_intersected_buffers <- 
+  map(.f = transpose, 
+      .x = safely_intersected_buffers)
+
+rm(safely_intersected_buffers)
+gc()
+
+# save intersected buffer file to disk
+save(transposed_safely_intersected_buffers, 
+     file = file.path("intermediate_data", 
+                      "transposed_safely_intersected_buffers.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+
+```
+
 ## fixing intersection errors
 
 ### investigation
@@ -5136,18 +5161,18 @@ gc()
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
 
 # load intermediate files
-intermediate_object_loader("safely_intersected_buffers")
+intermediate_object_loader("transposed_safely_intersected_buffers")
 
 # isolate the erroring tracts
 buffer_intersection_errors <- 
   map(
     .f = function(x) Filter(Negate(is.null), 
                             x$error),
-    .x = safely_intersected_buffers
+    .x = transposed_safely_intersected_buffers
   )
 
 # remove the safely intersected buffers to save memory
-rm(safely_intersected_buffers)
+rm(transposed_safely_intersected_buffers)
 gc()
 
 # count the erroring tracts
