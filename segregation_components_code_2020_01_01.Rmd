@@ -4993,6 +4993,10 @@ save(shrunken_tract_polygon_list,
      file = file.path("intermediate_data", 
                       "shrunken_tract_polygon_list.rdata"))
 
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+
 ```
 
 
@@ -5027,11 +5031,11 @@ clipped_buffers <-
       .f = buffer_clipper_nation, 
       tract_list = shrunken_tract_polygon_list)
 
-# visual check of result
-library(mapview)
-mapview::mapView(list(clipped_buffers$buffer_1000_m$`26253`, 
-                      shrunken_tract_polygon_list$`26253`),
-                 native.crs = TRUE)
+# # visual check of result
+# library(mapview)
+# mapview::mapView(list(clipped_buffers$buffer_1000_m$`26253`, 
+#                       shrunken_tract_polygon_list$`26253`),
+#                  native.crs = TRUE)
 
 # save objects
 save(buffer_clipper_nation, file = file.path("functions", 
