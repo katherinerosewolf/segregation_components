@@ -5441,7 +5441,7 @@ gc()
 ```
 
 
-```{r find remaining errors after each set combined}
+```{r find remaining errors after each set combined, eval=FALSE, include=FALSE}
 
 # load functions to save and load intermediate files
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
@@ -5480,10 +5480,5 @@ transpose_try <-transpose(precise_intersected_tracts$buffer_10000_m)
 
 
 end goal: weights from each buffer in each census tract
-
-```{r}
-
-```
-
 
 
