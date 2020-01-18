@@ -46,6 +46,7 @@ library(lubridate)
 library(lwgeom)
 library(ggdag)
 library(furrr)
+library(pryr)
 
 ```
 
@@ -5226,6 +5227,7 @@ save(erroring_tracts,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
 
 ```
 
@@ -5292,9 +5294,11 @@ precision_maximizer_nation <-
         .x = tract_sf_list)
   }
 
+mem_change(
 # run all tracts!
 precise_intersected_tracts <- map(.f = precision_maximizer_nation,
                                   .x = erroring_tracts)
+)
 
 # save objects to disk
 save(precision_maximizer_tract, 
