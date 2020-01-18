@@ -4936,10 +4936,9 @@ gc()
 ```
 
 
-```{r create dataset of only tracts with buffers, eval=FALSE, include=FALSE}
+```{r create dataset of only tracts with buffers}
 
-load(file = file.path("intermediate_data", 
-                      "buffers_by_tract_all_sizes.rdata"))
+load(file = file.path("intermediate_data", "buffers_by_tract_all_sizes.rdata"))
 
 # make function to name list items
 numeric_namer <- 
@@ -4993,7 +4992,6 @@ save(buffers_by_tracts_with_buffers,
 save(shrunken_tract_polygon_list,
      file = file.path("intermediate_data", 
                       "shrunken_tract_polygon_list.rdata"))
-
 
 ```
 
@@ -5452,9 +5450,9 @@ intermediate_object_loader("precise_intersected_tracts",
 # tracts still erroring after precision setting
 transpose_try <-transpose(precise_intersected_tracts$buffer_10000_m)
 
-snapped_self_intersected_tracts$buffer_10000_m$error
-
-snapped_grid_intersected_tracts$buffer_10000_m
+# snapped_self_intersected_tracts$buffer_10000_m$error
+# 
+# snapped_grid_intersected_tracts$buffer_10000_m
 
 # pull tracts from self-intersections
 
