@@ -5272,6 +5272,10 @@ precision_maximizer_tract <-
                                  intersect_precise, 
                                  err_bool)
       
+      rm(precise_tract, 
+         intersect_precise)
+      gc()
+      
       return(return_list)
       
     } else {
@@ -5280,6 +5284,10 @@ precision_maximizer_tract <-
                                  precise_tract, 
                                  intersect_precise, 
                                  err_bool)
+      
+      rm(precise_tract, 
+         intersect_precise)
+      gc()
       
       return(return_list)
   
@@ -5294,11 +5302,9 @@ precision_maximizer_nation <-
         .x = tract_sf_list)
   }
 
-mem_change(
 # run all tracts!
 precise_intersected_tracts <- map(.f = precision_maximizer_nation,
                                   .x = erroring_tracts)
-)
 
 # save objects to disk
 save(precision_maximizer_tract, 
@@ -5378,6 +5384,7 @@ save(snapped_error_indices,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
 
 ```
 
@@ -5452,15 +5459,43 @@ load(file = file.path("functions", "intermediate_object_loader.rdata"))
 
 # load files
 intermediate_object_loader("precise_intersected_tracts", 
-                           "snapped_self_intersected_tracts", 
+                           "snapped_self_intersected_tracts",
                            "snapped_grid_intersected_tracts")
 
-# tracts still erroring after precision setting
-transpose_try <-transpose(precise_intersected_tracts$buffer_10000_m)
+# format precise intersected tracts for easy error finding
+tract_intersect_selector <- 
+  function(tract_list){
+    map(.x = tract_list, 
+        .f = function(x) x$intersect_precise)
+  }
 
-# snapped_self_intersected_tracts$buffer_10000_m$error
-# 
-# snapped_grid_intersected_tracts$buffer_10000_m
+precise_tracts_intersections_only <- 
+  precise_intersected_tracts %>% 
+  map(.f = tract_intersect_selector)
+
+# function returns character indexes of successfully intersected tracts
+success_detector_for_tract_list <- 
+  function(intersect_output_tract_list){
+    successes <- 
+      intersect_output_tract_list[is.null(intersect_output_tract_list$error)]
+    return(names(successes))
+  }
+
+# run for precise tracts
+precision_successes <- 
+  map(.x = precise_tracts_intersections_only, 
+      .f = success_detector_for_tract_list)
+
+snap_to_self_successes <- 
+  map(.x = snapped_self_intersected_tracts, 
+      .f = success_detector_for_tract_list)
+
+snap_to_grid_successes <- 
+  map(.x = snapped_grid_intersected_tracts, 
+      .f = success_detector_for_tract_list)
+
+# merge with whatnot
+
 
 # pull tracts from self-intersections
 
@@ -5471,11 +5506,10 @@ transpose_try <-transpose(precise_intersected_tracts$buffer_10000_m)
 # pull rest from those snapped to the grid
 
 
-# add column with snapping information
-
-  
+# pull in all the tracts not erroring
 
 
+# combine into one master list!  YAY!
 
 
 
@@ -5483,6 +5517,6 @@ transpose_try <-transpose(precise_intersected_tracts$buffer_10000_m)
 ```
 
 
-end goal: weights from each buffer in each census tract
+end goal: weights from each buffer in each census tract (that add up to one!)
 
 

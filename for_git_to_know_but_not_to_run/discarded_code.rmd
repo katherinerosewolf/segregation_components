@@ -29301,3 +29301,18 @@ rm(list = ls(all.names = TRUE))
 
 ```
 
+
+```{r}
+
+success_detector_for_tract_list <- 
+  function(intersect_output_tract_list){
+  map(.f = success_detector, 
+      .x = intersect_output_tract_list)
+  }
+
+precision_successes <- 
+  map(.x = precise_tracts_intersections_only, 
+      .f = success_detector_for_tract_list)
+
+```
+
