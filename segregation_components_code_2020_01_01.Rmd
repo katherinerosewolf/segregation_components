@@ -5684,29 +5684,3 @@ mem_used()
 ```
 
 end goal: weights from each buffer in each census tract (that add up to one!)
-
-
-```{r}
-
-load(file = file.path("intermediate_data", 
-                      "tracts_to_use.rdata"))
-
-# save success indices for posterity
-load(file = file.path("intermediate_data", 
-                      "original_successes.rdata"))
-load(file = file.path("intermediate_data", 
-                                          "valid_successes.rdata"))
-load(file = file.path("intermediate_data", 
-                                          "zero_buffered_successes.rdata"))
-load(file = file.path("intermediate_data", 
-                                          "precision_successes.rdata"))
-load(file = file.path("intermediate_data", 
-                                          "snap_to_self_successes.rdata"))
-load(file = file.path("intermediate_data", 
-                                          "snap_to_grid_successes.rdata"))
-
-map(.x = zero_buffered_successes, 
-    .f = function(x) x)
-
-```
-
