@@ -10,6 +10,12 @@ before_install:
   - sudo apt-get --yes --force-yes update -qq
   - sudo apt-get install --yes libudunits2-dev libproj-dev libgeos-dev libgdal-dev libgsl-dev libv8-dev
   - git lfs pull
+  
+  # Additional info about the build
+  - uname -a
+  - free -m
+  - df -h
+  - ulimit -a
 
 script: 
   # Output something every 10 minutes or Travis kills the job

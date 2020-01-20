@@ -29360,3 +29360,208 @@ mem_used()
 
 ```
 
+
+```{r make tracts valid and then intersect buffers}
+
+mem_used()
+
+# load functions to save and load intermediate files
+load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
+
+mem_used()
+
+load(file = file.path("intermediate_data", "erroring_tracts.rdata"))
+
+mem_used()
+
+# make function to snap tracts to themselves
+validator <-
+  function(tracts_in_one_buffer_size) {
+    map(.x = tracts_in_one_buffer_size,
+        .f = st_make_valid)
+  }
+
+# do the validation
+erroring_tracts_valid <-
+  map(.x = erroring_tracts,
+      .f = validator)
+
+mem_used()
+
+rm(erroring_tracts)
+rm(validator)
+gc()
+
+mem_used()
+
+# save erroring_tracts_valid and remove erroring tracts
+save(erroring_tracts_valid, 
+     file = file.path("intermediate_data", "erroring_tracts_valid.rdata"))
+gc()
+
+mem_used()
+
+# safely intersect all buffer sizes for all erroring tracts
+valid_intersected_tracts <-
+  map(.f = safe_buffer_intersector_nation,
+      .x = erroring_tracts_valid)
+gc()
+mem_used()
+
+# remove erroring_tracts_valid
+rm(erroring_tracts_valid)
+gc()
+mem_used()
+
+# investigate errors
+intersected_valid_errors <-
+  map(.f = function(x) Filter(Negate(is.null),
+                              x$error),
+      .x = valid_intersected_tracts)
+
+save(valid_intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "valid_intersected_tracts.rdata"))
+rm(valid_intersected_tracts)
+gc()
+mem_used()
+
+# count errors
+valid_error_counts <-
+  map(
+    .x = intersected_valid_errors,
+    .f = length
+  )
+mem_used()
+
+# get buffer indices of tracts still erroring
+valid_error_indices <-
+  map(
+    .f = names,
+    .x = intersected_valid_errors
+  )
+
+save(valid_error_counts, 
+     file = file.path("intermediate_data", "valid_error_counts.rdata"))
+save(valid_error_indices, 
+     file = file.path("intermediate_data", "valid_error_indices.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r buffer tracts by 0 and then intersect buffers}
+
+# load functions to save and load intermediate files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
+
+intermediate_object_loader("erroring_tracts")
+
+# make function to snap tracts to themselves
+zero_bufferer <-
+  function(tracts_in_one_buffer_size) {
+    map(.x = tracts_in_one_buffer_size,
+        .f = function(x) st_buffer(x, dist = 0))
+  }
+
+# do the buffering
+erroring_tracts_zero_buffered <-
+  map(.x = erroring_tracts,
+      .f = zero_bufferer)
+gc()
+
+# save erroring_tracts_zero_buffered and remove erroring_tracts
+save(erroring_tracts_zero_buffered, 
+     file = file.path("intermediate_data", 
+                      "erroring_tracts_zero_buffered.rdata")) 
+rm(erroring_tracts)
+gc()
+
+# safely intersect all buffer sizes for all erroring tracts
+zero_buffered_intersected_tracts <-
+  map(.f = safe_buffer_intersector_nation,
+      .x = erroring_tracts_zero_buffered)
+gc()
+
+# remove erroring_tracts_zero_buffered
+rm(erroring_tracts_zero_buffered)
+gc()
+
+# investigate errors
+intersected_zero_buffered_errors <-
+  map(.f = function(x) Filter(Negate(is.null),
+                              x$error),
+      .x = zero_buffered_intersected_tracts)
+
+# count errors
+zero_buffered_error_counts <-
+  map(
+    .x = intersected_zero_buffered_errors,
+    .f = length
+  )
+
+# get buffer indices of tracts still erroring
+zero_buffered_error_indices <-
+  map(
+    .f = names,
+    .x = intersected_zero_buffered_errors
+  )
+
+save(zero_buffered_intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "zero_buffered_intersected_tracts.rdata"))
+save(zero_buffered_error_counts, 
+     file = file.path("intermediate_data", "zero_buffered_error_counts.rdata"))
+save(zero_buffered_error_indices, 
+     file = file.path("intermediate_data", "zero_buffered_error_indices.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r}
+
+
+
+# valid indices
+indices_use_from_valid <- valid_successes
+
+# zero buffered indices
+indices_use_from_zero_buffered <- 
+  map2(.x = zero_buffered_successes, 
+       .y = valid_successes, 
+       .f = setdiff)  # takes elements in the first but not in the second
+
+indices_use_from_valid_or_zero_buffered <- 
+  map2(.x = indices_use_from_valid, 
+       .y = indices_use_from_zero_buffered, 
+       .f = c)  # concatenates the lists
+
+
+
+
+tracts_use_from_valid <- 
+  map2(.x = valid_intersected_tracts, 
+       .y = indices_use_from_valid, 
+       .f = function(x, y) x[y])
+  
+tracts_use_from_zero_buffered <-
+  map2(.x = zero_buffered_intersected_tracts, 
+       .y = indices_use_from_zero_buffered, 
+       .f = function(x, y) x[y])
+
+```
+
