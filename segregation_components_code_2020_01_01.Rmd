@@ -4933,6 +4933,7 @@ save(buffers_by_tract_all_sizes,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -4997,6 +4998,7 @@ save(shrunken_tract_polygon_list,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5048,6 +5050,7 @@ save(clipped_buffers, file = file.path("intermediate_data",
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5125,6 +5128,7 @@ save(safely_intersected_buffers,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5151,6 +5155,7 @@ save(transposed_safely_intersected_buffers,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5228,6 +5233,7 @@ save(erroring_tracts,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5302,6 +5308,7 @@ save(valid_error_indices,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5377,6 +5384,7 @@ save(zero_buffered_error_indices,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5491,6 +5499,7 @@ save(precise_intersected_tracts,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5564,6 +5573,7 @@ save(snapped_error_indices,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5648,6 +5658,7 @@ save(snapped_grid_intersected_tracts,
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
@@ -5865,6 +5876,7 @@ mem_used()  # check memory
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
+mem_used()
 
 ```
 
