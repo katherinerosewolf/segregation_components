@@ -5658,11 +5658,13 @@ gc()
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
 
 # load files
-intermediate_object_loader("valid_intersected_tracts",
+intermediate_object_loader("safely_intersected_buffers",
+                           "valid_intersected_tracts",
                            "zero_buffered_intersected_tracts",
                            "precise_intersected_tracts", 
                            "snapped_self_intersected_tracts",
                            "snapped_grid_intersected_tracts")
+mem_used()  # check memory
 
 # function returns character indexes of successfully intersected tracts
 success_detector_for_tract <- 
@@ -5677,6 +5679,11 @@ success_detector_for_list <-
     successes <- true_false_list[true_false_list == TRUE]
     return(names(successes))
   }
+
+# run for unmodified tracts
+original_successes <- 
+  map(.x = safely_intersected_buffers,
+      .f = success_detector_for_list) 
 
 # run for precise tracts
 valid_successes <-
@@ -5700,6 +5707,9 @@ snap_to_grid_successes <-
       .f = success_detector_for_list)
 
 # make lists of indices of tracts to use from each group
+
+# original non-erroring indices
+indices_use_from_original <- original_successes
 
 # valid indices
 indices_use_from_valid <- valid_successes
@@ -5743,7 +5753,22 @@ indices_use_from_snap_grid <-
        .y = indices_use_from_valid_zero_buffered_precise_self, 
        .f = setdiff)  # takes elements in the first but not in the second
 
+# remove files no longer needed
+rm(original_successes, 
+   valid_successes, 
+   zero_buffered_successes, 
+   precision_successes, 
+   snap_to_self_successes, 
+   snap_to_grid_successes)
+gc()
+mem_used()  # check memory
+
 # pull in all the tracts not erroring
+tracts_use_from_original <- 
+  map2(.x = safely_intersected_buffers, 
+       .y = indices_use_from_original, 
+       .f = function(x, y) x[y])
+
 tracts_use_from_valid <- 
   map2(.x = valid_intersected_tracts, 
        .y = indices_use_from_valid, 
@@ -5769,26 +5794,82 @@ tracts_use_from_snap_grid <-
        .y = indices_use_from_snap_grid, 
        .f = function(x, y) x[y])
 
+
+# remove files no longer needed
+rm(indices_use_from_original, 
+   indices_use_from_valid, 
+   indices_use_from_zero_buffered,
+   indices_use_from_precise, 
+   indices_use_from_snap_self, 
+   indices_use_from_snap_grid,
+   indices_use_from_valid_or_zero_buffered, 
+   indices_use_from_valid_zero_buffered_precise,
+   indices_use_from_valid_zero_buffered_precise_self, 
+   safely_intersected_buffers, 
+   valid_intersected_tracts, 
+   zero_buffered_intersected_tracts, 
+   precise_intersected_tracts, 
+   snapped_self_intersected_tracts, 
+   snapped_grid_intersected_tracts)
+gc()
+mem_used()  # check memory
+
 # combine into one master list!  YAY!
 tracts_to_use <- 
-  lst(tracts_use_from_valid, 
+  lst(tracts_use_from_original,
+      tracts_use_from_valid, 
       tracts_use_from_zero_buffered, 
       tracts_use_from_precise, 
       tracts_use_from_snap_self, 
       tracts_use_from_snap_grid)
 
+save(tracts_to_use, file = file.path("intermediate_data", 
+                                     "tracts_to_use.rdata"))
 
+# remove objects no longer needed
+rm(tracts_use_from_original,
+   tracts_use_from_valid, 
+   tracts_use_from_zero_buffered, 
+   tracts_use_from_precise, 
+   tracts_use_from_snap_self, 
+   tracts_use_from_snap_grid)
+gc()
+mem_used()  # check memory
+
+# function to get only result for each tract and delete the null error from each
+tract_result_selector <- 
+  function(tract_list){
+    map(.x = tract_list, 
+        .f = function(x) x$result)
+  }
+
+
+# make list of all tracts
 intersected_tracts <- 
   pmap(.l = tracts_to_use,  # make list of the five lists for each buffer size
        .f = lst) %>% 
-  map(.f = flatten)  # remove source distinctions
+  map(.f = flatten) %>%  # remove source distinctions
+  map(.f = tract_result_selector)  # pull results only, not errors
+
+# remove tracts to use
+rm(tracts_to_use)
+gc()
+mem_used()  # check memory
+
+# save list of all tracts
+save(intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "intersected_tracts.rdata"))
+mem_used()  # check memory
+    
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+
+```
 
 
-
-
-
-
-
+```{r}
 
 ```
 
