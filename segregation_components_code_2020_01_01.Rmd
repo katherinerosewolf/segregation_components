@@ -5058,10 +5058,7 @@ mem_used()
 ```{r buffer intersections}
 
 # load functions to get the other files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
-
-# load clipped buffers
-intermediate_object_loader("clipped_buffers")
+load(file = file.path("intermediate_data", "clipped_buffers.rdata"))
 
 buffer_intersector_tract <- 
   function(buffers_clipped_to_tract_sf) {
@@ -5240,13 +5237,18 @@ mem_used()
 
 ```{r make tracts valid and then intersect buffers}
 
+mem_used()
+
 # load functions to save and load intermediate files
-load(file = file.path("functions", "intermediate_object_loader.rdata"))
 load(file = file.path("functions", "buffer_intersector_tract.rdata"))
 load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
 load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
 
-intermediate_object_loader("erroring_tracts")
+mem_used()
+
+load(file = file.path("intermediate_data", "erroring_tracts.rdata"))
+
+mem_used()
 
 # make function to snap tracts to themselves
 validator <-
@@ -5255,27 +5257,37 @@ validator <-
         .f = st_make_valid)
   }
 
-# do the snapping
+# do the validation
 erroring_tracts_valid <-
   map(.x = erroring_tracts,
       .f = validator)
+
+mem_used()
+
+rm(erroring_tracts)
+rm(validator)
 gc()
+
+mem_used()
 
 # save erroring_tracts_valid and remove erroring tracts
 save(erroring_tracts_valid, 
-     file = file.path("intermediate_data", "erroring_tracts_valid.rdata")) 
-rm(erroring_tracts)
+     file = file.path("intermediate_data", "erroring_tracts_valid.rdata"))
 gc()
+
+mem_used()
 
 # safely intersect all buffer sizes for all erroring tracts
 valid_intersected_tracts <-
   map(.f = safe_buffer_intersector_nation,
       .x = erroring_tracts_valid)
 gc()
+mem_used()
 
 # remove erroring_tracts_valid
 rm(erroring_tracts_valid)
 gc()
+mem_used()
 
 # investigate errors
 intersected_valid_errors <-
@@ -5283,12 +5295,20 @@ intersected_valid_errors <-
                               x$error),
       .x = valid_intersected_tracts)
 
+save(valid_intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "valid_intersected_tracts.rdata"))
+rm(valid_intersected_tracts)
+gc()
+mem_used()
+
 # count errors
 valid_error_counts <-
   map(
     .x = intersected_valid_errors,
     .f = length
   )
+mem_used()
 
 # get buffer indices of tracts still erroring
 valid_error_indices <-
@@ -5297,9 +5317,6 @@ valid_error_indices <-
     .x = intersected_valid_errors
   )
 
-save(valid_intersected_tracts, 
-     file = file.path("intermediate_data", 
-                      "valid_intersected_tracts.rdata"))
 save(valid_error_counts, 
      file = file.path("intermediate_data", "valid_error_counts.rdata"))
 save(valid_error_indices, 
@@ -5879,12 +5896,6 @@ gc()
 mem_used()
 
 ```
-
-
-```{r}
-
-```
-
 
 end goal: weights from each buffer in each census tract (that add up to one!)
 
