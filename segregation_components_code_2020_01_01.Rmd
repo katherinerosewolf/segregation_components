@@ -5253,17 +5253,29 @@ validator <-
 erroring_tracts_valid <-
   map(.x = erroring_tracts,
       .f = validator)
+gc()
+
+# save erroring_tracts_valid and remove erroring tracts
+save(erroring_tracts_valid, 
+     file = file.path("intermediate_data", "erroring_tracts_valid.rdata")) 
+rm(erroring_tracts)
+gc()
 
 # safely intersect all buffer sizes for all erroring tracts
-valid_self_intersected_tracts <-
+valid_intersected_tracts <-
   map(.f = safe_buffer_intersector_nation,
       .x = erroring_tracts_valid)
+gc()
+
+# remove erroring_tracts_valid
+rm(erroring_tracts_valid)
+gc()
 
 # investigate errors
 intersected_valid_errors <-
   map(.f = function(x) Filter(Negate(is.null),
                               x$error),
-      .x = valid_self_intersected_tracts)
+      .x = valid_intersected_tracts)
 
 # count errors
 valid_error_counts <-
@@ -5279,11 +5291,9 @@ valid_error_indices <-
     .x = intersected_valid_errors
   )
 
-save(erroring_tracts_valid, 
-     file = file.path("intermediate_data", "erroring_tracts_valid.rdata")) 
-save(valid_self_intersected_tracts, 
+save(valid_intersected_tracts, 
      file = file.path("intermediate_data", 
-                      "valid_self_intersected_tracts.rdata"))
+                      "valid_intersected_tracts.rdata"))
 save(valid_error_counts, 
      file = file.path("intermediate_data", "valid_error_counts.rdata"))
 save(valid_error_indices, 
@@ -5313,21 +5323,34 @@ zero_bufferer <-
         .f = function(x) st_buffer(x, dist = 0))
   }
 
-# do the snapping
+# do the buffering
 erroring_tracts_zero_buffered <-
   map(.x = erroring_tracts,
       .f = zero_bufferer)
+gc()
+
+# save erroring_tracts_zero_buffered and remove erroring_tracts
+save(erroring_tracts_zero_buffered, 
+     file = file.path("intermediate_data", 
+                      "erroring_tracts_zero_buffered.rdata")) 
+rm(erroring_tracts)
+gc()
 
 # safely intersect all buffer sizes for all erroring tracts
-zero_buffered_self_intersected_tracts <-
+zero_buffered_intersected_tracts <-
   map(.f = safe_buffer_intersector_nation,
       .x = erroring_tracts_zero_buffered)
+gc()
+
+# remove erroring_tracts_zero_buffered
+rm(erroring_tracts_zero_buffered)
+gc()
 
 # investigate errors
 intersected_zero_buffered_errors <-
   map(.f = function(x) Filter(Negate(is.null),
                               x$error),
-      .x = zero_buffered_self_intersected_tracts)
+      .x = zero_buffered_intersected_tracts)
 
 # count errors
 zero_buffered_error_counts <-
@@ -5343,11 +5366,9 @@ zero_buffered_error_indices <-
     .x = intersected_zero_buffered_errors
   )
 
-save(erroring_tracts_zero_buffered, 
-     file = file.path("intermediate_data", "erroring_tracts_zero_buffered.rdata")) 
-save(zero_buffered_self_intersected_tracts, 
+save(zero_buffered_intersected_tracts, 
      file = file.path("intermediate_data", 
-                      "zero_buffered_self_intersected_tracts.rdata"))
+                      "zero_buffered_intersected_tracts.rdata"))
 save(zero_buffered_error_counts, 
      file = file.path("intermediate_data", "zero_buffered_error_counts.rdata"))
 save(zero_buffered_error_indices, 
@@ -5407,7 +5428,7 @@ precision_maximizer_tract <-
       return(return_list)
       
     } else {
-      
+       
       return_list <- tibble::lst(precision_vector[i],
                                  precise_tract, 
                                  intersect_precise, 
@@ -5432,7 +5453,23 @@ precision_maximizer_nation <-
 
 # run all tracts!
 precise_intersected_tracts_with_metadata <- map(.f = precision_maximizer_nation,
-                                  .x = erroring_tracts)
+                                                .x = erroring_tracts)
+gc()
+
+rm(erroring_tracts)
+gc()
+
+# function to pull the precise intersected sf for each tract without metadata
+tract_intersect_precise_selector <- 
+  function(tract_list){
+    map(.x = tract_list, 
+        .f = function(x) x$intersect_precise)
+  }
+
+# run said function
+precise_intersected_tracts <- 
+  precise_intersected_tracts_with_metadata %>% 
+  map(.f = tract_intersect_precise_selector)
 
 # save objects to disk
 save(precision_maximizer_tract, 
@@ -5444,7 +5481,12 @@ save(precision_maximizer_nation,
                       "precision_maximizer_nation.rdata"))
 
 save(precise_intersected_tracts_with_metadata, 
-     file = file.path("intermediate_data", "precise_intersected_tracts_with_metadata.rdata"))
+     file = file.path("intermediate_data", 
+                      "precise_intersected_tracts_with_metadata.rdata"))
+
+save(precise_intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "precise_intersected_tracts.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -5566,8 +5608,29 @@ snap_to_grid_minimizer_nation <-
   }
 
 # run all tracts!
-snapped_grid_intersected_tracts <- map(.f = snap_to_grid_minimizer_nation, 
-                                       .x = erroring_tracts)
+snapped_grid_intersected_tracts_with_metadata <- 
+  map(.f = snap_to_grid_minimizer_nation, 
+      .x = erroring_tracts)
+gc()
+
+# save the above and remove erroring tracts
+save(snapped_grid_intersected_tracts_with_metadata, 
+     file = file.path("intermediate_data", 
+                      "snapped_grid_intersected_tracts_with_metadata.rdata"))
+rm(erroring_tracts)
+gc()
+
+# function to pull the snapped grid intersected sf by tract without metadata
+tract_snapped_grid_selector <- 
+  function(tract_list){
+    map(.x = tract_list, 
+        .f = function(x) x$intersect_snap)
+  }
+
+# run said function
+snapped_grid_intersected_tracts <- 
+  snapped_grid_intersected_tracts_with_metadata %>% 
+  map(.f = tract_snapped_grid_selector)
 
 # save objects to disk
 save(snap_to_grid_minimizer_tract, 
@@ -5595,45 +5658,46 @@ gc()
 load(file = file.path("functions", "intermediate_object_loader.rdata"))
 
 # load files
-intermediate_object_loader("precise_intersected_tracts_with_metadata", 
+intermediate_object_loader("valid_intersected_tracts",
+                           "zero_buffered_intersected_tracts",
+                           "precise_intersected_tracts", 
                            "snapped_self_intersected_tracts",
                            "snapped_grid_intersected_tracts")
 
-# format precise intersected tracts for easy error finding
-tract_intersect_selector <- 
-  function(tract_list){
-    map(.x = tract_list, 
-        .f = function(x) x$intersect_precise)
-  }
-
-precise_intersected_tracts <- 
-  precise_intersected_tracts_with_metadata %>% 
-  map(.f = tract_intersect_selector)
-
-rm(precise_intersected_tracts_with_metadata)
-
 # function returns character indexes of successfully intersected tracts
-success_detector_for_tract_list <- 
-  function(intersect_output_tract_list){
-    successes <- 
-      intersect_output_tract_list[is.null(intersect_output_tract_list$error)]
-    return(names(successes))
+success_detector_for_tract <- 
+  function(intersect_output_tract){
+    success <- 
+      intersect_output_tract_list[!is.null(intersect_output_tract$result)]
+    return(names(success))
   }
 
-# run for precise tracts
-precision_successes <- 
-  map(.x = precise_tracts_intersections_only, 
-      .f = success_detector_for_tract_list)
+# success_detector_for_tract_list(snapped_grid_intersected_tracts_with_metadata$buffer_10000_m$`2906`)
 
-snap_to_self_successes <- 
-  map(.x = snapped_self_intersected_tracts, 
-      .f = success_detector_for_tract_list)
-
-snap_to_grid_successes <- 
-  map(.x = snapped_grid_intersected_tracts, 
-      .f = success_detector_for_tract_list)
+# # run for precise tracts
+# valid_successes <- 
+#   map(.x = valid_intersected_tracts, 
+#       .f = success_detector_for_tract_list)
+# 
+# zero_buffered_successes <- 
+#   map(.x = zero_buffered_intersected_tracts, 
+#       .f = success_detector_for_tract_list)
+# 
+# precision_successes <- 
+#   map(.x = precise_intersected_tracts, 
+#       .f = success_detector_for_tract_list)
+# 
+# snap_to_self_successes <- 
+#   map(.x = snapped_self_intersected_tracts, 
+#       .f = success_detector_for_tract_list)
+# 
+# snap_to_grid_successes <- 
+#   map(.x = snapped_grid_intersected_tracts, 
+#       .f = success_detector_for_tract_list)
 
 # merge with whatnot
+# tracts_to_pull_valid_successes <- 
+  
 
 
 # pull tracts from self-intersections
