@@ -5667,33 +5667,37 @@ intermediate_object_loader("valid_intersected_tracts",
 # function returns character indexes of successfully intersected tracts
 success_detector_for_tract <- 
   function(intersect_output_tract){
-    success <- 
-      intersect_output_tract_list[!is.null(intersect_output_tract$result)]
-    return(names(success))
+    !is.null(intersect_output_tract$result)
+}
+
+success_detector_for_list <- 
+  function(tract_list){
+    true_false_list <- map(.f = success_detector_for_tract, 
+                           .x = tract_list)
+    successes <- true_false_list[true_false_list == TRUE]
+    return(names(successes))
   }
 
-# success_detector_for_tract_list(snapped_grid_intersected_tracts_with_metadata$buffer_10000_m$`2906`)
+# run for precise tracts
+valid_successes <-
+  map(.x = valid_intersected_tracts,
+      .f = success_detector_for_list)
 
-# # run for precise tracts
-# valid_successes <- 
-#   map(.x = valid_intersected_tracts, 
-#       .f = success_detector_for_tract_list)
-# 
-# zero_buffered_successes <- 
-#   map(.x = zero_buffered_intersected_tracts, 
-#       .f = success_detector_for_tract_list)
-# 
-# precision_successes <- 
-#   map(.x = precise_intersected_tracts, 
-#       .f = success_detector_for_tract_list)
-# 
-# snap_to_self_successes <- 
-#   map(.x = snapped_self_intersected_tracts, 
-#       .f = success_detector_for_tract_list)
-# 
-# snap_to_grid_successes <- 
-#   map(.x = snapped_grid_intersected_tracts, 
-#       .f = success_detector_for_tract_list)
+zero_buffered_successes <-
+  map(.x = zero_buffered_intersected_tracts,
+      .f = success_detector_for_list)
+
+precision_successes <-
+  map(.x = precise_intersected_tracts,
+      .f = success_detector_for_list)
+
+snap_to_self_successes <-
+  map(.x = snapped_self_intersected_tracts,
+      .f = success_detector_for_list)
+
+snap_to_grid_successes <-
+  map(.x = snapped_grid_intersected_tracts,
+      .f = success_detector_for_list)
 
 # merge with whatnot
 # tracts_to_pull_valid_successes <- 
