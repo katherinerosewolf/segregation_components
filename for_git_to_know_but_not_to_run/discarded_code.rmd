@@ -29316,3 +29316,47 @@ precision_successes <-
 
 ```
 
+
+```{r unionize buffers}
+
+# load buffers
+load(file = file.path("intermediate_data", "buffers.rdata"))
+
+# unionize buffers
+unionized_buffers <- 
+  map(.f = st_union, 
+             .x = buffers)
+
+# save result
+save(unionized_buffers, file = file.path("intermediate_data", 
+                                         "unionized_buffers.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+
+
+```{r make graphs by monitor}
+
+# thingie <- 
+#   ggplot(
+#     data = ec_conversion_tibble[ec_conversion_tibble$monitor_id_poc == "01-073-0023-05",],
+#     aes(x = date_local, y = arithmetic_mean, color = factor(parameter_code))
+#   ) + 
+#   geom_point(aes(shape = factor(parameter_code)), size = 1, alpha = 0.5) +
+#   scale_x_date(date_labels = "%Y-%m-%d", date_breaks = "5 days", minor_breaks = "1 day") +
+#   theme(axis.text.x = element_text(angle = 90, size = 3))
+# 
+# ggsave(filename = file.path("intermediate_data", "plots", "thingie.jpg"), plot = thingie, device = NULL, path = NULL,
+#   scale = 1, width = 180, height = 5, units = c("cm"),
+#   dpi = 300, limitsize = FALSE)
+# 
+# thingie
+
+```
+

@@ -2976,6 +2976,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -3036,6 +3038,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -3093,6 +3097,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -3133,7 +3139,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
-
+gc()
+mem_used()
 
 ```
 
@@ -3272,6 +3279,8 @@ save(sf1_messed_up_tracts,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -3348,6 +3357,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -3422,6 +3433,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -3483,6 +3496,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -3911,6 +3926,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -4048,6 +4065,8 @@ carbon_monitor_table <-
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -4124,6 +4143,8 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
   
 ```
 
@@ -4261,6 +4282,8 @@ save(ec_select_tibble,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
   
 ```
 
@@ -4396,29 +4419,10 @@ save(oc_select_tibble,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
-
-
-```{r make graphs by monitor}
-
-# thingie <- 
-#   ggplot(
-#     data = ec_conversion_tibble[ec_conversion_tibble$monitor_id_poc == "01-073-0023-05",],
-#     aes(x = date_local, y = arithmetic_mean, color = factor(parameter_code))
-#   ) + 
-#   geom_point(aes(shape = factor(parameter_code)), size = 1, alpha = 0.5) +
-#   scale_x_date(date_labels = "%Y-%m-%d", date_breaks = "5 days", minor_breaks = "1 day") +
-#   theme(axis.text.x = element_text(angle = 90, size = 3))
-# 
-# ggsave(filename = file.path("intermediate_data", "plots", "thingie.jpg"), plot = thingie, device = NULL, path = NULL,
-#   scale = 1, width = 180, height = 5, units = c("cm"),
-#   dpi = 300, limitsize = FALSE)
-# 
-# thingie
-
-```
-
 
 
 ## monitor assignments
@@ -4568,6 +4572,8 @@ save(sparse_monitors_wgs84,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -4605,6 +4611,8 @@ save(state_monitor_counts, file = file.path("intermediate_data",
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -4655,6 +4663,8 @@ save(monitors_sf, file = file.path("intermediate_data", "monitors_sf.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -4759,6 +4769,8 @@ save(tracts_multipolygon_list,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
@@ -4829,28 +4841,11 @@ save(
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
-
-```{r unionize buffers}
-
-# load buffers
-load(file = file.path("intermediate_data", "buffers.rdata"))
-
-# unionize buffers
-unionized_buffers <- 
-  map(.f = st_union, 
-             .x = buffers)
-
-# save result
-save(unionized_buffers, file = file.path("intermediate_data", 
-                                         "unionized_buffers.rdata"))
-
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-
-```
 
 
 ```{r calculate buffer intersections with single polygon tracts}
@@ -4877,6 +4872,8 @@ save(buffer_tract_intersections_polygons,
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
 
 ```
 
