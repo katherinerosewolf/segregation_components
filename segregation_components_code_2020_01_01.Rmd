@@ -5699,24 +5699,93 @@ snap_to_grid_successes <-
   map(.x = snapped_grid_intersected_tracts,
       .f = success_detector_for_list)
 
-# merge with whatnot
-# tracts_to_pull_valid_successes <- 
-  
+# make lists of indices of tracts to use from each group
 
+# valid indices
+indices_use_from_valid <- valid_successes
 
-# pull tracts from self-intersections
+# zero buffered indices
+indices_use_from_zero_buffered <- 
+  map2(.x = zero_buffered_successes, 
+       .y = valid_successes, 
+       .f = setdiff)  # takes elements in the first but not in the second
 
+# precision indices
+indices_use_from_valid_or_zero_buffered <- 
+  map2(.x = indices_use_from_valid, 
+       .y = indices_use_from_zero_buffered, 
+       .f = c)  # concatenates the lists
 
-# tracts still erroring after precision and snapping to self at meter tolerance
+indices_use_from_precise <- 
+  map2(.x = precision_successes, 
+       .y = indices_use_from_valid_or_zero_buffered, 
+       .f = setdiff)  # takes elements in the first but not in the second
 
+# self-snap indices
+indices_use_from_valid_zero_buffered_precise <- 
+  map2(.x = indices_use_from_valid_or_zero_buffered, 
+       .y = indices_use_from_precise, 
+       .f = c)  # concatenates the lists
 
-# pull rest from those snapped to the grid
+indices_use_from_snap_self <- 
+  map2(.x = snap_to_self_successes, 
+       .y = indices_use_from_valid_zero_buffered_precise, 
+       .f = setdiff)  # takes elements in the first but not in the second
 
+# snap to grid indices
+indices_use_from_valid_zero_buffered_precise_self <- 
+  map2(.x = indices_use_from_valid_zero_buffered_precise, 
+       .y = indices_use_from_snap_self, 
+       .f = c)  # concatenates the lists
+
+indices_use_from_snap_grid <- 
+  map2(.x = snap_to_grid_successes, 
+       .y = indices_use_from_valid_zero_buffered_precise_self, 
+       .f = setdiff)  # takes elements in the first but not in the second
 
 # pull in all the tracts not erroring
+tracts_use_from_valid <- 
+  map2(.x = valid_intersected_tracts, 
+       .y = indices_use_from_valid, 
+       .f = function(x, y) x[y])
+  
+tracts_use_from_zero_buffered <-
+  map2(.x = zero_buffered_intersected_tracts, 
+       .y = indices_use_from_zero_buffered, 
+       .f = function(x, y) x[y])
 
+tracts_use_from_precise <- 
+  map2(.x = precise_intersected_tracts, 
+       .y = indices_use_from_precise, 
+       .f = function(x, y) x[y])
+  
+tracts_use_from_snap_self <- 
+  map2(.x = snapped_self_intersected_tracts, 
+       .y = indices_use_from_snap_self, 
+       .f = function(x, y) x[y])
+  
+tracts_use_from_snap_grid <-
+  map2(.x = snapped_grid_intersected_tracts, 
+       .y = indices_use_from_snap_grid, 
+       .f = function(x, y) x[y])
 
 # combine into one master list!  YAY!
+tracts_to_use <- 
+  lst(tracts_use_from_valid, 
+      tracts_use_from_zero_buffered, 
+      tracts_use_from_precise, 
+      tracts_use_from_snap_self, 
+      tracts_use_from_snap_grid)
+
+
+intersected_tracts <- 
+  pmap(.l = tracts_to_use,  # make list of the five lists for each buffer size
+       .f = lst) %>% 
+  map(.f = flatten)  # remove source distinctions
+
+
+
+
 
 
 
