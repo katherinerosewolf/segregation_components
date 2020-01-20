@@ -3,7 +3,7 @@
 language: r
 cache: packages
 os: linux
-dist: xenial
+dist: bionic
 
 before_install:
   - sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable --yes
