@@ -1,0 +1,1483 @@
+---
+title: "Segregation Components Paper Code"
+author: "Katherine Rose Wolf"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+NOTES FOR KATIE: 5110ish, transpose that section (individual tracts)
+
+
+# CODE SETUP (run every time)
+
+```{r rmarkdown setup}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+```{r load packages}
+
+library(rmarkdown)
+library(stringi)
+library(knitr)
+library(plyr)
+library(data.table)
+library(Hmisc)
+library(extrafontdb)
+library(extrafont)
+library(NADA)
+library(grid)
+library(gridExtra)
+library(lattice)
+library(tmap)
+library(sf)
+library(tidycensus)
+library(tigris)
+library(rgeos)
+library(sjPlot)
+library(stargazer)
+library(readxl)
+library(tidyverse)
+library(totalcensus)
+library(spdep)
+library(lubridate)
+library(lwgeom)
+library(ggdag)
+library(furrr)
+library(pryr)
+
+```
+
+
+```{r set up future parallel processing options, eval=FALSE, include=FALSE}
+
+# future::plan(strategy = "multiprocess")
+
+```
+
+
+```{r establish directory structure}
+
+if(!dir.exists("intermediate_data")) {
+  dir.create("intermediate_data")
+}
+
+if(!dir.exists(file.path("functions"))) {
+  dir.create(file.path("functions"))
+}
+
+```
+
+```{r copy files from rmd_one_intermediate_data folder to intermediate_data folder}
+
+# copy files from rmd_one_intermediate_data folder to intermediate_data folder
+files_from_rmd_one <- list.files(path = file.path("rmd_one_intermediate_data"), 
+                      recursive = TRUE) %>%  # list the files
+  map_chr(.f = function(x) file.path("rmd_one_intermediate_data", x))
+  
+# copy the files
+file.copy(from = files_from_rmd_one, 
+          to = file.path("intermediate_data"), 
+          overwrite = TRUE, 
+          recursive = TRUE, 
+          copy.mode = TRUE, 
+          copy.date = TRUE)
+
+rm(files_from_rmd_one)
+gc()
+mem_used()
+
+```
+
+
+```{r census api key and options for tidycensus and totalcensus}
+
+# install the census api key for tidycensus
+census_api_key(key = Sys.getenv("CENSUS_API_KEY"), 
+               install = FALSE, 
+               overwrite = FALSE)
+
+readRenviron("~/.Renviron")
+
+# have tidycensus store old shapefiles for future use
+options(tigris_use_cache = TRUE)
+
+# set path to census data for totalcensus
+Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
+
+```
+
+
+```{r functions for general later use}
+
+# intermediate object saver
+intermediate_object_saver <- 
+  function(...) {
+    object_names <- tibble::lst(...)
+    saver <- 
+      function(object_name){
+        save(list = as.character(object_name),
+             file = file.path("intermediate_data",
+                              paste0(object_name,
+                                     ".rdata")), 
+             envir = .GlobalEnv)
+      }
+    map(.x = object_names,
+        .f = saver)
+  }
+
+# intermediate object loader
+intermediate_object_loader <- 
+  function(...) {
+    object_names <- tibble::lst(...)
+    loader <- 
+      function(object_name){
+        load(file = file.path("intermediate_data",
+                              paste0(object_name,
+                                     ".rdata")),
+             envir = .GlobalEnv)
+      }
+    map(.x = object_names,
+        .f = loader)
+  }
+
+# function to convert column names to snake case
+column_name_fixer <-
+  function(tibble) {
+  new_names <-
+    tibble %>%
+    colnames() %>%  # gets the column names from the tibble
+    tolower() %>%  # converts the column names to lowercase
+    {gsub(" ", "_", .)}  # replaces spaces with "_"
+  colnames(tibble) <-
+    new_names  # rename the columns in the original tibble
+  return(tibble)
+  }
+
+# create function that downloads files
+file_downloader <-
+  function(desired_filename_as_string, 
+           web_address_as_string, 
+           folder_as_string) {
+    
+    path <-  # specify the file path
+      file.path(
+        folder_as_string,
+        desired_filename_as_string) 
+    
+    if(!file.exists(path))  # checks if file exists already
+      download.file(url = web_address_as_string,  # if not, downloads/saves file
+                    destfile = path, 
+                    mode = "wb")
+  }
+
+# function to download generated data without asking
+download_generated_data_auto <- 
+  function() {
+    cat(paste("Downloading data generated from decennial census 2010."))
+    total_files <- 426
+    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
+    url <- "https://s3.amazonaws.com/gl-shared-data/generated_census_data_v060.zip"
+    download.file(url, paste0(path_to_census, "/tmp.zip"))
+    unzip(paste0(path_to_census, "/tmp.zip"), exdir = paste0(path_to_census, 
+        "/generated_data"))
+    file.remove(paste0(path_to_census, "/tmp.zip"))
+    n_files <- length(list.files(paste0(path_to_census, "/generated_data"), 
+        recursive = TRUE))
+    if (n_files == total_files) {
+        cat("Extraction is successful!\n\n")
+    }
+    else {
+        cat("Last downloading or extraction has a problem. Download and extract again.")
+        download_generated_data_auto()
+    }
+  }
+
+# save functions for later use
+save(column_name_fixer, 
+     file = file.path("functions", 
+                      "column_name_fixer.rdata"))
+
+save(file_downloader, 
+     file = file.path("functions", 
+                      "file_downloader.rdata"))
+
+save(download_generated_data_auto, 
+     file = file.path("functions", 
+                      "download_generated_data_auto.rdata"))
+
+save(intermediate_object_saver,
+     file = file.path("functions", 
+                      "intermediate_object_saver.rdata"))
+
+save(intermediate_object_loader,
+     file = file.path("functions", 
+                      "intermediate_object_loader.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
+
+
+## monitor assignments
+
+### assign monitors
+
+```{r count and type monitor locations}
+
+# load air pollutant tibble for monitor counts
+load(file = file.path("travis_cache", 
+                      "air_pollutant_tibble.rdata"))
+
+# isolate columns needed for monitor counting
+monitor_id_and_code <- 
+  air_pollutant_tibble %>% 
+  dplyr::select(monitor_id,
+                parameter_code) %>% 
+  distinct()
+
+# remove the air pollutant tibble to save memory
+rm(air_pollutant_tibble)
+invisible(gc())
+
+# load the air monitor tibble
+load(file = file.path("travis_cache",
+                      "air_monitor_tibble.rdata"))
+
+# isolate columns needed for monitor counting
+monitor_locations <- 
+  air_monitor_tibble %>% 
+  dplyr::select(monitor_id, 
+                latitude, 
+                longitude, 
+                datum)
+
+# join parameter code information to monitor information
+monitor_locations_and_parameter_codes <- 
+  monitor_id_and_code %>% 
+  left_join(monitor_locations, 
+            by = "monitor_id")
+
+# save the above
+save(monitor_locations_and_parameter_codes, 
+     file = file.path("intermediate_data", 
+                      "monitor_locations_and_parameter_codes.rdata"))
+
+# vector for datums
+datum_order <- tibble(datum = c("NAD83", "WGS84"))
+
+# order the monitor locations in order to convert the fewest possible
+monitor_locations_and_parameter_codes_ordered <- 
+  full_join(datum_order, 
+            monitor_locations_and_parameter_codes, 
+            by = "datum")
+
+# isolate unique monitor-parameter combinations
+monitor_locations_and_parameter_codes_marked <-
+  monitor_locations_and_parameter_codes_ordered %>% 
+   distinct(
+     monitor_id,
+     parameter_code, 
+     .keep_all = TRUE
+     )
+
+# classify monitors as for total pm25, species, or both
+monitor_locations_and_parameter_codes_marked <- 
+  monitor_locations_and_parameter_codes_marked %>%
+  mutate(
+    monitor_pm25 = 
+      ifelse(
+        (parameter_code == "88101"),
+        "yes",
+        "no"
+        )
+    ) %>% 
+  mutate(
+    monitor_species = 
+      ifelse(
+        (parameter_code != "88101"),
+        "yes",
+        "no"
+        )
+    ) %>%
+  distinct(
+    monitor_id,
+    monitor_pm25,
+    monitor_species, 
+    .keep_all = TRUE
+    )
+
+# save the above
+save(monitor_locations_and_parameter_codes_marked, 
+     file = file.path("intermediate_data",
+                      "monitor_locations_and_parameter_codes_marked.rdata"))
+
+# classify monitors as total pm2.5, species, or both
+monitor_locations_and_parameter_codes_counts <- 
+  monitor_locations_and_parameter_codes_marked %>% 
+  add_count(monitor_id) %>% 
+  mutate(monitor_type = 
+           ifelse(
+             n == 2, 
+             "both", 
+             ifelse(
+               monitor_species == "yes",
+               "species",
+               ifelse(
+                 monitor_pm25 == "yes", 
+                 "pm25",
+                 "what"
+               )
+             )
+           )
+         )
+
+# only keep the two columns for monitor classification
+sparse_monitors <- 
+  monitor_locations_and_parameter_codes_counts %>% 
+  distinct(monitor_id, 
+           monitor_type,
+           .keep_all = TRUE)
+
+# save the monitor types and locations
+save(sparse_monitors,
+     file = file.path("intermediate_data", 
+                      "sparse_monitors.rdata"))
+
+# isolate NAD83 monitors
+sparse_monitors_nad83 <- 
+  sparse_monitors %>% 
+  filter(datum == "NAD83")
+
+# save NAD83 monitors
+save(sparse_monitors_nad83,
+     file = file.path("intermediate_data", 
+                      "sparse_monitors_nad83.rdata"))
+  
+# isolate WGS84 monitors
+sparse_monitors_wgs84 <- 
+  sparse_monitors %>% 
+  filter(datum == "WGS84")
+
+# save WGS84 monitors
+save(sparse_monitors_wgs84,
+     file = file.path("intermediate_data", 
+                      "sparse_monitors_wgs84.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r count monitors by state}
+
+# load files
+load(file = file.path("intermediate_data", "sparse_monitors.rdata"))
+load(file = file.path("travis_cache", "air_monitor_tibble.rdata"))
+
+monitor_and_state <- 
+  air_monitor_tibble %>% 
+  select(
+    monitor_id, 
+    state_name, 
+    state_code
+  ) %>% 
+  distinct()
+
+# count monitors by type and state
+state_monitor_counts <- 
+  left_join(
+    sparse_monitors,
+    monitor_and_state, 
+    by = "monitor_id"
+  ) %>% 
+  group_by(
+    state_name, 
+    monitor_type
+  ) %>% 
+  tally()
+
+save(state_monitor_counts, file = file.path("intermediate_data", 
+                                            "state_monitor_counts.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r make spatial files from monitor locations}
+
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+# load needed files
+intermediate_object_loader("sparse_monitors_nad83", 
+                           "sparse_monitors_wgs84")
+
+load(file = file.path("travis_cache", "tract_shapefiles.rdata"))
+
+# make monitor locations into spatial point files
+sparse_monitors_nad83_sf <- 
+  st_as_sf(
+    sparse_monitors_nad83, 
+    coords = 
+      c("longitude",
+        "latitude"),
+    crs = st_crs(tract_shapefiles) 
+  ) 
+
+sparse_monitors_wgs84_sf <- 
+  st_as_sf(
+    sparse_monitors_wgs84, 
+    coords = 
+      c("longitude",
+        "latitude"),
+    crs = 4326
+  )
+
+# transformations to match census data
+sparse_monitors_wgs84_to_nad_83_sf <- 
+  st_transform(
+    sparse_monitors_wgs84_sf, 
+    crs = st_crs(tract_shapefiles))
+
+monitors_sf <- 
+  rbind(
+    sparse_monitors_nad83_sf, 
+    sparse_monitors_wgs84_to_nad_83_sf
+  )
+
+save(monitors_sf, file = file.path("intermediate_data", "monitors_sf.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r assign tracts to monitors}
+
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+# load needed files
+load(file = file.path("travis_cache", "tract_shapefiles.rdata"))
+
+intermediate_object_loader("monitors_sf")
+
+# project the tracts to the NAD 83 Conus Albers Equal Area projection, a flat one, to make distances comparable
+tracts_multipolygon <- 
+  tract_shapefiles %>% 
+  st_transform(crs = 5070) %>% 
+  select(  # simplify to only needed variables
+    geoid10, 
+    aland10, 
+    awater10, 
+    intptlat10, 
+    intptlon10
+    ) %>% 
+  mutate(  # calculate the total area of each census tract after projection (m2)
+    proj_tract_area = 
+      st_area(geometry)
+  ) %>% 
+  rowid_to_column("multipolygon_tract_index")
+
+# set attributes for variables in projected tracts
+st_agr(tracts_multipolygon) <-  
+  c(multipolygon_tract_index = "identity",
+    geoid10 = "identity", 
+    aland10 = "aggregate", 
+    awater10 = "aggregate", 
+    intptlat10 = "constant", 
+    intptlon10 = "constant", 
+    proj_tract_area = "aggregate")
+  
+# project the monitors to the same
+projected_monitors <-
+  monitors_sf %>% 
+  st_transform(crs = 5070) %>% 
+  select(monitor_id) 
+
+# join tracts to monitors
+monitors_to_tracts <- 
+  st_join(projected_monitors, 
+          tracts_multipolygon)
+
+save(projected_monitors, file = file.path("intermediate_data", 
+                                          "projected_monitors.rdata"))
+save(monitors_to_tracts, file = file.path("intermediate_data", 
+                                          "monitors_to_tracts.rdata"))
+rm(projected_monitors)
+rm(monitors_to_tracts)
+gc()
+
+# make projected tracts into simple polygons
+tracts_polygon <- 
+  tracts_multipolygon %>% 
+  st_cast("POLYGON") %>% 
+  rowid_to_column("polygon_tract_index")
+
+st_agr(tracts_polygon) <- 
+  c(polygon_tract_index = "identity")
+
+# make simple projected tract sf into a list of single-feature sfs
+tracts_polygon_list <- 
+  tracts_polygon %>% 
+  select(polygon_tract_index,   # select constant variables
+         multipolygon_tract_index, 
+         geoid10) %>% 
+  split(seq(nrow(tracts_polygon)))
+
+save(tracts_polygon, file = file.path("intermediate_data", 
+                                      "tracts_polygon.rdata"))
+rm(tracts_polygon)
+gc()
+
+save(tracts_polygon_list, file = file.path("intermediate_data", 
+                                           "tracts_polygon_list.rdata"))
+rm(tracts_polygon_list)
+gc()
+
+# make multipolygon projected tract sf into a list of single-tract sfs
+tracts_multipolygon_list <- 
+  tracts_multipolygon %>% 
+  select(multipolygon_tract_index, 
+         geoid10) %>% 
+  split(seq(nrow(tracts_multipolygon)))
+
+# save files
+save(tracts_multipolygon, 
+     file = file.path("intermediate_data", 
+                      "tracts_multipolygon.rdata"))
+save(tracts_multipolygon_list, 
+     file = file.path("intermediate_data", 
+                      "tracts_multipolygon_list.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+## buffer work
+
+```{r make buffers}
+
+# load projected monitor sf
+load(file = file.path("intermediate_data", "projected_monitors.rdata"))
+
+# make list in which to store the projected monitor sf
+list_of_proj_mon_sf <- 
+  list(projected_monitors)
+
+# list of buffer distances desired in meters
+distances <- 
+  c(1000, 
+    2000, 
+    2500, 
+    3000, 
+    4000, 
+    5000, 
+    7500, 
+    10000)
+
+# make list of buffer names
+buffer_names <- 
+  str_c("buffer_", 
+        as.character(distances), 
+        "_m",
+        sep = "")
+
+# make the buffers
+pre_attribute_pre_index_buffers <- 
+  map2(.f = st_buffer, 
+       .y = distances, 
+       .x = list_of_proj_mon_sf) %>% 
+  set_names(buffer_names)  # name the list elements
+
+# make buffer index
+pre_attribute_buffers <-
+  map(.f = rowid_to_column,
+      .x = pre_attribute_pre_index_buffers, 
+      var = "buffer_index")
+
+# set relation_to_geometry ("agr") attribute to "constant"
+buffers <-
+  map(
+    .f = function(x) {
+      st_agr(x) = 
+        c(buffer_index = "identity",
+          monitor_id = "identity")
+      return(x)
+      },
+    .x = pre_attribute_buffers
+  )
+
+# save the buffers
+save(
+  buffers, 
+  file = 
+    file.path(
+      "intermediate_data", 
+      "buffers.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+
+```{r calculate buffer intersections with single polygon tracts}
+
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+# load files
+intermediate_object_loader("buffers", 
+                           "tracts_polygon")  # projected single-polygon tracts
+
+# calculate for all buffer sizes for singlepolygons
+buffer_tract_intersections_polygons <- 
+  map(
+    .f = function(x, y) st_intersects(y, x), 
+    .x = buffers, 
+    y = tracts_polygon
+  )
+
+# save result
+save(buffer_tract_intersections_polygons, 
+     file = file.path("intermediate_data", 
+                      "buffer_tract_intersections_polygons.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r buffer filter by tract}
+
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+intermediate_object_loader("buffers", 
+                           "tracts_polygon", 
+                           "buffer_tract_intersections_polygons")
+                     
+# little filter function that creates the sf of buffers intersecting the input tract (unclipped)
+buffer_filter <- 
+  function(tract_buffer_sgbp_row, 
+           buffer_sf) {
+    initial_filter_sf <- 
+      buffer_sf %>% 
+        filter(buffer_index %in% tract_buffer_sgbp_row)
+    if(nrow(initial_filter_sf) == 0){
+      return("no_buffers_here")
+    } else {
+      st_geometry(initial_filter_sf) <- "geometry"
+      return(initial_filter_sf)
+    }
+  }
+
+# bigger filter function that does the above for all tracts for one size
+buffer_colander <- 
+  function(buffer_sf_for_colander,
+           buffer_sgbp_guide,
+           buffer_filter_function){
+    list_by_tract_of_filtered_buffers <- 
+      map(.f = buffer_filter_function,
+          .x = buffer_sgbp_guide, 
+          buffer_sf = buffer_sf_for_colander)
+    return(list_by_tract_of_filtered_buffers)    
+  }
+
+# make buffers by tract for all sizes!  (takes ten minutes)
+buffers_by_tract_all_sizes <- 
+  map2(
+    .x = buffers,
+    .y = buffer_tract_intersections_polygons,
+    .f = buffer_colander, 
+    buffer_filter_function = buffer_filter
+  )
+
+# save the above
+save(buffers_by_tract_all_sizes, 
+     file = file.path("intermediate_data", 
+                      "buffers_by_tract_all_sizes.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r create dataset of only tracts with buffers}
+
+load(file = file.path("intermediate_data", "buffers_by_tract_all_sizes.rdata"))
+
+# make function to name list items
+numeric_namer <- 
+  function(list_to_name){
+    names(list_to_name) <- as.character(seq(1:length(list_to_name)))
+    return(list_to_name)
+  }
+
+# do it for all buffer sizes
+buffers_by_tract_all_sizes_named <- 
+  map(.x = buffers_by_tract_all_sizes, 
+      .f = numeric_namer)
+
+# remove unneeded file to spare memory
+rm(buffers_by_tract_all_sizes)
+gc()
+
+# make function to remove tracts with no buffers in them
+no_buffer_remover <- 
+  function(list_of_tracts){
+    list_of_tracts[list_of_tracts != "no_buffers_here"]
+  }
+
+# run the above function (takes a bit)
+buffers_by_tracts_with_buffers <- 
+  map(.x = buffers_by_tract_all_sizes_named, 
+      .f = no_buffer_remover)
+
+# remove unneeded file to spare memory
+rm(buffers_by_tract_all_sizes_named)
+gc()
+
+# get names of buffers by tract with buffers 
+names_tracts_with_buffers <- 
+  map(.x = buffers_by_tracts_with_buffers, 
+      .f = names) %>% 
+  unlist() %>% 
+  unique()
+
+load(file = file.path("intermediate_data", "tracts_polygon_list.rdata"))
+
+shrunken_tract_polygon_list <- tracts_polygon_list[names_tracts_with_buffers]
+
+rm(tracts_polygon_list)
+gc()
+
+save(buffers_by_tracts_with_buffers,
+     file = file.path("intermediate_data", 
+                      "buffers_by_tracts_with_buffers.rdata"))
+
+save(shrunken_tract_polygon_list,
+     file = file.path("intermediate_data", 
+                      "shrunken_tract_polygon_list.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+
+```{r buffer clipping}
+
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+# load necessary files
+intermediate_object_loader("buffers_by_tracts_with_buffers", 
+                           "shrunken_tract_polygon_list")
+
+# make buffer clipper function for all tracts
+buffer_clipper_nation <- 
+  function(buffers_by_tract_list,
+           tract_list){
+    
+    tract_names <- names(buffers_by_tract_list)
+    
+    tract_list_subset <- tract_list[tract_names]
+    
+    clipped_buffers <- 
+      map2(.f = st_intersection, 
+           .x = tract_list_subset, 
+           .y = buffers_by_tract_list)
+  }
+
+# clip the buffers for all the tracts!
+clipped_buffers <- 
+  map(.x = buffers_by_tracts_with_buffers, 
+      .f = buffer_clipper_nation, 
+      tract_list = shrunken_tract_polygon_list)
+
+# # visual check of result
+# library(mapview)
+# mapview::mapView(list(clipped_buffers$buffer_1000_m$`26253`, 
+#                       shrunken_tract_polygon_list$`26253`),
+#                  native.crs = TRUE)
+
+# save objects
+save(buffer_clipper_nation, file = file.path("functions", 
+                                             "buffer_clipper_nation.rdata"))
+
+save(clipped_buffers, file = file.path("intermediate_data", 
+                                       "clipped_buffers.rdata"))
+  
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r buffer intersections}
+
+# load functions to get the other files
+load(file = file.path("intermediate_data", "clipped_buffers.rdata"))
+
+buffer_intersector_tract <- 
+  function(buffers_clipped_to_tract_sf) {
+    # make concordance vector to replace "origin" values (rows) with monitor ids
+      
+    # label monitors with their indices
+    concordance_vector <-
+      setNames(
+        object = buffers_clipped_to_tract_sf$monitor_id,  # object to named
+        nm = buffers_clipped_to_tract_sf$buffer_index  # names (polygon #s)
+      )
+    
+    # find buffer intersections and areas by monitor
+    buffer_intersections <- 
+      buffers_clipped_to_tract_sf %>% 
+      st_intersection() %>% 
+      mutate(area = st_area(geometry),  # add areas
+             monitor_id_overlaps =  # add column of monitor ids
+               map(
+                 .x = origins,  # go through the origin column (with polygon #s)
+                 .f = function(a) concordance_vector[a]  # replace with monitor ids
+                 )
+             ) 
+    
+    return(buffer_intersections)
+  }
+
+# safe buffer intersection function for one tract that gives results and errors
+safe_buffer_intersector_tract <- safely(buffer_intersector_tract)
+
+# safe buffer intersection function for nation that gives results and errors
+safe_buffer_intersector_nation <- 
+  function(buffers_clipped_to_tracts){
+    map(.x = buffers_clipped_to_tracts,
+        .f = safe_buffer_intersector_tract)
+  }
+
+# safely intersect all buffer sizes for all tracts!
+safely_intersected_buffers <- 
+  map(.f = safe_buffer_intersector_nation, 
+      .x = clipped_buffers)
+
+rm(clipped_buffers)
+gc()
+    
+# save the functions to disk
+save(buffer_intersector_tract, 
+     file = file.path("functions", 
+                      "buffer_intersector_tract.rdata"))
+
+save(safe_buffer_intersector_tract, 
+     file = file.path("functions", 
+                      "safe_buffer_intersector_tract.rdata"))
+
+save(safe_buffer_intersector_nation, 
+     file = file.path("functions", 
+                      "safe_buffer_intersector_nation.rdata"))
+
+# save intersected buffer file to disk
+save(safely_intersected_buffers, 
+     file = file.path("intermediate_data", 
+                      "safely_intersected_buffers.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r transpose results above}
+
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+intermediate_object_loader("safely_intersected_buffers")
+
+transposed_safely_intersected_buffers <- 
+  map(.f = transpose, 
+      .x = safely_intersected_buffers)
+
+rm(safely_intersected_buffers)
+gc()
+
+# save intersected buffer file to disk
+save(transposed_safely_intersected_buffers, 
+     file = file.path("intermediate_data", 
+                      "transposed_safely_intersected_buffers.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+## fixing intersection errors
+
+### investigation
+
+```{r investigate intersected buffers}
+
+# load functions to get the other files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+# load intermediate files
+intermediate_object_loader("transposed_safely_intersected_buffers")
+
+# isolate the erroring tracts
+buffer_intersection_errors <- 
+  map(
+    .f = function(x) Filter(Negate(is.null), 
+                            x$error),
+    .x = transposed_safely_intersected_buffers
+  )
+
+# remove the safely intersected buffers to save memory
+rm(transposed_safely_intersected_buffers)
+gc()
+
+# count the erroring tracts
+error_counts_by_buffer_size <- 
+  map(
+    .x = buffer_intersection_errors,
+    .f = length
+  )
+
+# get indices of erroring tracts
+error_tract_indices <-
+  map(
+    .f = names,
+    .x = buffer_intersection_errors
+  )
+
+save(buffer_intersection_errors, 
+     file = file.path("intermediate_data", 
+                      "buffer_intersection_errors.rdata"))
+rm(buffer_intersection_errors)
+gc()
+
+intermediate_object_loader("clipped_buffers")
+
+# select the erroring tracts
+erroring_tracts <-
+  map2(
+    .x = clipped_buffers, 
+    .y = error_tract_indices,
+    .f = function(x, y) x[y]
+  )
+
+# remove clipped buffers to save memory
+rm(clipped_buffers)
+gc()
+
+# save files
+save(error_counts_by_buffer_size, 
+     file = file.path("intermediate_data", 
+                      "error_counts_by_buffer_size.rdata"))
+
+save(error_tract_indices, 
+     file = file.path("intermediate_data", 
+                      "error_tract_indices.rdata"))
+
+save(erroring_tracts, 
+     file = file.path("intermediate_data", 
+                      "erroring_tracts.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r set precision and then intersect buffers}
+
+# load necessary functions
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
+
+# load tracts with errors
+intermediate_object_loader("erroring_tracts")
+
+# function that snaps single tracts to grid at the minimum possible cell size
+precision_maximizer_tract <- 
+  
+  function(tract_of_buffers_sf){
+    
+    precision_vector <- c(seq(1000, 10, by = -10), 5, 4, 3, 2, 1)
+    
+    i <- 0  # set index
+    
+    error_existence <- TRUE
+    
+    more_vector_left <- TRUE
+    
+    while (error_existence & more_vector_left) {
+      i <- (i + 1)
+      precise_tract <- st_set_precision(tract_of_buffers_sf,
+                                        precision = precision_vector[i])
+      intersect_precise <- safe_buffer_intersector_tract(precise_tract)
+      error_existence <- !is.null(intersect_precise$error)
+      more_vector_left <- (i < length(precision_vector))
+    }
+    
+    err_bool <- (more_vector_left == FALSE & error_existence == TRUE)
+    
+    if(err_bool){
+      
+      return_list <- tibble::lst(precision_vector[i],
+                                 precise_tract, 
+                                 intersect_precise, 
+                                 err_bool)
+      
+      rm(precise_tract, 
+         intersect_precise)
+      gc()
+      
+      return(return_list)
+      
+    } else {
+       
+      return_list <- tibble::lst(precision_vector[i],
+                                 precise_tract, 
+                                 intersect_precise, 
+                                 err_bool)
+      
+      rm(precise_tract, 
+         intersect_precise)
+      gc()
+      
+      return(return_list)
+  
+    }
+  
+  }
+
+# function to run the precision_maximizer nationally
+precision_maximizer_nation <- 
+  function(tract_sf_list){
+    map(.f = precision_maximizer_tract,
+        .x = tract_sf_list)
+  }
+
+# run all tracts!
+precise_intersected_tracts_with_metadata <- map(.f = precision_maximizer_nation,
+                                                .x = erroring_tracts)
+gc()
+
+rm(erroring_tracts)
+gc()
+
+# function to pull the precise intersected sf for each tract without metadata
+tract_intersect_precise_selector <- 
+  function(tract_list){
+    map(.x = tract_list, 
+        .f = function(x) x$intersect_precise)
+  }
+
+# run said function
+precise_intersected_tracts <- 
+  precise_intersected_tracts_with_metadata %>% 
+  map(.f = tract_intersect_precise_selector)
+
+# save objects to disk
+save(precision_maximizer_tract, 
+     file = file.path("functions", 
+                      "precision_maximizer_tract.rdata"))
+
+save(precision_maximizer_nation, 
+     file = file.path("functions", 
+                      "precision_maximizer_nation.rdata"))
+
+save(precise_intersected_tracts_with_metadata, 
+     file = file.path("intermediate_data", 
+                      "precise_intersected_tracts_with_metadata.rdata"))
+
+save(precise_intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "precise_intersected_tracts.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r snap tracts to themselves one-meter tolerance and then intersect buffers}
+
+# load functions to save and load intermediate files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_nation.rdata"))
+
+intermediate_object_loader("erroring_tracts")
+
+# make function to snap tracts to themselves
+tract_snapper <-
+  function(tracts_in_one_buffer_size) {
+    map(.x = tracts_in_one_buffer_size,
+        .f = function(x) st_snap(x, x, tolerance = 1))
+  }
+
+# do the snapping
+erroring_tracts_snapped <-
+  map(.x = erroring_tracts,
+      .f = tract_snapper)
+
+# save snapped tracts and remove erroring tracts to try to fix memory problems
+save(erroring_tracts_snapped, 
+     file = file.path("intermediate_data", "erroring_tracts_snapped.rdata"))
+rm(erroring_tracts)
+gc()
+
+# safely intersect all buffer sizes for all erroring tracts
+snapped_self_intersected_tracts <-
+  map(.f = safe_buffer_intersector_nation,
+      .x = erroring_tracts_snapped)
+
+# remove erroring tracts snapped to try to fix memory problems
+rm(erroring_tracts_snapped)
+gc()
+
+# investigate errors
+intersected_snapped_errors <-
+  map(.f = function(x) Filter(Negate(is.null),
+                              x$error),
+      .x = snapped_self_intersected_tracts)
+
+# count errors
+snapped_error_counts <-
+  map(
+    .x = intersected_snapped_errors,
+    .f = length
+  )
+
+# get buffer indices of tracts still erroring
+snapped_error_indices <-
+  map(
+    .f = names,
+    .x = intersected_snapped_errors
+  )
+
+# save objects to disk
+save(snapped_self_intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "snapped_self_intersected_tracts.rdata"))
+save(snapped_error_counts, 
+     file = file.path("intermediate_data", "snapped_error_counts.rdata"))
+save(snapped_error_indices, 
+     file = file.path("intermediate_data", "snapped_error_indices.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r snap tracts to grid and then intersect buffers}
+
+# load necessary functions
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+load(file = file.path("functions", "safe_buffer_intersector_tract.rdata"))
+
+# load tracts with errors
+intermediate_object_loader("erroring_tracts")
+
+# function that snaps single tracts to grid at the minimum possible cell size
+snap_to_grid_minimizer_tract <- 
+  function(tract_of_buffers_sf){
+    
+    cell_size <- 0
+    error_existence <- TRUE
+    
+    while (error_existence) {
+      cell_size = cell_size + 1
+      snapped_tract <- st_snap_to_grid(tract_of_buffers_sf,
+                                       size = cell_size)
+      intersect_snap <- safe_buffer_intersector_tract(snapped_tract)
+      error_existence <- !is.null(intersect_snap$error)
+      }
+
+  list_to_return <- tibble::lst(cell_size, 
+                                snapped_tract, 
+                                intersect_snap)
+  
+  rm(snapped_tract)
+  rm(intersect_snap)
+  gc()
+  
+  return(list_to_return)
+  
+  }
+
+# function to run the snap_to_grid_minimizer nationally
+snap_to_grid_minimizer_nation <- 
+  function(tract_sf_list){
+    map(.f = snap_to_grid_minimizer_tract,
+        .x = tract_sf_list)
+  }
+
+# run all tracts!
+snapped_grid_intersected_tracts_with_metadata <- 
+  map(.f = snap_to_grid_minimizer_nation, 
+      .x = erroring_tracts)
+gc()
+
+# save the above and remove erroring tracts
+save(snapped_grid_intersected_tracts_with_metadata, 
+     file = file.path("intermediate_data", 
+                      "snapped_grid_intersected_tracts_with_metadata.rdata"))
+rm(erroring_tracts)
+gc()
+
+# function to pull the snapped grid intersected sf by tract without metadata
+tract_snapped_grid_selector <- 
+  function(tract_list){
+    map(.x = tract_list, 
+        .f = function(x) x$intersect_snap)
+  }
+
+# run said function
+snapped_grid_intersected_tracts <- 
+  snapped_grid_intersected_tracts_with_metadata %>% 
+  map(.f = tract_snapped_grid_selector)
+
+# save objects to disk
+save(snap_to_grid_minimizer_tract, 
+     file = file.path("functions", 
+                      "snap_to_grid_minimizer_tract.rdata"))
+
+save(snap_to_grid_minimizer_nation, 
+     file = file.path("functions", 
+                      "snap_to_grid_minimizer_nation.rdata"))
+
+save(snapped_grid_intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "snapped_grid_intersected_tracts.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r find remaining errors after each set combined}
+
+# load functions to save and load intermediate files
+load(file = file.path("functions", "intermediate_object_loader.rdata"))
+
+# load files
+intermediate_object_loader("safely_intersected_buffers",
+                           "precise_intersected_tracts", 
+                           "snapped_self_intersected_tracts",
+                           "snapped_grid_intersected_tracts")
+mem_used()  # check memory
+
+# function returns character indexes of successfully intersected tracts
+success_detector_for_tract <- 
+  function(intersect_output_tract){
+    !is.null(intersect_output_tract$result)
+}
+
+success_detector_for_list <- 
+  function(tract_list){
+    true_false_list <- map(.f = success_detector_for_tract, 
+                           .x = tract_list)
+    successes <- true_false_list[true_false_list == TRUE]
+    return(names(successes))
+  }
+
+# run for unmodified tracts
+original_successes <- 
+  map(.x = safely_intersected_buffers,
+      .f = success_detector_for_list) 
+
+# get indices of successful tracts
+precision_successes <-
+  map(.x = precise_intersected_tracts,
+      .f = success_detector_for_list)
+
+snap_to_self_successes <-
+  map(.x = snapped_self_intersected_tracts,
+      .f = success_detector_for_list)
+
+snap_to_grid_successes <-
+  map(.x = snapped_grid_intersected_tracts,
+      .f = success_detector_for_list)
+
+# make lists of indices of tracts to use from each group
+
+# original non-erroring indices
+indices_use_from_original <- original_successes
+
+# precision indices
+indices_use_from_precise <- precision_successes
+
+# self-snap indices
+indices_use_from_snap_self <- 
+  map2(.x = snap_to_self_successes, 
+       .y = indices_use_from_precise, 
+       .f = setdiff)  # takes elements in the first but not in the second
+
+# snap to grid indices
+indices_use_from_precise_snap_self <- 
+  map2(.x = indices_use_from_precise, 
+       .y = indices_use_from_snap_self, 
+       .f = c)  # concatenates the lists
+
+indices_use_from_snap_grid <- 
+  map2(.x = snap_to_grid_successes, 
+       .y = indices_use_from_precise_snap_self, 
+       .f = setdiff)  # takes elements in the first but not in the second
+
+# save success indices for posterity
+save(original_successes, file = file.path("intermediate_data", 
+                                          "original_successes.rdata"))
+save(precision_successes, file = file.path("intermediate_data", 
+                                          "precision_successes.rdata"))
+save(snap_to_self_successes, file = file.path("intermediate_data", 
+                                          "snap_to_self_successes.rdata"))
+save(snap_to_grid_successes, file = file.path("intermediate_data", 
+                                          "snap_to_grid_successes.rdata"))
+
+# remove files no longer needed
+rm(original_successes, 
+   precision_successes, 
+   snap_to_self_successes, 
+   snap_to_grid_successes)
+gc()
+mem_used()  # check memory
+
+# pull in all the tracts not erroring
+tracts_use_from_original <- 
+  map2(.x = safely_intersected_buffers, 
+       .y = indices_use_from_original, 
+       .f = function(x, y) x[y])
+
+tracts_use_from_precise <- 
+  map2(.x = precise_intersected_tracts, 
+       .y = indices_use_from_precise, 
+       .f = function(x, y) x[y])
+  
+tracts_use_from_snap_self <- 
+  map2(.x = snapped_self_intersected_tracts, 
+       .y = indices_use_from_snap_self, 
+       .f = function(x, y) x[y])
+  
+tracts_use_from_snap_grid <-
+  map2(.x = snapped_grid_intersected_tracts, 
+       .y = indices_use_from_snap_grid, 
+       .f = function(x, y) x[y])
+
+
+# remove files no longer needed
+rm(indices_use_from_original, 
+   indices_use_from_precise, 
+   indices_use_from_snap_self, 
+   indices_use_from_snap_grid,
+   indices_use_from_precise_snap_self,
+   safely_intersected_buffers, 
+   precise_intersected_tracts, 
+   snapped_self_intersected_tracts, 
+   snapped_grid_intersected_tracts)
+gc()
+mem_used()  # check memory
+
+# combine into one master list!  YAY!
+tracts_to_use <- 
+  lst(tracts_use_from_original,
+      tracts_use_from_precise, 
+      tracts_use_from_snap_self, 
+      tracts_use_from_snap_grid)
+
+save(tracts_to_use, file = file.path("intermediate_data", 
+                                     "tracts_to_use.rdata"))
+
+# remove objects no longer needed
+rm(tracts_use_from_original,
+   tracts_use_from_precise, 
+   tracts_use_from_snap_self, 
+   tracts_use_from_snap_grid)
+gc()
+mem_used()  # check memory
+
+# function to get only result for each tract and delete the null error from each
+tract_result_selector <- 
+  function(tract_list){
+    map(.x = tract_list, 
+        .f = function(x) x$result)
+  }
+
+
+# make list of all tracts
+intersected_tracts <- 
+  pmap(.l = tracts_to_use,  # make list of the five lists for each buffer size
+       .f = lst) %>% 
+  map(.f = flatten) %>%  # remove source distinctions
+  map(.f = tract_result_selector)  # pull results only, not errors
+
+# remove tracts to use
+rm(tracts_to_use)
+gc()
+mem_used()  # check memory
+
+# save list of all tracts
+save(intersected_tracts, 
+     file = file.path("intermediate_data", 
+                      "intersected_tracts.rdata"))
+mem_used()  # check memory
+    
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+end goal: weights from each buffer in each census tract (that add up to one!)

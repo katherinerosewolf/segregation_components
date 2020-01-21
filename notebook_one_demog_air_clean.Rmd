@@ -1,0 +1,1736 @@
+---
+title: "Segregation Components Paper Code"
+author: "Katherine Rose Wolf"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+NOTES FOR KATIE: 5110ish, transpose that section (individual tracts)
+
+
+# CODE SETUP (run every time)
+
+```{r rmarkdown setup}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+```{r load packages}
+
+library(rmarkdown)
+library(stringi)
+library(knitr)
+library(plyr)
+library(data.table)
+library(Hmisc)
+library(extrafontdb)
+library(extrafont)
+library(NADA)
+library(grid)
+library(gridExtra)
+library(lattice)
+library(tmap)
+library(sf)
+library(tidycensus)
+library(tigris)
+library(rgeos)
+library(sjPlot)
+library(stargazer)
+library(readxl)
+library(tidyverse)
+library(totalcensus)
+library(spdep)
+library(lubridate)
+library(lwgeom)
+library(ggdag)
+library(furrr)
+library(pryr)
+
+```
+
+
+```{r set up future parallel processing options, eval=FALSE, include=FALSE}
+
+# future::plan(strategy = "multiprocess")
+
+```
+
+
+```{r establish directory structure}
+
+# delete the rmd_one_intermediate_data folder for testing purposes
+
+if(!dir.exists("rmd_one_intermediate_data")) {
+  unlink("rmd_one_intermediate_data", recursive = TRUE)
+}
+
+if(!dir.exists("rmd_one_intermediate_data")) {
+  dir.create("rmd_one_intermediate_data")
+}
+
+if(!dir.exists(file.path("functions"))) {
+  dir.create(file.path("functions"))
+}
+
+```
+
+
+```{r census api key and options for tidycensus and totalcensus}
+
+# install the census api key for tidycensus
+census_api_key(key = Sys.getenv("CENSUS_API_KEY"), 
+               install = FALSE, 
+               overwrite = FALSE)
+
+readRenviron("~/.Renviron")
+
+# have tidycensus store old shapefiles for future use
+options(tigris_use_cache = TRUE)
+
+# set path to census data for totalcensus
+Sys.setenv(PATH_TO_CENSUS = "raw_data/totalcensus")
+
+```
+
+
+```{r functions for general later use}
+
+# intermediate object saver
+intermediate_object_saver <- 
+  function(...) {
+    object_names <- tibble::lst(...)
+    saver <- 
+      function(object_name){
+        save(list = as.character(object_name),
+             file = file.path("rmd_one_intermediate_data",
+                              paste0(object_name,
+                                     ".rdata")), 
+             envir = .GlobalEnv)
+      }
+    map(.x = object_names,
+        .f = saver)
+  }
+
+# intermediate object loader
+intermediate_object_loader <- 
+  function(...) {
+    object_names <- tibble::lst(...)
+    loader <- 
+      function(object_name){
+        load(file = file.path("rmd_one_intermediate_data",
+                              paste0(object_name,
+                                     ".rdata")),
+             envir = .GlobalEnv)
+      }
+    map(.x = object_names,
+        .f = loader)
+  }
+
+# function to convert column names to snake case
+column_name_fixer <-
+  function(tibble) {
+  new_names <-
+    tibble %>%
+    colnames() %>%  # gets the column names from the tibble
+    tolower() %>%  # converts the column names to lowercase
+    {gsub(" ", "_", .)}  # replaces spaces with "_"
+  colnames(tibble) <-
+    new_names  # rename the columns in the original tibble
+  return(tibble)
+  }
+
+# create function that downloads files
+file_downloader <-
+  function(desired_filename_as_string, 
+           web_address_as_string, 
+           folder_as_string) {
+    
+    path <-  # specify the file path
+      file.path(
+        folder_as_string,
+        desired_filename_as_string) 
+    
+    if(!file.exists(path))  # checks if file exists already
+      download.file(url = web_address_as_string,  # if not, downloads/saves file
+                    destfile = path, 
+                    mode = "wb")
+  }
+
+# function to download generated data without asking
+download_generated_data_auto <- 
+  function() {
+    cat(paste("Downloading data generated from decennial census 2010."))
+    total_files <- 426
+    path_to_census <- Sys.getenv("PATH_TO_CENSUS")
+    url <- "https://s3.amazonaws.com/gl-shared-data/generated_census_data_v060.zip"
+    download.file(url, paste0(path_to_census, "/tmp.zip"))
+    unzip(paste0(path_to_census, "/tmp.zip"), exdir = paste0(path_to_census, 
+        "/generated_data"))
+    file.remove(paste0(path_to_census, "/tmp.zip"))
+    n_files <- length(list.files(paste0(path_to_census, "/generated_data"), 
+        recursive = TRUE))
+    if (n_files == total_files) {
+        cat("Extraction is successful!\n\n")
+    }
+    else {
+        cat("Last downloading or extraction has a problem. Download and extract again.")
+        download_generated_data_auto()
+    }
+  }
+
+# save functions for later use
+save(column_name_fixer, 
+     file = file.path("functions", 
+                      "column_name_fixer.rdata"))
+
+save(file_downloader, 
+     file = file.path("functions", 
+                      "file_downloader.rdata"))
+
+save(download_generated_data_auto, 
+     file = file.path("functions", 
+                      "download_generated_data_auto.rdata"))
+
+save(intermediate_object_saver,
+     file = file.path("functions", 
+                      "intermediate_object_saver.rdata"))
+
+save(intermediate_object_loader,
+     file = file.path("functions", 
+                      "intermediate_object_loader.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+
+```
+
+
+# TRAVIS SHALL BEGIN HERE
+
+## geography 
+
+```{r ruca data format}
+
+# load column name fixer function
+load(
+  file = 
+    file.path(
+     "functions", 
+     "column_name_fixer.rdata"
+    )
+  )
+
+# read the data from the excel file
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "ruca_2010_raw.rdata"
+    )
+)
+  
+# fix column names
+ruca_simple <-
+  ruca_2010_raw %>% 
+  column_name_fixer %>%  # fix column names
+  select(
+    tract_id = 4, 
+    ruca_prime = 5, 
+    ruca_second = 6
+  ) %>% 
+  mutate(urban = 'noturban')
+
+
+# set to urban or not urban based on RUCA codes
+ruca_simple <- 
+  within(ruca_simple, 
+         urban[ruca_second == 1.0 | 
+               ruca_second == 1.1 | 
+               ruca_second == 2.0 | 
+               ruca_second == 2.1 | 
+               ruca_second == 3.0 | 
+               ruca_second == 3.1 | 
+               ruca_second == 4.1 | 
+               ruca_second == 5.1 | 
+               ruca_second == 6.1 | 
+               ruca_second == 7.1 | 
+               ruca_second == 8.1 | 
+               ruca_second == 9.1 | 
+               ruca_second == 10.1] <- 
+           'urban')
+
+ruca_urban_only <- 
+  ruca_simple %>% 
+  filter(
+    urban == 'urban'
+    )
+
+# save useful files
+save(
+  ruca_simple, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "ruca_simple.rdata"
+    )
+)
+
+save(
+  ruca_urban_only, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "ruca_urban_only.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+## demographic file formatting
+
+```{r census data format}
+
+# load the column name fixer function
+load(
+  file = 
+    file.path(
+     "functions", 
+     "column_name_fixer.rdata"
+    )
+  )
+
+# load raw sf1 census dataframe
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "sf1_totalcensus_raw_dataframe.rdata"
+    )
+)
+# make the dataframe into a tibble
+sf1_totalcensus_tibble <- 
+  as_tibble(sf1_totalcensus_raw_dataframe)
+
+# fix column names 
+sf1_totalcensus_tibble <- 
+  column_name_fixer(
+    sf1_totalcensus_tibble
+)
+
+# fix geoids
+sf1_totalcensus_tibble <- 
+  sf1_totalcensus_tibble %>% 
+  mutate(
+    geoid = 
+      str_replace(
+        geoid,
+        "14000US", 
+        ""
+      )
+  )
+
+# save the tibble to disk
+save(
+  sf1_totalcensus_tibble, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data",
+      "sf1_totalcensus_tibble.rdata"
+      )
+  )
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r acs data format}
+
+# load the column name fixer function
+load(
+  file = 
+    file.path(
+     "functions", 
+     "column_name_fixer.rdata"
+    )
+  )
+
+# load raw dataframe
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "acs_totalcensus_raw_dataframe.rdata"
+    )
+)
+
+# make it into a tibble
+acs_totalcensus_tibble <- 
+  as_tibble(acs_totalcensus_raw_dataframe)
+
+# fix variable names
+acs_totalcensus_tibble <- 
+  acs_totalcensus_tibble %>% 
+  column_name_fixer()
+
+# fix geoids
+acs_totalcensus_tibble <- 
+  acs_totalcensus_tibble %>% 
+  mutate(
+    geoid = 
+      str_replace(
+        geoid,
+        "14000US", 
+        ""
+      )
+  )
+
+# save
+save(
+  acs_totalcensus_tibble, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "acs_totalcensus_tibble.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r 2012 household income quantiles data format}
+
+# load raw historical data
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "inc_hh_hist_raw.rdata"
+    )
+)
+
+# pull the cutoffs for the 2012 household income quantiles for ice
+inc_hh_2012_cutoffs <- 
+  inc_hh_hist_raw %>% 
+  filter(
+    year == "2012"
+  ) %>% 
+  select(
+    lowest, 
+    second, 
+    third, 
+    fourth
+  )
+
+# save file to disk
+save(
+  inc_hh_2012_cutoffs, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "inc_hh_2012_cutoffs.rdata"
+      )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+## demographics
+
+### making census 2010 geography match acs 2012 geography
+
+```{r geography changes from 2010 to 2011}
+
+# https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2011/geography-changes.html
+
+# https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes/2012/geography-changes.html
+
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "acs_totalcensus_tibble.rdata"
+    )
+)
+
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "sf1_totalcensus_tibble.rdata"
+      )
+  )
+
+# character vector of geoids from 2012 acs data
+geoids_acs <- 
+  acs_totalcensus_tibble %>% 
+  pull(geoid)
+
+# character vector of geoids from 2010 census sf1 data
+geoids_sf1 <- 
+  sf1_totalcensus_tibble %>% 
+  pull(geoid)
+
+# character vector of 2012 acs geoids not in 2010 census sf1
+acs_geoids_not_in_sf1 <- 
+  setdiff(geoids_acs, geoids_sf1)
+
+# character vector of 2012 acs geoids not in 2010 census sf1
+sf1_geoids_not_in_acs <- 
+  setdiff(geoids_sf1, geoids_acs)
+
+# manual acs geoids corresponding to and ordered by sf1_geoids_not_in_acs
+acs_geoids_for_sf1_geoids_not_in_acs <- 
+  c("04019002704",
+    "04019002906",
+    "04019004118",
+    "04019004121",
+    "04019004125",
+    "04019005200",
+    "04019005300",
+    "06037137000",
+    "36053030101",
+    "36053030102",
+    "36053030103",
+    "36053030200",
+    "36053030300",
+    "36053030401",
+    "36053030403",
+    "36053030600",
+    "36053030402",
+    "36065024800",
+    "36065024700",
+    "36065024900",
+    "36085009700")
+
+# manual sf1 2010 geoids of census tracts with boundary changes in acs 2012
+sf1_messed_up_tracts <- 
+  c("06037930401", 
+    "36065940200", 
+    "36085008900", 
+    "36065023000", 
+    "06037800204")
+
+# make concordance tibble
+sf1_acs_concordance_tibble <- 
+  tibble(sf1_geoid = sf1_geoids_not_in_acs, 
+         acs_geoid = acs_geoids_for_sf1_geoids_not_in_acs)
+
+# add acs equivalent-ish ids to sf1 table
+sf1_tibble_with_acs_concordance <- 
+  sf1_totalcensus_tibble %>%   # summon the census
+  mutate(geoid_for_acs_join = geoid) %>%  # make new variable to use to join acs 
+  mutate(geoid_for_acs_join =  # replace sf1 geoids not found in acs with 
+           str_replace_all(    # equivalent acs geoids
+             geoid_for_acs_join,  # this is the column to be modified
+             setNames(  # this names the replacement values by their sf1 ids
+               acs_geoids_for_sf1_geoids_not_in_acs,  # replacements'("objects")
+               sf1_geoids_not_in_acs  # values to be replaced, or "names"
+               )  # thus this identifies the sf1 geoids as "names" and replaces
+             )    # them with their "object" values
+         ) 
+
+# check differences
+acs_concordance_geoids_not_in_sf1 <- 
+  setdiff(
+    sf1_tibble_with_acs_concordance$geoid_for_acs_join, 
+    sf1_tibble_with_acs_concordance$geoid
+  )
+
+sf1_geoids_not_in_acs_concordance_geoids <- 
+  setdiff(
+    sf1_tibble_with_acs_concordance$geoid,
+    sf1_tibble_with_acs_concordance$geoid_for_acs_join
+  )
+
+# save files
+save(sf1_acs_concordance_tibble, 
+     file = 
+       file.path(
+         "rmd_one_intermediate_data", 
+         "sf1_acs_concordance_tibble.rdata"
+       )
+     )
+save(sf1_tibble_with_acs_concordance, 
+     file = 
+       file.path(
+         "rmd_one_intermediate_data", 
+         "sf1_tibble_with_acs_concordance.rdata"
+       )
+     )
+    
+save(sf1_messed_up_tracts, 
+     file = 
+       file.path(
+         "rmd_one_intermediate_data", 
+         "sf1_messed_up_tracts.rdata"
+       )
+     )
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+### segregation
+
+```{r calculate segregation index}
+
+# load census dataset
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "sf1_totalcensus_tibble.rdata"
+    )
+)
+
+# load census tract neighbor data
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "neighbor_tibble_long.rdata"
+    )
+)
+
+# import segregation variables (Black, Black/other, total)
+seg_vars <- 
+  sf1_totalcensus_tibble %>% 
+  select(  # import the variables
+    geoid, 
+    p0050001, 
+    p0050004
+  ) %>%  # make total nonblack population variable
+  mutate(
+    tot_pop_no_black = p0050001 - p0050004
+  ) 
+
+# merge by the NEIGHBOR TRACT GEOID
+neighbors_with_census_tibble <- 
+  neighbor_tibble_long %>% 
+  left_join(
+    seg_vars, 
+    by = c("geoid_neighbor_tract" = "geoid")
+  )
+
+# get summaries by each PRIMARY TRACT for it and all its neighbors
+racial_isolation_index_tibble <- 
+  neighbors_with_census_tibble %>% 
+  group_by(geoid_primary_tract) %>% 
+  summarise(
+    neighborly_tot_pop_p0050001 = sum(p0050001), 
+    neighborly_black_p0050004 = sum(p0050004), 
+    neighborly_tot_pop_no_black = sum(tot_pop_no_black)
+  ) %>% 
+  mutate(
+    racial_isolation_index_k1 = 
+      neighborly_black_p0050004/
+      neighborly_tot_pop_p0050001) %>% 
+  select(
+    geoid_primary_tract, 
+    racial_isolation_index_k1
+  )
+
+# save the final file
+save(
+  racial_isolation_index_tibble, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "racial_isolation_index_tibble.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+### merge sf1, acs, and segregation files
+
+```{r merge sf1}
+
+# load sf1 tibble
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "sf1_tibble_with_acs_concordance.rdata"
+    )
+)
+
+# load acs tibble
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "acs_totalcensus_tibble.rdata"
+    )
+)
+
+# load segregation
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "racial_isolation_index_tibble.rdata"
+    )
+)
+
+# delete duplicate variables from acs tibble
+acs_tibble_for_joining <- 
+  acs_totalcensus_tibble %>% 
+  rename(pop_acs = population, 
+         geoid_acs = geoid) %>% 
+  select(
+    -c(name, 
+       geocomp, 
+       sumlev, 
+       state,
+       stusab,
+       lon, 
+       lat)
+  )
+
+# join everything
+demographic_tibble <- 
+  sf1_tibble_with_acs_concordance %>% 
+  left_join(
+    acs_tibble_for_joining, 
+    by = c("geoid_for_acs_join" = "geoid_acs")  # sf1 variable left, acs right
+  ) %>% 
+  left_join(
+    racial_isolation_index_tibble, 
+    by = c("geoid" = "geoid_primary_tract")  # sf1 variable left, acs right
+  )
+
+# save to file
+save(
+  demographic_tibble, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "demographic_tibble.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+### add land area
+
+```{r land area to demographic tibble}
+
+# load tigris shapefiles
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "tract_shapefiles.rdata"
+    )
+)
+
+# pull the geoid, land area, water area, drop geography
+area_tibble <- 
+  tract_shapefiles %>% 
+  st_drop_geometry() %>%  # drop the geometry
+  as_tibble() %>%  # make result into a tibble
+  select(
+    geoid = geoid10,  # select and rename geoid
+    aland10,  # select land area
+    awater10  # select water area
+  )
+
+# remove shapefiles
+rm(tract_shapefiles)
+invisible(gc())
+
+# load demographic tibble
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "demographic_tibble.rdata"
+    )
+)
+
+# join demographic tibble to area tibble
+demographic_area_tibble <- 
+  demographic_tibble %>% 
+  left_join(
+    area_tibble, 
+    by = "geoid"
+  )
+
+# save demographic area tibble
+save(
+  demographic_area_tibble, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "demographic_area_tibble.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+### construct derived variables
+
+```{r deriving demographic variables}
+
+# load demographic area tibble
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "demographic_area_tibble.rdata"
+    )
+)
+
+# # load 2012 household income tibble (don't actually need it)
+# load(
+#   file = 
+#     file.path(
+#       "rmd_one_intermediate_data", 
+#       "inc_hh_2012_cutoffs.rdata"
+#     )
+# )
+
+# make the constructed tibble
+demographic_constructed <- 
+  demographic_area_tibble
+
+# remove the raw tibble to save memory
+rm(demographic_area_tibble)
+invisible(gc())
+
+#### census
+
+#### demographic variables
+
+# total population sf1 p1 p0010001
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    pop_tot_p0010001 = population)
+
+# land and water area and population density
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    land_area_m2 = aland10, 
+    water_area_m2 = awater10, 
+    land_area_km2 = aland10 / 1000000, 
+    water_area_km2 = awater10 / 1000000, 
+    pop_dense_km2 = population / land_area_km2)
+
+
+# race and ethnicity sf1 p5
+  # hispanic or latino origin by race
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    not_hisp_lat_pct_p0050002 = 
+      p0050002 / p0050001,
+    white_nhl_pct_p0050003 = 
+      p0050003 / p0050001,
+    black_nhl_pct_p0050004 = 
+      p0050004 / p0050001, 
+    aian_nhl_pct_p0050005 = 
+      p0050005 / p0050001,
+    asian_nhl_p0050006 = 
+      p0050006 / p0050001,
+    nhopi_nhl_p0050007 = 
+      p0050007 / p0050001, 
+    some_other_nhl_p0050008 =
+      p0050008 / p0050001,
+    two_more_nhl_p0050009 =
+      p0050009 / p0050001,
+    hisp_lat_pct_p0050010 = 
+      p0050010 / p0050001,
+    white_hl_p0050011 = 
+      p0050011 / p0050001, 
+    black_hl_p0050012 = 
+      p0050012 / p0050001, 
+    aian_hl_p0050013 = 
+      p0050013 / p0050001, 
+    asian_hl_p0050014 = 
+      p0050014 / p0050001,
+    nhopi_hl_p0050015 = 
+      p0050015 / p0050001, 
+    some_other_hl_p0050016 = 
+      p0050016 / p0050001, 
+    two_more_hl_p0050017 = 
+      p0050017 / p0050001,
+    aian_nhopi_nhl_pct_p0050005_07 = 
+      (p0050005 + p0050007) / p0050001, 
+    all_aian_nhopi_pct_p0050005_07_13_15 =
+      (p0050005 + p0050007 + p0050013 + p0050015) / p0050001, 
+    some_other_and_two_more_nhl_p0050008_009 = 
+      (p0050008 + p0050009) / p0050001)
+
+
+# female percentages sf1 p12
+  # sex by age (SF1 P12)
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    female_pct_p0120026 = 
+      p0120026 / p0120001
+  )
+
+
+# median age sf1 p13 p0130001
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    age_median_p0130001 = p0130001)
+
+
+# age percentages sf1 p12
+  # sex by age
+  # universe: total population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    age_0_19_pct = 
+      (p0120003 +   # male under 5 years
+       p0120004 +   # male 5 to 9 years
+       p0120005 +   # male 10 to 14 years
+       p0120006 +   # male 15 to 17 years
+       p0120007 +   # male 18 and 19 years
+       p0120027 +   # female under 5 years
+       p0120028 +   # female 5 to 9 years
+       p0120029 +   # female 10 to 14 years
+       p0120030 +   # female 15 to 17 years
+       p0120031) /  # female 18 and 19 years
+      pop_tot_p0010001,  # divide by total population
+    age_20_64_pct = 
+      (p0120008 +   # male 20 years
+       p0120009 +   # male 21 years
+       p0120010 +   # male 22 to 24 years
+       p0120011 +   # male 25 to 29 years
+       p0120012 +   # male 30 to 24 years
+       p0120013 +   # male 35 to 39 years
+       p0120014 +   # male 40 to 44 years
+       p0120015 +   # male 45 to 49 years
+       p0120016 +   # male 50 to 54 years
+       p0120017 +   # male 55 to 59 years
+       p0120018 +   # male 60 and 61 years
+       p0120019 +   # male 62 to 64 years
+       p0120032 +   # female 20 years
+       p0120033 +   # female 21 years
+       p0120034 +   # female 22 to 24 years
+       p0120035 +   # female 25 to 29 years
+       p0120036 +   # female 30 to 34 years
+       p0120037 +   # female 35 to 39 years
+       p0120038 +   # female 40 to 44 years
+       p0120039 +   # female 45 to 49 years
+       p0120040 +   # female 50 to 54 years
+       p0120041 +   # female 55 to 59 years
+       p0120042 +   # female 60 and 61 years
+       p0120043) /  # female 62 to 64 years
+      pop_tot_p0010001,  # total population
+    age_65_plus_pct = 
+      (p0120020 +   # male 65 and 66 years
+       p0120021 +   # male 67 to 69 years
+       p0120022 +   # male 70 to 74 years
+       p0120023 +   # male 75 to 79 years
+       p0120024 +   # male 80 to 84 years
+       p0120025 +   # male 85 years and over
+       p0120044 +   # female 65 and 66 years
+       p0120045 +   # female 67 to 69 years
+       p0120046 +   # female 70 to 74 years
+       p0120047 +   # female 75 to 79 years
+       p0120048 +   # female 80 to 84 years
+       p0120049) /  # female 85 years and over
+    pop_tot_p0010001)  # total population
+
+
+# housing tenure by household (renter and owner occupancy) sf1 h4
+  # housing tenure (SF1 H4)
+  # universe: occupied housing units
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    rent_occ_hh_pct_h0040004 = h0040004 / h0040001,
+    own_occ_hh_pct = (h0040002 + h0040003) / h0040001
+  )
+
+
+# housing tenure by people (renter and owner occupancy) sf1 h11
+  # population in occupied housing units by tenure
+  # universe: population in occupied housing units
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    rent_occ_pop_pct = h0110004 / h0110001, 
+    own_occ_pop_pct = (h0110002 + h0110003) / h0110001
+  )
+
+
+
+#### american community survey
+
+# income household median b19013_001
+  # median household income in the past 12 months (in 2012 inflation-adjusted dollars)
+  # universe: households
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    inc_hh_med_b19013_001 = b19013_001, 
+    inc_hh_med_b19013_001_margin = b19013_001_margin)
+
+
+# unemployed percentage b25075
+  # employment status for the population 16 years and over
+  # universe: population 16 years and over
+  # note: below uses % unemployed in civilian labor force only
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    unemp_pct_b25075_005_003 = b23025_005 / b23025_003, 
+    unemp_pct_b25075_005_marg_num = b23025_005_margin, 
+    unemp_pct_b25075_003_marg_denom = b23025_003_margin
+    )
+
+
+# median home value b25077
+  # median value (dollars)
+  # universe: owner-occupied housing units
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    home_val_med_b25077 = b25077_001, 
+    home_val_med_b25077_marg = b25077_001_margin
+  )
+
+    
+# at least high school education b15003
+  # educational attainment for the population 25 years and over
+  # universe: population 25 years and over
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    education_high_school_b15003_17_to_25 = 
+      b15003_017 +
+      b15003_018 +
+      b15003_019 +
+      b15003_020 +
+      b15003_021 +
+      b15003_022 +
+      b15003_023 +
+      b15003_024 +
+      b15003_025
+    )
+
+
+# limited english percent of households b16002
+  # household language by households in which no one 14 and over speaks english only or speaks a language other than english at home and speaks english "very well"
+  # universe: households
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    ling_iso_pct_b16002_004_007_010_013 =
+      (b16002_004 + b16002_007 + b16002_010 + b16002_013) / b16002_001
+    )
+
+
+# poverty percentages c17002
+  # ratio of income to poverty level in the past 12 months
+  # universe: population for whom poverty status is determined
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    pov_below_pct_c17002_002_to_003 = 
+      (c17002_002 + 
+       c17002_003) / 
+       c17002_001,
+    pov_below_125_pct_c17002_002_to_004 = 
+      (c17002_002 + 
+       c17002_003 + 
+       c17002_004) / 
+       c17002_001,
+    pov_below_150_pct_c17002_002_to_005 = 
+      (c17002_002 + 
+       c17002_003 + 
+       c17002_004 + 
+       c17002_005) / 
+       c17002_001,
+    pov_below_185_pct_c17002_002_to_006 = 
+      (c17002_002 + 
+       c17002_003 + 
+       c17002_004 + 
+       c17002_005 + 
+       c17002_006) / 
+       c17002_001, 
+    pov_below_200_pct_c17002_002_to_007 = 
+      (c17002_002 + 
+       c17002_003 + 
+       c17002_004 + 
+       c17002_005 + 
+       c17002_006 + 
+       c17002_007) / 
+       c17002_001
+  )
+
+
+# median individual earnings b20002
+  # median earnings in the past 12 months (in 2012 inflation-adjusted dollars) by sex for the population 16 years and over with earnings in the past 12 months
+  # universe: population 16 years and over with earnings
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    earn_ind_med_b20002_001 = 
+      b20002_001
+  )
+
+
+# health insurance percentage c27010
+  # types of health insurance coverage by age
+  # universe: civilian noninstitutionalized population
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    hlth_ins_none_pct_c27010_006_011_016_021 = 
+      (c27010_006 +
+       c27010_011 +
+       c27010_016 +
+       c27010_021) /
+       c27010_001
+    )
+
+
+# # income concentration at the extremes (ice)
+# # 2012 US Census historical income tables
+
+# lowest  20599
+# second  39764
+# third   64582
+# fourth  104096
+
+# household income in the past 12 months (in 2012 inflation-adjusted dollars)
+# universe: households
+# B19001_001  total
+# B19001_002  less than $10,000
+# B19001_003  $10,000 to $14,999
+# B19001_004  $15,000 to $19,999
+# -- top of lowest quintile
+# B19001_005  $20,000 to $24,999
+# B19001_006  $25,000 to $29,999
+# B19001_007  $30,000 to $34,999
+# B19001_008  $35,000 to $39,999
+# -- top of second quintile
+# B19001_009  $40,000 to $44,999
+# B19001_010  $45,000 to $49,999
+# B19001_011  $50,000 to $59,999
+# -- top of third quintile
+# B19001_012  $60,000 to $74,999
+# B19001_013  $75,000 to $99,999
+# -- top of fourth quintile
+# B19001_014  $100,000 to $124,999
+# B19001_015  $125,000 to $149,999
+# B19001_016  $150,000 to $199,999
+# B19001_017  $200,000 or more
+
+# acs_geo_cats$income_house_2017_bottom_quintile_24638 <- 
+#   acs_geo_cats$B19001_002 +   # estimated as through $24999
+#   acs_geo_cats$B19001_003 +
+#   acs_geo_cats$B19001_004 +
+#   acs_geo_cats$B19001_005
+# acs_geo_cats$income_house_2017_top_quintile_126855 <- 
+#   acs_geo_cats$B19001_015 +   # estimated as $125,000
+#   acs_geo_cats$B19001_016 +
+#   acs_geo_cats$B19001_017 
+# acs_geo_cats$income_house_total_count_B19001_001 <-
+#   acs_geo_cats$B19001_001
+# 
+# acs_geo_cats$ice_B19001 <- 
+#   (acs_geo_cats$income_house_2017_top_quintile_126855 - 
+#      acs_geo_cats$income_house_2017_bottom_quintile_24638) /
+#   acs_geo_cats$income_house_total_count_B19001_001
+
+# make quintile counts, total count, and ice variable
+demographic_constructed <-
+  demographic_constructed %>%
+  mutate(
+    ice_first_bottom_quintile_20599 =
+      b19001_002 +
+      b19001_003 +
+      b19001_004, 
+    ice_second_quintile_39764 = 
+      b19001_005 +
+      b19001_006 +
+      b19001_007 +
+      b19001_008, 
+    ice_third_quintile_64582 =
+      b19001_009 +
+      b19001_010 +
+      b19001_011, 
+    ice_fourth_quintile_104096 = 
+      b19001_012 +
+      b19001_013, 
+    ice_fifth_top_quintile = 
+      b19001_014 +
+      b19001_015 +
+      b19001_016 +
+      b19001_017,
+    ice_total_count_b19001_001 = 
+      b19001_001, 
+    ice_b19001 = 
+      (ice_fifth_top_quintile - 
+         ice_first_bottom_quintile_20599) /
+      ice_total_count_b19001_001
+  )
+
+# save constructed variables
+save(
+  demographic_constructed, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "demographic_constructed.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+
+## air data
+
+### carbon disasters
+
+```{r investigating carbon}
+
+# load air data file
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "air_pollutant_tibble.rdata"
+    )
+)
+
+# load pollutant names
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "parameter_names_codes_tibble.rdata"
+))
+
+# make tibble with pollutant names
+names_pollutant_tibble <- 
+  air_pollutant_tibble %>% 
+  left_join(
+    parameter_names_codes_tibble, 
+    by = "parameter_code"
+  )
+
+# what are the pollutant names
+pollutant_names <- 
+  names_pollutant_tibble %>% 
+  select(parameter_name, parameter_code) %>% 
+  distinct()
+
+# make a tibble for just the carbon
+carbon_tibble <- 
+  names_pollutant_tibble %>% 
+  filter(str_detect(parameter_name, "EC") | 
+           str_detect(parameter_name, "OC") | 
+           str_detect(parameter_name, "carbon") |
+            str_detect(parameter_name, "CARBON") |
+           str_detect(parameter_name, "TC")
+         )
+
+# make a tibble for just elemental carbon
+ec_tibble <- 
+  carbon_tibble %>% 
+  filter(
+    str_detect(parameter_name, "EC")
+  )
+
+# make tibble of ec monitor counts by code
+ec_parameter_codes_monitor_counts <- 
+  ec_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code) %>% 
+  distinct() %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+# make organic carbon tibble
+oc_tibble <- 
+  carbon_tibble %>% 
+  filter(
+    str_detect(parameter_name, "OC")
+  )
+
+# make tibble of oc monitor counts by code
+oc_parameter_codes_monitor_counts <- 
+  oc_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code) %>% 
+  distinct() %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+# summarize each by date
+carbon_by_date <- 
+  carbon_tibble %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  summarize(first_date = min(date_local), 
+            last_date = max(date_local))
+
+# summarize each by date and monitor
+carbon_by_date_by_monitor <- 
+  carbon_tibble %>% 
+  group_by(monitor_id, parameter_name, parameter_code) %>% 
+  summarize(first_date = min(date_local), 
+            last_date = max(date_local)) %>% 
+  arrange(monitor_id)
+
+# count carbon parameter codes by monitor 
+parameter_codes_monitor_counts <- 
+  carbon_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code) %>% 
+  distinct() %>% 
+  group_by(parameter_name, parameter_code) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+# count overall number of monitors with carbon data
+carbon_monitor_count <- 
+  carbon_tibble %>% 
+  select(monitor_id) %>% 
+  distinct() %>% 
+  tally()
+
+# monitors with EC gold standard throughout the period
+carbon_ec_monitor_id <- 
+  carbon_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code, date_local) %>% 
+  filter(parameter_code == 88321) %>% 
+  group_by(monitor_id, poc) %>% 
+  summarize(min_date = min(date_local), 
+            max_date = max(date_local)) %>% 
+  arrange(min_date, max_date)
+
+# make table of monitors
+carbon_monitor_table <- 
+  carbon_tibble %>% 
+  select(monitor_id, poc, parameter_name, parameter_code, date_local) %>% 
+  group_by(monitor_id, poc, parameter_code) %>% 
+  summarise(first_date = min(date_local), 
+            last_date = max(date_local), 
+            observations = n()) %>% 
+  arrange(monitor_id, poc, parameter_code)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```
+
+
+```{r carbon conversions}
+
+### load files
+
+# load air data file
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "air_pollutant_tibble.rdata"
+    )
+)
+
+# make list of data frames for conversion
+converted_tibbles <- 
+  list()
+
+### elemental carbon
+
+# convert 88307	EC CSN PM2.5 LC TOT
+# 88321 EC PM2.5 LC TOR
+converted_tibbles[["ec_88307_to_88321_conversion_tibble"]] <- 
+  air_pollutant_tibble %>% 
+  filter(parameter_code == 88307) %>% 
+  mutate(parameter_code = 99307, 
+         arithmetic_mean = arithmetic_mean / 0.71 - 0.08/0.71)
+
+# convert 88380 EC CSN_Rev Unadjusted PM2.5 LC TOR to 
+# 88321 EC PM2.5 LC TOR
+converted_tibbles[["ec_88380_to_88321_conversion_tibble"]] <- 
+  air_pollutant_tibble %>% 
+  filter(parameter_code == 88380) %>% 
+  mutate(parameter_code = 99380, 
+         arithmetic_mean = arithmetic_mean / 0.98 - 0.02/0.98)
+
+
+### organic carbon
+
+# convert 88305	OC CSN Unadjusted PM2.5 LC TOT
+# 88320 OC PM2.5 LC TOR
+converted_tibbles[["ec_88305_to_88320_conversion_tibble"]] <- 
+  air_pollutant_tibble %>% 
+  filter(parameter_code == 88305) %>% 
+  mutate(parameter_code = 99305, 
+         arithmetic_mean = arithmetic_mean / 1.41 - 1.21/1.41)
+
+# convert 88370 OC CSN_Rev Unadjusted PM2.5 LC TOR to 
+# 88320 OC PM2.5 LC TOR
+converted_tibbles[["ec_88370_to_88320_conversion_tibble"]] <- 
+  air_pollutant_tibble %>% 
+  filter(parameter_code == 88370) %>% 
+  mutate(parameter_code = 99370, 
+         arithmetic_mean = arithmetic_mean / 1.04 - 0.20/1.04)
+
+# combine all of the above
+air_pollutant_conversion_tibble <- 
+  air_pollutant_tibble %>% 
+  bind_rows(converted_tibbles) 
+  
+
+# save the air pollution conversion tibble
+save(
+  air_pollutant_conversion_tibble, 
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "air_pollutant_conversion_tibble.rdata"
+    )
+)
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+  
+```
+
+
+```{r elemental carbon variable selection}
+
+# load air pollution with conversions
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "air_pollutant_conversion_tibble.rdata"
+    )
+)
+
+# load parameter names and codes
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "parameter_names_codes_tibble.rdata"
+    )
+)
+
+
+# numeric vectors of converted and unconverted codes for ec
+ec_converted_codes <- 
+  c(99307, 99380)
+ec_unconverted_codes <- 
+  c(88307, 88380)
+
+# make tibble of ec names and codes
+ec_names_and_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "EC"))
+
+# make numeric vector of all ec codes
+ec_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "EC")) %>% 
+  pull(parameter_code) %>% 
+  combine(ec_converted_codes)
+
+# filter tibble for only elemental carbon data considered for inclusion
+ec_conversion_tibble <- 
+  air_pollutant_conversion_tibble %>% 
+  filter(
+    parameter_code %in%
+      ec_codes
+  ) %>% 
+  filter(
+    !(parameter_code %in% 
+        ec_unconverted_codes)  # take out raw pre-conversion rows
+  )
+
+# remove the air pollutant conversion tibble
+rm(air_pollutant_conversion_tibble)
+invisible(gc())
+
+# ec conversion tibble
+# summarize each by date and monitor
+ec_monitor_tibble <- 
+  ec_conversion_tibble %>% 
+  select(monitor_id, poc, parameter_code, date_local) %>% 
+  group_by(monitor_id, poc, parameter_code) %>% 
+  summarise(first_date = min(date_local), 
+            last_date = max(date_local), 
+            observations = n()) %>% 
+  arrange(monitor_id, poc, parameter_code)
+
+# counts of poc codes by monitor_id
+ec_pocs_by_site <- 
+  ec_monitor_tibble %>% 
+  select(monitor_id, poc) %>% 
+  distinct() %>% 
+  group_by(monitor_id) %>% 
+  mutate(poc = as.character(poc)) %>% 
+  summarize(poc_count = n()) %>% 
+  arrange(poc_count)
+
+# monitor id character vector
+ec_monitor_ids <- 
+  ec_conversion_tibble %>% 
+  select(monitor_id) %>% 
+  distinct() %>% 
+  pull()
+
+# make tibble of parameter codes and priority rankings
+ec_priority_tibble <- 
+  tibble(
+    parameter_code = 
+      c(88321, 99380, 99307, 88381, 88357, 88316),
+    parameter_priority = 
+      c(1, 2, 3, 4, 5, 6)
+  )
+
+# tibble including only the best data point for each day
+ec_select_tibble <- 
+  ec_conversion_tibble %>% 
+  left_join(ec_priority_tibble, 
+            by = "parameter_code") %>% 
+  arrange(monitor_id_poc, date_local) %>% 
+  group_by(monitor_id_poc, date_local) %>% 
+  arrange(parameter_priority, .by_group = TRUE) %>% 
+  slice(1)
+
+# checking the select and full ec tibbles for all the date-monitor-id-poc combinations
+ec_conversion_date_check <- 
+  ec_conversion_tibble %>% 
+  select(
+    monitor_id_poc, 
+    date_local
+  ) %>% 
+  distinct() %>% 
+  tally()
+
+ec_selected_date_check <- 
+  ec_select_tibble %>% 
+  ungroup() %>% 
+  select(
+    monitor_id_poc, 
+    date_local
+  ) %>% 
+# distinct() %>% 
+  tally()
+
+# save the select tibble to disk
+save(ec_select_tibble, 
+     file = 
+       file.path(
+         "rmd_one_intermediate_data", 
+         "ec_select_tibble.rdata"
+       )
+     )
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+  
+```
+
+
+```{r organic carbon variable selection}
+
+# load air pollution with conversions
+load(
+  file = 
+    file.path(
+      "rmd_one_intermediate_data", 
+      "air_pollutant_conversion_tibble.rdata"
+    )
+)
+
+# load parameter names and codes
+load(
+  file = 
+    file.path(
+      "travis_cache", 
+      "parameter_names_codes_tibble.rdata"
+    )
+)
+
+# numeric vectors of converted and unconverted codes for ec and oc
+oc_converted_codes <- 
+  c(99305, 99370)
+oc_unconverted_codes <- 
+  c(88305, 88370)
+
+# make tibble of oc names and codes
+oc_names_and_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "OC"))
+
+# make numeric vector of all oc codes
+oc_codes <- 
+  parameter_names_codes_tibble %>% 
+  filter(str_detect(parameter_name, "OC")) %>% 
+  pull(parameter_code) %>% 
+  combine(oc_converted_codes)
+
+# filter tibble for only organic carbon data considered for inclusion
+oc_conversion_tibble <- 
+  air_pollutant_conversion_tibble %>% 
+  filter(
+    parameter_code %in%
+      oc_codes
+  ) %>% 
+  filter(
+    !(parameter_code %in% 
+        oc_unconverted_codes)  # take out raw pre-conversion rows
+  )
+
+# remove the air pollutant conversion tibble
+rm(air_pollutant_conversion_tibble)
+invisible(gc())
+
+# oc conversion tibble
+# summarize each by date and monitor
+oc_monitor_tibble <- 
+  oc_conversion_tibble %>% 
+  select(monitor_id, poc, parameter_code, date_local) %>% 
+  group_by(monitor_id, poc, parameter_code) %>% 
+  summarise(first_date = min(date_local), 
+            last_date = max(date_local), 
+            observations = n()) %>% 
+  arrange(monitor_id, poc, parameter_code)
+
+# counts of poc codes by monitor_id
+oc_pocs_by_site <- 
+  oc_monitor_tibble %>% 
+  select(monitor_id, poc) %>% 
+  distinct() %>% 
+  group_by(monitor_id) %>% 
+  mutate(poc = as.character(poc)) %>% 
+  summarize(poc_count = n()) %>% 
+  arrange(poc_count)
+
+# monitor id character vector
+oc_monitor_ids <- 
+  oc_conversion_tibble %>% 
+  select(monitor_id) %>% 
+  distinct() %>% 
+  pull()
+
+# make tibble of parameter codes and priority rankings
+oc_priority_tibble <- 
+  tibble(
+    parameter_code = 
+      c(88320, 99370, 99305, 88382, 88355),
+    parameter_priority = 
+      c(1, 2, 3, 4, 5)
+  )
+
+# tibble including only the best data point for each day
+oc_select_tibble <- 
+  oc_conversion_tibble %>% 
+  left_join(oc_priority_tibble,  # add the priority codes
+            by = "parameter_code") %>% 
+  arrange(monitor_id_poc, date_local) %>% 
+  group_by(monitor_id_poc, date_local) %>% 
+  arrange(parameter_priority, .by_group = TRUE) %>%  # sort in priority order
+  slice(1)  # take highest priority row for each monitor and date
+
+# checking the select and full oc tibbles for all the date-monitor-id-poc combinations
+oc_conversion_date_check <- 
+  oc_conversion_tibble %>% 
+  select(
+    monitor_id_poc, 
+    date_local
+  ) %>% 
+  distinct() %>% 
+  tally()
+
+oc_selected_date_check <- 
+  oc_select_tibble %>% 
+  ungroup() %>% 
+  select(
+    monitor_id_poc, 
+    date_local
+  ) %>% 
+# distinct() %>% 
+  tally()
+
+save(oc_select_tibble, 
+     file = 
+       file.path(
+         "rmd_one_intermediate_data", 
+         "oc_select_tibble.rdata"
+       )
+     )
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+mem_used()
+
+```

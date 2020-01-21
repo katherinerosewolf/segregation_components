@@ -11,16 +11,42 @@ before_install:
   - sudo apt-get install --yes libudunits2-dev libproj-dev libgeos-dev libgdal-dev libgsl-dev libv8-dev
   - git lfs pull
   
-  # Additional info about the build
-  - uname -a
-  - free -m
-  - df -h
-  - ulimit -a
-
-script: 
-  # Output something every 10 minutes or Travis kills the job
-  - while sleep 540; do echo "=====[ $SECONDS seconds still running ]====="; done &
-  - R -f tests/render_rmds.R
-  # Killing background sleep loop
-  - kill %1
-  - df -h
+jobs:
+  include:
+    - stage: notebook one
+      script:
+        # information about the build
+        - uname -a
+        - free -m
+        - df -h
+        - ulimit -a
+        # background sleep loop outputting something every 9 minutes to avoid kill
+        - while sleep 540; do echo "=====[ $SECONDS seconds still running ]====="; done &
+        # render the r notebook one
+        - R -f tests/render_notebook_one.R
+        # Killing background sleep loop
+        - kill %1
+        #information about the build
+        - uname -a
+        - free -m
+        - df -h
+        - ulimit -a
+    - stage: notebook two
+      script:
+        # information about the build
+        - uname -a
+        - free -m
+        - df -h
+        - ulimit -a
+        # create background sleep loop
+        - while sleep 540; do echo "=====[ $SECONDS seconds still running ]====="; done &
+        # render the r notebook one
+        - R -f tests/render_notebook_two.R
+        # Killing background sleep loop
+        - kill %1
+        #information about the build
+        - uname -a
+        - free -m
+        - df -h
+        - ulimit -a
+        
