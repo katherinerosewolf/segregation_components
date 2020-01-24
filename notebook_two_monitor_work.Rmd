@@ -1495,19 +1495,30 @@ mem_used()
 
 ```
 
+
 ```{r try for one pollutant}
 
-load(file = file.path("intermediate_data", "air_pollutant_conversion_tibble.rdata"))
+load(file = file.path("intermediate_data", "air_pollutant_tibble.rdata"))
 
-head(air_pollutant_conversion_tibble)
+head(air_pollutant_tibble)
 
-nrow(air_pollutant_conversion_tibble)
+nrow(air_pollutant_tibble)
 mem_used()
 
-# remove all objects from the environment
-rm(list = ls(all.names = TRUE))
-gc()
-mem_used()
+# # remove all objects from the environment
+# rm(list = ls(all.names = TRUE))
+# gc()
+# mem_used()
+
+# # aggregate mean on months and years for three-year data
+# monthlyaveragesnodrops3 <- 
+#   aggregate(arithmetic_mean ~ month + year + parameter_code + tract_ID, 
+#             atleast3years180obs, mean)
+# 
+# #get long-term averages
+# averagebycensustractnodrops3 <- 
+#   aggregate(arithmetic_mean ~ parameter_code + tract_ID, 
+#             data = monthlyaveragesnodrops3, FUN="mean")
 
 ```
 
