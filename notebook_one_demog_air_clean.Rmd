@@ -1591,6 +1591,11 @@ save(ec_select_tibble,
        )
      )
 
+# save ec codes to disk for later
+save(ec_codes, 
+     file = file.path("rmd_one_intermediate_data", 
+                      "ec_codes.rdata"))
+
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
 gc()
@@ -1720,13 +1725,15 @@ oc_selected_date_check <-
 # distinct() %>% 
   tally()
 
+# save final tibble to disk
 save(oc_select_tibble, 
-     file = 
-       file.path(
-         "rmd_one_intermediate_data", 
-         "oc_select_tibble.rdata"
-       )
-     )
+     file = file.path("rmd_one_intermediate_data", 
+                      "oc_select_tibble.rdata"))
+
+# save oc codes to disk for later
+save(oc_codes, 
+     file = file.path("rmd_one_intermediate_data", 
+                      "oc_codes.rdata"))
 
 # remove all objects from the environment
 rm(list = ls(all.names = TRUE))
@@ -1734,3 +1741,64 @@ gc()
 mem_used()
 
 ```
+
+
+```{r make final full air pollution dataset}
+
+# make final air dataset before exclusions for frequencies
+load(file = file.path("travis_cache", "air_pollutant_tibble.rdata"))
+load(file = file.path("rmd_one_intermediate_data", "ec_codes.rdata"))
+load(file = file.path("rmd_one_intermediate_data", "oc_codes.rdata"))
+
+# filter out ec and oc rows from air_pollutant_tibble 
+air_pollutant_tibble_decarbonized <- 
+  air_pollutant_tibble %>% 
+  filter(!(parameter_code %in% ec_codes)) %>%   # filter out ec rows
+  filter(!(parameter_code %in% oc_codes))  # filter out oc rows
+
+# remove big tibble hogging memory from environment
+rm(air_pollutant_tibble)
+gc()
+
+# load ec and oc tibbles
+load(file = file.path("rmd_one_intermediate_data", "ec_select_tibble.rdata"))
+load(file = file.path("rmd_one_intermediate_data", "oc_select_tibble.rdata"))
+
+# remove parameter_priority column from oc_select_tibble
+oc_select_tibble_for_join <- 
+  oc_select_tibble %>% 
+  select(-c(parameter_priority))
+
+# remove oc_select_tibble from environment
+rm(oc_select_tibble)
+gc()
+
+# remove parameter priority column from ec_select_tibble
+ec_select_tibble_for_join <- 
+  ec_select_tibble %>% 
+  select(-c(parameter_priority))  
+
+# remove ec_select_tibble object with extra column from environment
+rm(ec_select_tibble)
+gc()
+
+# rbind the three together
+air_pollutant_tibble_to_analyze <- 
+  air_pollutant_tibble_decarbonized %>% 
+  bind_rows(ec_select_tibble_for_join, oc_select_tibble_for_join)
+
+rm(air_pollutant_tibble_decarbonized, 
+   ec_select_tibble_for_join, 
+   oc_select_tibble_for_join)
+gc()
+
+save(air_pollutant_tibble_to_analyze, 
+     file = file.path("rmd_one_intermediate_data", 
+                      "air_pollutant_tibble_to_analyze.rdata"))
+
+# remove all objects from the environment
+rm(list = ls(all.names = TRUE))
+gc()
+
+```
+

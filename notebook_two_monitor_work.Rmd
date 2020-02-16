@@ -1486,7 +1486,7 @@ end goal: weights from each buffer in each census tract (that add up to one!)
 
 load(file = file.path("intermediate_data", "intersected_tracts.rdata"))
 
-intersected_tracts$buffer_10000_m$`74301`
+intersected_tracts$buffer_10000_m$`74301`$monitor_id_overlaps
 
 # # remove all objects from the environment
 # rm(list = ls(all.names = TRUE))
@@ -1494,3 +1494,51 @@ intersected_tracts$buffer_10000_m$`74301`
 # mem_used()
 
 ```
+
+first need to check if tract had a buffer with ANY observations
+
+THEN count up total observations in the TRACT
+
+THEN exclude
+
+THEN do final analysis using final choices
+
+```{r try for one pollutant}
+
+# make final air dataset before exclusions for frequencies
+load(file = file.path("rmd_one_intermediate_data", 
+                      "air_pollutant_tibble_to_analyze.rdata"))
+
+
+
+# # format dates
+# 
+# # convert to date if not already
+# allairdataandruca$Date.Local <- 
+#   as.Date(allairdataandruca$Date.Local)
+# str(allairdataandruca$Date.Local)
+# 
+# #get months
+# allairdataandruca$month <- 
+#   format(allairdataandruca$Date.Local,
+#          format = "%m")
+# 
+# #get years
+# allairdataandruca$year <- 
+#   format(allairdataandruca$Date.Local,
+#          format = "%y")
+# # remove all objects from the environment
+# rm(list = ls(all.names = TRUE))
+# gc()
+# mem_used()
+# # aggregate mean on months and years for three-year data
+# monthlyaveragesnodrops3 <- 
+#   aggregate(arithmetic_mean ~ month + year + parameter_code + tract_ID, 
+#             atleast3years180obs, mean)
+# 
+# #get long-term averages
+# averagebycensustractnodrops3 <- 
+#   aggregate(arithmetic_mean ~ parameter_code + tract_ID, 
+#             data = monthlyaveragesnodrops3, FUN="mean")
+```
+
