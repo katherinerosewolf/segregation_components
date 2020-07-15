@@ -1499,9 +1499,13 @@ first need to check if tract had a buffer with ANY observations
 
 THEN count up total observations in the TRACT
 
+# make dataset of just those monitors . . . for each tract!
+
+
+
 THEN exclude
 
-THEN do final analysis using final choices
+THEN pull it all back togetherdo final analysis using final choices
 
 ```{r try for one pollutant}
 

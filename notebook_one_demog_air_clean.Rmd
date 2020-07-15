@@ -1787,11 +1787,13 @@ air_pollutant_tibble_to_analyze <-
   air_pollutant_tibble_decarbonized %>% 
   bind_rows(ec_select_tibble_for_join, oc_select_tibble_for_join)
 
+# remove big files
 rm(air_pollutant_tibble_decarbonized, 
    ec_select_tibble_for_join, 
    oc_select_tibble_for_join)
 gc()
 
+# save air pollutant tibble compiled with carbon conversions
 save(air_pollutant_tibble_to_analyze, 
      file = file.path("rmd_one_intermediate_data", 
                       "air_pollutant_tibble_to_analyze.rdata"))
