@@ -1501,11 +1501,11 @@ THEN count up total observations in the TRACT
 
 # make dataset of just those monitors . . . for each tract!
 
-
+# check lit on buffers to prioritize buffers
 
 THEN exclude
 
-THEN pull it all back togetherdo final analysis using final choices
+THEN pull it all back together do final analysis using final choices
 
 ```{r try for one pollutant}
 
